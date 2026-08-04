@@ -1,0 +1,3 @@
+---
+nginx_index_title: "PoC VM Nginx"
+nginx_index_message: "Nginx configurado com Ansible em uma VM criada via Terraform na GCP."

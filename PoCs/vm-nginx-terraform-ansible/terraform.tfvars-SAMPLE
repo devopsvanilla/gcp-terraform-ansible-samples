@@ -1,0 +1,47 @@
+# Ajuste estes parâmetros antes de executar terraform plan/apply.
+# Este arquivo centraliza os parâmetros das VMs, rede e acesso SSH.
+
+# ===== Atributos globais da PoC =====
+poc_name = "vm-nginx-terraform-ansible" # Nome lógico da PoC
+project_id = "<gcp_project_id>" # ID do projeto GCP onde os recursos serão criados
+region     = "us-central1" # Região GCP para a PoC
+zone       = "us-central1-a" # Zona GCP para a VM
+manage_vm_external_ip_org_policy = true # Gerencia a Org Policy de IP externo no projeto
+
+# ===== Atributos globais com fallback por VM =====
+# Estes valores servem como padrão para todas as VMs; cada VM pode sobrescrevê-los se necessário.
+ssh_username   = "devops" # Usuário Linux padrão para SSH/Ansible
+ssh_public_key = "ssh-ed25519 AAAA... substitua-pela-sua-chave-publica" # Chave pública SSH padrão para as VMs
+use_metadata_ssh_keys = false # Injeta a chave SSH via metadado ssh-keys da instância
+network_name    = "default" # VPC usada por padrão pelas VMs
+subnetwork_name = "" # Subnet opcional; deixe vazio para usar o valor padrão da VPC
+allowed_http_cidr = "0.0.0.0/0" # CIDR liberado para HTTP (porta 80)
+allowed_ssh_cidr  = "0.0.0.0/0" # CIDR liberado para SSH (porta 22)
+run_ansible          = true # Executa o playbook do Ansible após a criação das VMs
+ansible_wait_seconds = 15 # Tempo em segundos entre tentativas do Ansible
+ansible_max_retries  = 10 # Número máximo de tentativas do Ansible
+ansible_private_key_file = "~/.ssh/id_ed25519" # Caminho da chave privada usada pelo Ansible
+ansible_ssh_user     = "devopsvanillaofficial_gmail_com" # Usuário SSH/OS Login usado pelo Ansible
+
+vms = {
+  web_example = {
+    vm_name                   = "vm-nginx-example"
+    machine_type_override     = "e2-micro" # Tipo de máquina da VM
+    machine_series            = "e2" # Série da máquina
+    vcpu_count                = 1 # Quantidade de vCPUs
+    memory_gb                 = 1 # Memória RAM em GB
+    disk_type                 = "pd-standard" # Tipo de disco do boot disk
+    disk_size_gb              = 30 # Tamanho do disco em GB
+    boot_image_project        = "debian-cloud" # Projeto da imagem base
+    boot_image_family         = "debian-12" # Família da imagem base
+    assign_external_ip        = true # Define se a VM deve ter IP externo
+    ssh_username              = "devops" # Pode sobrescrever o valor global para esta VM
+    ssh_public_key            = "ssh-ed25519 AAAA... substitua-pela-sua-chave-publica" # Pode sobrescrever o valor global para esta VM
+    user_groups               = ["sudo", "www-data"] # Grupos Linux a serem adicionados ao usuário remoto
+    network_name              = "default" # Pode sobrescrever a rede global para esta VM
+    subnetwork_name           = "" # Pode sobrescrever a subnet global para esta VM
+    allowed_http_cidr         = "0.0.0.0/0" # Pode sobrescrever o CIDR global para esta VM
+    allowed_ssh_cidr          = "0.0.0.0/0" # Pode sobrescrever o CIDR global para esta VM
+    manage_vm_external_ip_org_policy = true # Pode sobrescrever a política global para esta VM
+  }
+}

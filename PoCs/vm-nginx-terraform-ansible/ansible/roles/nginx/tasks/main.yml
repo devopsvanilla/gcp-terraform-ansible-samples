@@ -1,0 +1,31 @@
+---
+- name: Instalar pacote Nginx
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+- name: Publicar página de teste do Nginx
+  ansible.builtin.copy:
+    dest: /var/www/html/index.html
+    owner: root
+    group: root
+    mode: "0644"
+    content: |
+      <!doctype html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="utf-8" />
+        <title>{{ nginx_index_title }}</title>
+      </head>
+      <body>
+        <h1>{{ nginx_index_title }}</h1>
+        <p>{{ nginx_index_message }}</p>
+      </body>
+      </html>
+  notify: Reiniciar Nginx
+
+- name: Garantir serviço Nginx habilitado e iniciado
+  ansible.builtin.service:
+    name: nginx
+    enabled: true
+    state: started

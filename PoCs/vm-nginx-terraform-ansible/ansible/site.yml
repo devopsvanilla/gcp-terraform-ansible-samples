@@ -1,0 +1,10 @@
+---
+- name: Configurar Nginx na VM provisionada pela PoC
+  hosts: web
+  become: true
+  become_method: sudo
+  become_flags: "-n"
+  gather_facts: true
+
+  roles:
+    - role: nginx
