@@ -11,6 +11,7 @@ Repositório de provas de conceito (POCs) para Google Cloud Platform com foco em
 ## Índice das POCs existentes
 
 - [PoCs/vm-nginx-terraform-ansible](PoCs/vm-nginx-terraform-ansible)
+- [PoCs/morpheus](PoCs/morpheus): App Blueprint no Morpheus Data (provider `HPE/hpe`) que expõe um formulário de self-service para adicionar VMs ao `terraform.tfvars` da PoC `vm-nginx-terraform-ansible` e aplicar o manifesto correspondente.
 
 ## Observações gerais de pré-requisitos e segurança
 

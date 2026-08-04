@@ -1,0 +1,25 @@
+# Copie este arquivo para terraform.tfvars e ajuste os valores.
+# NUNCA versione terraform.tfvars com credenciais reais.
+
+morpheus_url      = "https://morpheus.example.com"
+morpheus_username = "admin"
+morpheus_password = "CHANGE_ME"
+# morpheus_access_token   = "CHANGE_ME"   # alternativa a username/password
+# morpheus_tenant_subdomain = ""
+morpheus_insecure = false
+
+repo_path                   = "/opt/gcp-terraform-ansible-samples"
+poc_relative_path           = "PoCs/vm-nginx-terraform-ansible"
+add_vm_script_relative_path = "scripts/add-vm-to-tfvars.sh"
+terraform_binary            = "terraform"
+
+task_execute_target = "local"
+# remote_target_host     = ""
+# remote_target_port     = ""
+# remote_target_username = ""
+# remote_target_password = ""
+
+blueprint_name        = "vm-nginx-terraform-ansible"
+blueprint_description = "Adiciona uma VM ao terraform.tfvars da PoC vm-nginx-terraform-ansible e aplica o manifesto Terraform correspondente."
+blueprint_category     = "terraform-ansible-samples"
+blueprint_visibility   = "private"

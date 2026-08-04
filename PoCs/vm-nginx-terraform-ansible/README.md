@@ -21,6 +21,13 @@ Esta PoC implanta **uma ou várias VMs Linux na GCP** usando Terraform, com:
   - `gcloud`
   - `ansible`
   - `ansible-lint`
+  - `python3` (usado pelos scripts auxiliares que editam o `terraform.tfvars`)
+  - `python3-pip`
+  - `python3-venv`
+  - `pipx` (usado para instalar `ansible-dev-tools`, que fornece `ansible-lint`)
+- Para preparar rapidamente a estação de trabalho com essas dependências, use:
+  - `./scripts/install-prerequisites.sh`
+  - ele verifica o ambiente, mostra no pré-flight o que será instalado e instala apenas o que estiver ausente.
 - Autenticação GCP ativa via ADC ou `gcloud`:
   - `gcloud auth application-default login`
 - Permissões no projeto para:
@@ -69,6 +76,9 @@ Se algum campo de rede/SSH/firewall não for informado na entrada da VM, o manif
 1. Acesse o diretório da PoC.
 2. Edite `terraform.tfvars` e preencha os valores reais do projeto, da zona e das chaves SSH.
 3. Defina as VMs em `vms = { ... }`; cada entrada aceita `assign_external_ip = true` ou `false`.
+   - Se preferir automatizar a inclusão de uma nova VM no manifesto, use o script abaixo a partir da raiz do repositório:
+     - `./scripts/add-vm-to-tfvars.sh --file "./PoCs/vm-nginx-terraform-ansible/terraform.tfvars" --vm-key <NOME_DA_VM> --vm-name <NOME DA VM> --machine-type-override e2-micro --machine-series e2 --vcpu-count 1 --memory-gb 1 --disk-type pd-standard --disk-size-gb 30 --boot-image-project debian-cloud --boot-image-family debian-12 --assign-external-ip true --ssh-username <USUARIO A SER CRIADO> --ssh-public-key '<SUA CHAVE>' --network-name default --subnetwork-name '' --allowed-http-cidr 0.0.0.0/0 --allowed-ssh-cidr 138.94.84.20/32 --user-group <GRUPO> --user-group <GRUPO> --user-group <...>`
+   - O script valida os parâmetros obrigatórios, aceita parâmetros opcionais, impede duplicidade de `vm_name`, executa `terraform fmt` e `terraform validate` ao final e aborta com rollback do arquivo se a inclusão deixar o manifesto inválido.
 4. Se quiser que o usuário remoto seja criado automaticamente na VM e adicionado a grupos, defina `user_groups = ["sudo"]` (ou outra lista) na entrada da VM. Se esse campo não for informado, a lista fica vazia.
 5. Para que o Terraform execute o playbook do Ansible automaticamente após a criação da VM, mantenha `run_ansible = true` (ou altere para `false` para apenas provisionar a infraestrutura).
 6. Se quiser o fluxo automático de Org Policy para IP externo, mantenha `manage_vm_external_ip_org_policy = true`.
@@ -105,6 +115,7 @@ Se houver uma política herdada de nível superior (Folder/Org) que impeça over
   - `terraform output vm_internal_ips`
   - `terraform output vm_external_ips`
   - `terraform output vm_details`
+  - `terraform output deployment_summary`
 - Testar SSH com a chave correspondente à pública cadastrada em cada VM:
   - `ssh -i <caminho-da-chave-privada> <ssh_username>@<ip-da-vm>`
 - Conferir o usuário remoto criado pela inicialização da VM e os grupos atribuídos:
@@ -133,6 +144,9 @@ ansible-playbook -i ansible/inventories/dev/hosts.yml ansible/site.yml -e "targe
 
 - No diretório da PoC:
   - `terraform destroy`
+- Se quiser remover apenas uma VM do manifesto antes de rodar `terraform plan`/`terraform apply`, use a partir da raiz do repositório:
+  - `./scripts/remove-vm-from-tfvars.sh --file "./PoCs/vm-nginx-terraform-ansible/terraform.tfvars" --name <NOME DA VM>`
+- O script de remoção localiza o bloco com `vm_name` igual ao valor informado, remove o bloco completo, executa `terraform fmt` e `terraform validate` e restaura o arquivo original se a remoção deixar o manifesto inválido.
 - Confirmar no Console GCP que VM, regras de firewall e políticas da PoC foram removidas.
 
 ## Guia de erros comuns
@@ -142,6 +156,8 @@ ansible-playbook -i ansible/inventories/dev/hosts.yml ansible/site.yml -e "targe
 - **`orgpolicy.googleapis.com` / quota project:** se o Terraform falhar com erro de quota project, certifique-se de que a conta ADC esteja autenticada e de que o projeto esteja correto. A automação tenta configurar isso automaticamente quando necessário.
 - **Erro `Constraint constraints/compute.vmExternalIpAccess violated`:** a PoC tenta aplicar a regra no nível do projeto para VMs com `assign_external_ip = true`. Se o erro persistir, provavelmente há política herdada de Folder/Org sem possibilidade de override; nesse caso, peça liberação no nível superior ou desative a gestão automática.
 - **`network` ou `subnetwork` não encontrados:** revise `network_name` e `subnetwork_name` no `terraform.tfvars`.
+- **Falha ao usar `add-vm-to-tfvars.sh`:** confirme se `python3` e `terraform` estão instalados, se `--vm-key` é único e se `--vm-name` ainda não existe no `terraform.tfvars`.
+- **Falha ao usar `remove-vm-from-tfvars.sh`:** confirme se o valor passado em `--name` corresponde exatamente ao atributo `vm_name` do bloco que você quer remover.
 - **Sem acesso SSH com `assign_external_ip = false`:** use conectividade privada (VPN, bastion ou IAP).
 - **SSH não conecta mesmo com IP externo:** confira se `allowed_ssh_cidr` contém o seu IP público atual com `/32` e se ele não mudou desde o `terraform apply`.
 - **`Permission denied (publickey)`:** confirme se a chave privada corresponde à pública em `ssh_public_key` e se o usuário usado em `ssh_username`/`ansible_ssh_user` existe na VM.
