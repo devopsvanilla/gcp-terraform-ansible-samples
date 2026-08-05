@@ -47,7 +47,7 @@ recurso; consulte-os para o detalhamento de cada bloco.
   catálogo.
 - O host onde a **task** será executada (`task_execute_target`, padrão `local`
   = o próprio Morpheus; também suporta `remote` e `resource`) precisa ter:
-  - este repositório clonado em `repo_path` (padrão `/opt/gcp-terraform-ansible-samples`);
+  - O repositório Git sincronizado no Morpheus Data com o seu respectivo **ID de repositório** (informado em `task_repository_id` no `terraform.tfvars` ou via integração Git em `git_integration_name` / `git_repository_name`);
   - `bash`, `python3` (usado por `add-vm-to-tfvars.sh`), `terraform` e
     `gcloud`/ADC configurado com permissão para o projeto GCP alvo;
   - o bucket de state remoto da PoC `vm-nginx-terraform-ansible` já criado
@@ -56,7 +56,7 @@ recurso; consulte-os para o detalhamento de cada bloco.
 - Se `task_execute_target = "remote"`, defina também `remote_target_host`,
   `remote_target_port`, `remote_target_username` e `remote_target_password`.
 - Copie `terraform.tfvars-SAMPLE` para `terraform.tfvars` e preencha os
-  valores reais. **Nunca versione `terraform.tfvars` com credenciais.**
+  valores reais (incluindo `task_repository_id`). **Nunca versione `terraform.tfvars` com credenciais.**
 
 ## Como implantar
 

@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
-# Gerado a partir de templates/add_vm_and_apply.sh.tftpl pelo Terraform (hpe_morpheus_task_shell_script).
+# Shell Script executado pelo Morpheus Data a partir do repositório Git.
 # Os valores entre <%= customOptions[...] %> são substituídos pelo Morpheus Data
 # em tempo de execução, com base no formulário preenchido pelo solicitante.
 set -euo pipefail
 
-REPO_DIR="${repo_path}"
-POC_DIR="$REPO_DIR/${poc_relative_path}"
-ADD_VM_SCRIPT="$REPO_DIR/${add_vm_script_relative_path}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+POC_DIR="${POC_DIR:-$REPO_DIR/PoCs/vm-nginx-terraform-ansible}"
+ADD_VM_SCRIPT="${ADD_VM_SCRIPT:-$REPO_DIR/scripts/add-vm-to-tfvars.sh}"
 TFVARS_FILE="$POC_DIR/terraform.tfvars"
-TERRAFORM_BIN="${terraform_binary}"
+TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
@@ -58,14 +59,14 @@ ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME")
 
 if [[ -n "$USER_GROUPS" ]]; then
   IFS=',' read -ra RAW_GROUPS <<< "$USER_GROUPS"
-  for raw_group in "$${RAW_GROUPS[@]}"; do
+  for raw_group in "${RAW_GROUPS[@]}"; do
     group_name="$(echo "$raw_group" | xargs)"
     [[ -z "$group_name" ]] || ARGS+=(--user-group "$group_name")
   done
 fi
 
-log_info "Executando: $ADD_VM_SCRIPT $${ARGS[*]}"
-"$ADD_VM_SCRIPT" "$${ARGS[@]}"
+log_info "Executando: $ADD_VM_SCRIPT ${ARGS[*]}"
+"$ADD_VM_SCRIPT" "${ARGS[@]}"
 
 log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"

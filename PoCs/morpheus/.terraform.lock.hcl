@@ -5,6 +5,7 @@ provider "registry.terraform.io/hpe/hpe" {
   version     = "1.6.0"
   constraints = ">= 1.6.0"
   hashes = [
+    "h1:IYE3pgcwMbNzvKwrSa09zwAJdCssKzgN13MI7ZPETAY=",
     "h1:fu1pm7//v+2G52yxUBqeUgQm+Xwkbmqn0ieP1cxJa7s=",
     "zh:369715f0243fc92dd2f5714ec581ab03b4eb5c04a2ba0c95aba4ae7b4c22f856",
     "zh:3887dfa1463c2a48e592fe73c68764e03be6c94b2ca40e6ff732184cbc1e5c8c",

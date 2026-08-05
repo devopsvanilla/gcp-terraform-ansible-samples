@@ -8,12 +8,17 @@ morpheus_password = "CHANGE_ME"
 # morpheus_tenant_subdomain = ""
 morpheus_insecure = false
 
-repo_path                   = "/opt/gcp-terraform-ansible-samples"
-poc_relative_path           = "PoCs/vm-nginx-terraform-ansible"
-add_vm_script_relative_path = "scripts/add-vm-to-tfvars.sh"
-terraform_binary            = "terraform"
+# ===== Automação: repositório Git e script alvo no Morpheus =====
+task_source_type   = "repository"
+task_repository_id = 1 # Substitua pelo ID numérico do repositório no Morpheus (ex.: 1, 2, 3...)
+# git_integration_name = "devopsvanilla-morpheus-dashboards"
+# git_repository_name  = "loonar-morpheus-sysint (all:all)"
+task_script_path   = "PoCs/morpheus/templates/add_vm_and_apply.sh"
+task_version_ref   = "main"
 
-task_execute_target = "local"
+task_execute_target       = "local"
+# task_local_repository_id  = "1" # Se nulo, usará automaticamente o valor de task_repository_id
+task_local_repository_ref = "main"
 # remote_target_host     = ""
 # remote_target_port     = ""
 # remote_target_username = ""

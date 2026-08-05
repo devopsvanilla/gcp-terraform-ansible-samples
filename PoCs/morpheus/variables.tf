@@ -37,30 +37,47 @@ variable "morpheus_insecure" {
   default     = false
 }
 
-# ===== Automação: repositório e script alvo =====
+# ===== Automação: repositório Git e script alvo no Morpheus =====
 
-variable "repo_path" {
+variable "task_source_type" {
   type        = string
-  description = "Caminho absoluto, no host de execução da task, onde este repositório está clonado."
-  default     = "/opt/gcp-terraform-ansible-samples"
+  description = "Origem do script da task no Morpheus Data (repository, local ou url)."
+  default     = "repository"
+
+  validation {
+    condition     = contains(["local", "repository", "url"], var.task_source_type)
+    error_message = "task_source_type deve ser \"local\", \"repository\" ou \"url\"."
+  }
 }
 
-variable "poc_relative_path" {
-  type        = string
-  description = "Caminho relativo, a partir da raiz do repositório, até a PoC vm-nginx-terraform-ansible."
-  default     = "PoCs/vm-nginx-terraform-ansible"
+variable "task_repository_id" {
+  type        = number
+  description = "ID numérico do repositório Git configurado/sincronizado no Morpheus Data. Obrigatório quando task_source_type = \"repository\"."
+  default     = null
 }
 
-variable "add_vm_script_relative_path" {
+variable "git_integration_name" {
   type        = string
-  description = "Caminho relativo, a partir da raiz do repositório, até o script add-vm-to-tfvars.sh."
-  default     = "scripts/add-vm-to-tfvars.sh"
+  description = "Nome da integração Git no Morpheus Data para busca automática do ID do repositório (opcional se task_repository_id for definido)."
+  default     = ""
 }
 
-variable "terraform_binary" {
+variable "git_repository_name" {
   type        = string
-  description = "Caminho ou nome do binário do Terraform disponível no host de execução da task."
-  default     = "terraform"
+  description = "Nome do repositório na integração Git no Morpheus Data (opcional se task_repository_id for definido)."
+  default     = ""
+}
+
+variable "task_script_path" {
+  type        = string
+  description = "Caminho de execução do script wrapper dentro do repositório Git (ex.: PoCs/morpheus/templates/add_vm_and_apply.sh)."
+  default     = "PoCs/morpheus/templates/add_vm_and_apply.sh"
+}
+
+variable "task_version_ref" {
+  type        = string
+  description = "Branch ou Tag do repositório Git para obtenção do script no Morpheus (ex.: main)."
+  default     = "main"
 }
 
 # ===== Automação: alvo de execução da task no Morpheus =====
@@ -74,6 +91,18 @@ variable "task_execute_target" {
     condition     = contains(["local", "remote", "resource"], var.task_execute_target)
     error_message = "task_execute_target deve ser \"local\", \"remote\" ou \"resource\"."
   }
+}
+
+variable "task_local_repository_id" {
+  type        = string
+  description = "ID do repositório Git para o contexto de execução local (GIT REPO). Se nulo, utiliza o valor de task_repository_id."
+  default     = null
+}
+
+variable "task_local_repository_ref" {
+  type        = string
+  description = "Branch ou Tag para o contexto de execução local (GIT REF)."
+  default     = "main"
 }
 
 variable "remote_target_host" {
