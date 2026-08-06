@@ -23,6 +23,27 @@ blueprint_visibility  = "private"
 # Nome da chave do segredo no Cypher onde as tfvars serão armazenadas
 cypher_secret_key = "tfvars/vm-nginx-poc"
 
+# ===== Customização Opcional dos Rótulos (Labels) exibidos no Formulário =====
+# Descomente e altere os textos abaixo caso queira personalizar os rótulos dos campos no Morpheus:
+# label_vm_name             = "Nome da VM (vm_name)"
+# label_machine_series      = "Série da Máquina"
+# label_machine_type_override = "Tipo de Máquina (Machine Type)"
+# label_vcpu_count          = "Quantidade de vCPUs"
+# label_memory_gb           = "Memória RAM (GB)"
+# label_disk_type           = "Tipo de Disco"
+# label_disk_size_gb        = "Tamanho do Disco (GB)"
+# label_boot_image_project  = "Projeto da Imagem de Boot"
+# label_boot_image_family   = "Família da Imagem de Boot"
+# label_assign_external_ip  = "Atribuir IP Público Externo"
+# label_ssh_username        = "Usuário SSH"
+# label_ssh_public_key      = "Chave Pública SSH"
+# label_network_name        = "Rede VPC"
+# label_subnetwork_name     = "Subnet VPC (Opcional - deixe vazio para utilizar a sub-rede padrão da região)"
+# label_allowed_http_cidr   = "CIDR Liberado HTTP (Porta 80)"
+# label_allowed_ssh_cidr    = "CIDR Liberado SSH (Porta 22)"
+# label_run_ansible         = "Executar Ansible (Instalação Nginx)"
+
+
 # ===== Parâmetros Padrão da VM GCP a ser provisionada pelo Blueprint =====
 # (Utilizam os identificadores NATIVOS das APIs do Google Cloud Platform - GCP)
 # (NÃO exige a criação prévia de nenhum template no Morpheus Data)

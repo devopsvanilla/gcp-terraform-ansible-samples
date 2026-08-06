@@ -9,10 +9,11 @@ Esta PoC utiliza o provedor oficial [`HPE/hpe`](https://registry.terraform.io/pr
 - **Gerenciamento do Estado (`tfstate`) no Cypher**: O arquivo de estado `.tfstate` é mantido e criptografado nativamente no **Morpheus Cypher**, dispensando a necessidade de buckets externos no Google Cloud Storage (GCS) ou arquivos de estado locais.
 - **Injeção de Parâmetros via Cypher (`tfvar_secret`)**: Os valores das variáveis do `terraform.tfvars` são gravados em um segredo do Cypher (`hpe_morpheus_cypher_secret`) e injetados automaticamente no plano do Terraform.
 - **Formulário Amigável de Provisionamento**: Cada parâmetro da VM (`vm_name`, `machine_type_override`, `disk_size_gb`, `assign_external_ip`, `ssh_username`, `ssh_public_key`, `network_name`, `allowed_ssh_cidr`, etc.) é exposto como um campo individual e amigável (Option Types) no Self-Service.
+- **Obrigatoriedade e Rótulos Customizáveis**: Todos os campos do formulário são marcados como obrigatórios (com exceção de `subnetwork_name`), e os rótulos de cada campo exibidos na interface gráfica do Morpheus podem ser totalmente customizados via `terraform.tfvars`.
 - **Isolamento de Estado**: Cada pedido no Catálogo provisiona 1 VM individual com seu próprio App Instance e `tfstate` isolado no Cypher.
 
 ### Recursos Provisionados no GCP ao Executar o App Blueprint:
-Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a engine nativa do Terraform executa o manifesto [`PoCs/vm-nginx-terraform-ansible`](../vm-nginx-terraform-ansible/README.md) e provisiona automaticamente:
+Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a engine nativa do Terraform executa o manifesto [`PoCs/vm-nginx-terraform-ansible`](../vm-nginx-terraform-ansible/README.md) utilizando os **identificadores nativos das APIs do GCP** (sem exigir a criação prévia de nenhum template no Morpheus Data) e provisiona automaticamente:
 
 1. **Instância de VM no Google Compute Engine (GCE)**:
    - Uma máquina virtual GCP (ex.: `e2-micro` ou conforme especificado no formulário).
@@ -33,7 +34,6 @@ Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a eng
 
 5. **Instância de Aplicação (App Instance) no Morpheus Data**:
    - Criação do objeto App Instance no Morpheus com monitoramento de status e o arquivo `.tfstate` armazenado nativamente no Morpheus Cypher.
-
 
 ---
 
@@ -67,7 +67,7 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 
 #### A. Conexão com o Morpheus Data
 - **`morpheus_url`**: URL completa da console do Morpheus Data (ex.: `https://morpheus.seu-dominio.com`).
-- **`morpheus_username` / `morpheus_password`**: Credenciais de usuário/senha administrative ou de automação no Morpheus.
+- **`morpheus_username` / `morpheus_password`**: Credenciais de usuário/senha administrativa ou de automação no Morpheus.
 - **`morpheus_access_token`**: Alternativa para autenticação via Access Token (se utilizado, deixe username/password em branco).
 - **`morpheus_insecure`**: Defina como `true` para ignorar a validação de certificados SSL/TLS autoassinados em ambientes de laboratório/PoC. Em produção com SSL confiável, defina como `false`.
 
@@ -85,24 +85,33 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 - **`blueprint_visibility`**: Visibilidade do Blueprint (`private` ou `public`).
 - **`cypher_secret_key`**: Caminho do segredo no Cypher onde as `tfvars` serão armazenadas (ex.: `tfvars/vm-nginx-poc`). **Este segredo é criado automaticamente pelo `terraform apply`**.
 
-#### D. Parâmetros Padrão da VM GCP (Valores do Formulário)
-- **Status dos Parâmetros**:
-  - **Se comentados (`#`)**: Os campos do formulário no Self-Service abrirão **em branco**, exigindo preenchimento pelo solicitante.
-  - **Se descomentados**: Os campos abrirão **pré-preenchidos** no formulário com esses valores como padrão.
-- **Lista de Parâmetros**:
-  - `vm_name`: Nome padrão da VM GCP.
-  - `machine_series` / `machine_type_override`: Série e tipo nativo da VM GCP (ex.: `e2`, `e2-micro`).
-  - `vcpu_count` / `memory_gb`: vCPUs e RAM da instância.
-  - `disk_type` / `disk_size_gb`: Tipo do disco (`pd-standard`) e tamanho em GB.
-  - `boot_image_project` / `boot_image_family`: Projeto e família nativos da imagem GCP (`debian-cloud`, `debian-12`).
-  - `assign_external_ip` / `manage_vm_external_ip_org_policy`: Configurações de IP público e Org Policy (`true`/`false`).
-  - `ssh_username` / `ssh_public_key`: Usuário Linux e chave pública SSH em formato OpenSSH.
-  - `network_name` / `subnetwork_name`: VPC e Subnet GCP (deixe `subnetwork_name` em branco `""` para sub-rede padrão da região).
-  - `allowed_http_cidr` / `allowed_ssh_cidr`: Regras de liberação no Firewall GCP para portas 80 e 22.
-  - `run_ansible` / `ansible_ssh_user`: Configurações do provissionamento Ansible Nginx.
+#### D. Customização Opcional dos Rótulos (Labels) dos Campos
+- Você pode personalizar os títulos/rótulos exibidos acima de cada campo na interface do Morpheus Data definindo as variáveis `label_*` no `terraform.tfvars`:
+  - `label_vm_name`: Rótulo do campo Nome da VM.
+  - `label_machine_series` / `label_machine_type_override`: Rótulos da série e tipo de máquina.
+  - `label_disk_size_gb`: Rótulo do tamanho do disco.
+  - `label_subnetwork_name`: Rótulo do campo de subnet VPC (ex.: `Subnet VPC (Opcional - deixe vazio para utilizar a sub-rede padrão da região)`).
+  - Demais rótulos `label_*`: Consulte a lista completa em [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE).
 
-#### E. Chave Privada SSH do Ansible (`ansible_private_key`)
-- Para que o Ansible execute no runner do Morpheus e instale o Nginx na VM criada, a chave privada SSH pode ser fornecida via bloco multilinha `<<-EOT`:
+#### E. Parâmetros Padrão da VM GCP (Valores do Formulário)
+- **Comportamento dos Campos no Formulário**:
+  - **Se mantidos comentados (`#`)**: Os campos no formulário do Self-Service abrirão **em branco**, exigindo preenchimento pelo solicitante.
+  - **Se descomentados**: Os campos abrirão **pré-preenchidos** no formulário com esses valores como padrão.
+- **Obrigatoriedade**: Todos os campos são de preenchimento obrigatório no Morpheus Data, com exceção de `subnetwork_name` (opcional).
+- **Lista de Parâmetros de VM**:
+  - `vm_name`: Nome da VM GCP.
+  - `machine_series` / `machine_type_override`: Identificadores nativos GCP (ex.: `e2`, `e2-micro`).
+  - `vcpu_count` / `memory_gb`: vCPUs e RAM da instância.
+  - `disk_type` / `disk_size_gb`: Tipo de disco (`pd-standard`) e tamanho em GB.
+  - `boot_image_project` / `boot_image_family`: Imagem nativa GCP (`debian-cloud`, `debian-12`).
+  - `assign_external_ip` / `manage_vm_external_ip_org_policy`: IP público e Org Policy (`true`/`false`).
+  - `ssh_username` / `ssh_public_key`: Usuário Linux e chave pública SSH.
+  - `network_name` / `subnetwork_name`: VPC e Subnet GCP.
+  - `allowed_http_cidr` / `allowed_ssh_cidr`: Firewall GCP para portas 80 e 22.
+  - `run_ansible` / `ansible_ssh_user`: Provisionamento do Nginx via Ansible.
+
+#### F. Chave Privada SSH do Ansible (`ansible_private_key`)
+- Fornecida no `terraform.tfvars` da automação via bloco multilinha `<<-EOT`:
   ```hcl
   ansible_private_key = <<-EOT
   -----BEGIN OPENSSH PRIVATE KEY-----
@@ -110,7 +119,7 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
   -----END OPENSSH PRIVATE KEY-----
   EOT
   ```
-- **Segurança**: O `terraform apply` grava essa chave no segredo criptografado `secret/ansible-private-key` no Cypher do Morpheus. O solicitante final no Catálogo **nunca visualiza ou precisa fornecer a chave privada no formulário**.
+- **Segurança**: O `terraform apply` salva essa chave no segredo criptografado `secret/ansible-private-key` no Cypher do Morpheus. O solicitante final no Catálogo **nunca visualiza ou precisa fornecer a chave privada no formulário**.
 
 ---
 
@@ -148,7 +157,7 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 
 2. **Teste de Provisionamento no Self-Service**:
    - Clique em **Order** no item de catálogo.
-   - Verifique se o formulário exibe os campos amigáveis (`Nome da VM`, `Tipo de Máquina`, `Tamanho do Disco`, `IP Público`, `Chave Pública SSH`, `Rede VPC`, etc.).
+   - Verifique se o formulário exibe os campos amigáveis (`Nome da VM`, `Tipo de Máquina`, `Tamanho do Disco`, `IP Público`, `Chave Pública SSH`, `Rede VPC`, etc.) com os seus respectivos rótulos customizados.
    - Preencha os campos obrigatórios e solicite a App.
    - Acesse **Provisioning > Apps**, selecione a App criada e acompanhe a aba **History / Logs**. O Morpheus executará o runner Terraform nativo armazenando o `tfstate` no Cypher.
 

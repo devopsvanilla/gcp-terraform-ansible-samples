@@ -114,6 +114,111 @@ variable "cypher_secret_ttl" {
   default     = 0
 }
 
+# ===== Customização dos Rótulos (Labels) dos Campos do Formulário =====
+
+variable "label_vm_name" {
+  type        = string
+  description = "Rótulo do campo Nome da VM no formulário."
+  default     = "Nome da VM (vm_name)"
+}
+
+variable "label_machine_series" {
+  type        = string
+  description = "Rótulo do campo Série da Máquina no formulário."
+  default     = "Série da Máquina"
+}
+
+variable "label_machine_type_override" {
+  type        = string
+  description = "Rótulo do campo Tipo de Máquina no formulário."
+  default     = "Tipo de Máquina (Machine Type)"
+}
+
+variable "label_vcpu_count" {
+  type        = string
+  description = "Rótulo do campo Quantidade de vCPUs no formulário."
+  default     = "Quantidade de vCPUs"
+}
+
+variable "label_memory_gb" {
+  type        = string
+  description = "Rótulo do campo Memória RAM no formulário."
+  default     = "Memória RAM (GB)"
+}
+
+variable "label_disk_type" {
+  type        = string
+  description = "Rótulo do campo Tipo de Disco no formulário."
+  default     = "Tipo de Disco"
+}
+
+variable "label_disk_size_gb" {
+  type        = string
+  description = "Rótulo do campo Tamanho do Disco no formulário."
+  default     = "Tamanho do Disco (GB)"
+}
+
+variable "label_boot_image_project" {
+  type        = string
+  description = "Rótulo do campo Projeto da Imagem no formulário."
+  default     = "Projeto da Imagem de Boot"
+}
+
+variable "label_boot_image_family" {
+  type        = string
+  description = "Rótulo do campo Família da Imagem no formulário."
+  default     = "Família da Imagem de Boot"
+}
+
+variable "label_assign_external_ip" {
+  type        = string
+  description = "Rótulo do campo Atribuir IP Público no formulário."
+  default     = "Atribuir IP Público Externo"
+}
+
+variable "label_ssh_username" {
+  type        = string
+  description = "Rótulo do campo Usuário SSH no formulário."
+  default     = "Usuário SSH"
+}
+
+variable "label_ssh_public_key" {
+  type        = string
+  description = "Rótulo do campo Chave Pública SSH no formulário."
+  default     = "Chave Pública SSH"
+}
+
+variable "label_network_name" {
+  type        = string
+  description = "Rótulo do campo Rede VPC no formulário."
+  default     = "Rede VPC"
+}
+
+variable "label_subnetwork_name" {
+  type        = string
+  description = "Rótulo do campo Subnet VPC no formulário."
+  default     = "Subnet VPC (Opcional - deixe vazio para utilizar a sub-rede padrão da região)"
+}
+
+variable "label_allowed_http_cidr" {
+  type        = string
+  description = "Rótulo do campo CIDR HTTP no formulário."
+  default     = "CIDR Liberado HTTP (Porta 80)"
+}
+
+variable "label_allowed_ssh_cidr" {
+  type        = string
+  description = "Rótulo do campo CIDR SSH no formulário."
+  default     = "CIDR Liberado SSH (Porta 22)"
+}
+
+variable "label_run_ansible" {
+  type        = string
+  description = "Rótulo do campo Executar Ansible no formulário."
+  default     = "Executar Ansible (Instalação Nginx)"
+}
+
+
 # ===== Parâmetros da VM e Ambiente GCP (Sem valores padrão para os opcionais) =====
 # Se estes parâmetros não forem definidos no terraform.tfvars, os campos do formulário no Morpheus
 # serão exibidos em branco (sem valor pré-preenchido).
