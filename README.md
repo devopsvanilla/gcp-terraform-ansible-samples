@@ -16,7 +16,7 @@ Repositório de provas de conceito (POCs) para Google Cloud Platform com foco em
 ## Observações gerais de pré-requisitos e segurança
 
 - Tenha `terraform`, `gcloud` e `ansible` instalados e atualizados.
-- Configure autenticação no GCP antes de aplicar infraestrutura.
+- Configure a autenticação no GCP antes de aplicar infraestrutura. Consulte o guia [HOWTO-gcloud-connect.md](HOWTO-gcloud-connect.md) para aprender a autenticar o Morpheus Data e o Terraform na sua conta e projeto GCP.
 - A PoC de VM Nginx já inclui criação automática de usuário remoto na VM, grupos configuráveis por VM e execução automática do playbook do Ansible pelo Terraform quando `run_ansible = true`.
 - Nunca versione credenciais, chaves privadas ou arquivos de estado Terraform.
 - Sempre revise `terraform plan` antes de `terraform apply`.
