@@ -2,112 +2,107 @@
 
 ## Objetivo deste repositório
 
-Este repositório é dedicado a **provas de conceito (POCs) em Terraform para GCP** e scripts auxiliares em **Bash Linux**.
+Este repositório é dedicado a **provas de conceito (POCs) em Terraform para GCP e Morpheus Data (via provedor oficial `HPE/hpe`)**, com suporte opcional a **Ansible** para provisionamento e configuração de serviços, e scripts auxiliares em **Bash Linux**.
 
-As POCs devem implantar **unidades mínimas de software ou configuração** que comprovem funcionamento com baixo custo/complexidade.
+As POCs devem implantar **unidades mínimas de software ou configuração** que comprovem funcionamento com baixo custo, simplicidade e facilidade de limpeza (`terraform destroy`).
 
-## Escopo para agentes de IA e Copilot
+---
 
-Ao criar ou alterar conteúdo neste repositório, siga estas regras:
+## Escopo para Agentes de IA e GitHub Copilot
+
+Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras:
 
 1. **Foque em POCs mínimas e verificáveis**
-
    - Cada POC deve ser pequena, objetiva e com validação clara.
 
 2. **Uma POC por diretório próprio**
+   - Use obrigatoriamente o padrão: `PoCs/<nome-da-poc>/` (prefixo `PoCs/` com maiúsculas).
 
-   - Use o padrão: `PoCs/<nome-da-poc>/`.
+3. **README obrigatório por POC (6 seções estritas)**
+   - Cada `PoCs/<nome-da-poc>/README.md` deve conter exatamente as seguintes seções na ordem exata:
+     1. `O que será implantado`
+     2. `Pré-requisitos`
+     3. `Como implantar`
+     4. `Como conferir a implantação`
+     5. `Como descomissionar`
+     6. `Guia de erros comuns`
 
-3. **README obrigatório por POC**
+4. **README raiz obrigatório (`/README.md`)**
+   - O `README.md` da raiz deve descrever o propósito do projeto, pré-requisitos gerais e servir de índice atualizado das POCs.
 
-   - Cada `PoCs/<nome-da-poc>/README.md` deve conter exatamente estas seções:
-     - O que será implantado
-     - Pré-requisitos
-     - Como implantar
-     - Como conferir a implantação
-     - Como descomissionar
-     - Guia de erros comuns
-
-4. **README raiz obrigatório**
-
-   - O `README.md` da raiz deve descrever o propósito do projeto e funcionar como índice das POCs.
-
-5. **Terraform com boas práticas**
-
-   - Formatação e validação antes de propor mudanças.
-   - Variáveis e outputs sempre documentados.
-   - Versionamento de provider/terraform explícito.
+5. **Terraform com boas práticas (GCP e HPE Morpheus Data)**
+   - Divida em arquivos por intenção (`versions.tf`, `providers.tf`, `main.tf`, `variables.tf`, `outputs.tf`).
+   - Para Morpheus Data, declare o provedor oficial `HPE/hpe` (`https://registry.terraform.io/providers/HPE/hpe/latest`).
+   - Variáveis e outputs sempre documentados com `description`. Marcação `sensitive = true` para tokens de acesso e URLs sensíveis.
+   - Nomes em `snake_case` sem redundância de tipo.
+   - Versionamento explícito de provider/terraform.
+   - Sem segredos ou credenciais hardcoded.
 
 6. **Ansible com boas práticas**
-
-   - Playbooks e roles devem ser idempotentes.
-   - Inventários e variáveis por ambiente devem ser separados e documentados.
-   - Validar com `ansible-lint` antes de propor mudanças.
+   - Playbooks em `PoCs/<nome-da-poc>/ansible/`.
+   - Tasks idempotentes com nomes descritivos.
+   - Priorizar módulos nativos Ansible; usar `handlers` para reinícios de serviço.
 
 7. **Scripts preferencialmente em Bash Linux**
+   - Iniciar com `#!/usr/bin/env bash` e `set -euo pipefail`.
+   - Quoting seguro (`"${var}"`), suporte a `--help` e tratamento de erros direcionado a STDERR.
 
-   - Scripts idempotentes, com tratamento de erro e ajuda de uso.
+8. **Fluxo em 3 Fases**
+   - Execute modificações utilizando o fluxo em 3 fases (Fase 1: Diagnóstico → Fase 2: Implementação → Fase 3: Validação).
 
-8. **Use os artefatos de automação do repositório**
+9. **Use as Skills do repositório (`.agents/skills/`)**
+   - `poc-scaffold`: Automação de scaffolding de POCs.
+   - `poc-readme-validator`: Validação das 6 seções do README.
+   - `terraform-quality-gate`: Quality Gate de Terraform GCP e HPE Morpheus.
+   - `ansible-quality-gate`: Quality Gate de Ansible.
+   - `bash-quality-gate`: Quality Gate de Bash Linux.
 
-  Hook de política: `.github/hooks/enforce-pocs-path.json` + `scripts/hooks/enforce-path-standard.sh`.
-  Prompts de scaffold: `.github/prompts/create-gcp-terraform-poc.prompt.md` e `.github/prompts/create-gcp-terraform-ansible-poc.prompt.md`.
+---
 
-## Estrutura recomendada
+## Estrutura recomendada de uma POC
 
-- `PoCs/<nome-da-poc>/`
-  - `main.tf`, `variables.tf`, `outputs.tf`, `versions.tf`, `providers.tf` (conforme necessidade)
-  - `README.md` (com as seções obrigatórias)
-  - `ansible/` (opcional: playbooks e roles de configuração)
-  - `scripts/` (opcional: scripts chamados pelo Terraform)
-  - `helpers/` (opcional: scripts de apoio operacional)
-  - `files/` e `templates/` (quando aplicável)
+```text
+PoCs/<nome-da-poc>/
+├── main.tf
+├── variables.tf
+├── outputs.tf
+├── versions.tf
+├── providers.tf
+├── terraform.tfvars.example
+├── README.md
+├── ansible/            (opcional: playbooks, roles e inventários)
+│   ├── site.yml
+│   ├── inventories/
+│   ├── group_vars/
+│   └── roles/
+└── scripts/            (opcional: scripts bash de apoio)
+```
+
+---
 
 ## Convenções de qualidade
 
-- Terraform:
-  - Execute `terraform fmt`, `terraform validate` e revisão de `terraform plan`.
-  - Não commitar `terraform.tfstate*`, `.terraform/` e segredos em `*.tfvars`.
-- Bash:
-  - Use `#!/usr/bin/env bash` e `set -euo pipefail`.
-  - Prefira `[[ ... ]]`, quote em variáveis (`"${var}"`), funções pequenas e `main`.
-  - Validar com ShellCheck quando possível.
-- Ansible:
-  - Padronize diretórios em `inventories/`, `group_vars/`, `host_vars/`, `roles/` e playbooks.
-  - Use nomes descritivos em tasks e handlers.
-  - Priorize módulos nativos em vez de `shell`/`command` quando possível.
-  - Use `--check` e `--diff` para validação quando aplicável.
+- **Terraform**: `terraform fmt`, `terraform validate`, `terraform plan`.
+- **Bash**: `shellcheck`, `set -euo pipefail`, `--help`.
+- **Ansible**: `ansible-lint`, `ansible-playbook --syntax-check`, `ansible-playbook --check --diff`.
 
-## Referências oficiais (linkar, não copiar)
+---
 
-- Terraform Style Guide (HashiCorp):
-  - <https://developer.hashicorp.com/terraform/language/style>
-- Terraform Tests (HashiCorp):
-  - <https://developer.hashicorp.com/terraform/language/tests>
-- Terraform no Google Cloud (overview):
-  - <https://docs.cloud.google.com/docs/terraform>
-- Boas práticas Terraform na GCP (general style/structure):
-  - <https://docs.cloud.google.com/docs/terraform/best-practices/general-style-structure>
-- Boas práticas de root modules na GCP:
-  - <https://docs.cloud.google.com/docs/terraform/best-practices/root-modules>
-- Boas práticas de reusable modules na GCP:
-  - <https://docs.cloud.google.com/docs/terraform/best-practices/reusable-modules>
-- Guia de estilo Bash (Google):
-  - <https://google.github.io/styleguide/shellguide.html>
-- ShellCheck:
-  - <https://www.shellcheck.net/>
-- Ansible Documentation:
-  - <https://docs.ansible.com/>
-- Ansible Best Practices:
-  - <https://docs.ansible.com/ansible/latest/tips_tricks/ansible_tips_tricks.html>
-- Ansible Lint:
-  - <https://ansible.readthedocs.io/projects/lint/>
+## Referências oficiais
 
-## Nota de colaboração
+### Terraform & GCP
+- Terraform Style Guide: <https://developer.hashicorp.com/terraform/language/style>
+- Terraform no Google Cloud: <https://docs.cloud.google.com/docs/terraform>
+- GCP Terraform Best Practices: <https://docs.cloud.google.com/docs/terraform/best-practices/general-style-structure>
 
-Se houver qualquer ambiguidade de estrutura, priorize:
+### HPE Morpheus Data
+- Provedor Terraform HPE: <https://registry.terraform.io/providers/HPE/hpe/latest>
+- Configurações da solução e uso da console web: <https://support.hpe.com/hpesc/public/docDisplay?docId=sd00008014en_us&page=GUID-709AAADB-A9C1-40B6-AD22-958EE7E6F312.html>
+- API e CLI Morpheus Data: <https://support.hpe.com/hpesc/public/docDisplay?docId=sd00008014en_us&page=GUID-F695DE83-0DF8-4C5E-A932-79B60E12C7B4.html>
+- Repositórios no GitHub (HPE): <https://github.com/HewlettPackard/?q=morpheus&type=all&language=&sort=>
+- Whitepapers e Relatórios: <https://www.hpe.com/us/en/resource-library.html/search/morpheus?type=whitepapers-and-reports>
 
-1) legibilidade,
-2) segurança,
-3) custo baixo,
-4) facilidade de destruição limpa (`terraform destroy`).
+### Bash & Ansible
+- Guia de estilo Bash (Google): <https://google.github.io/styleguide/shellguide.html>
+- Ansible Documentation & Best Practices: <https://docs.ansible.com/>
+- Ansible Lint: <https://ansible.readthedocs.io/projects/lint/>

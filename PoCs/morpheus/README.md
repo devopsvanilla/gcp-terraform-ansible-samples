@@ -39,6 +39,31 @@ comportamento pedido, e é o padrão recomendado pelo próprio provider para
 Todos os arquivos `.tf` desta PoC estão documentados com o objetivo de cada
 recurso; consulte-os para o detalhamento de cada bloco.
 
+## Estratégia de Armazenamento de Estado (`tfstate`)
+
+Nesta arquitetura, adota-se o padrão de **backend local por padrão** com **sobreposição dinâmica (override)** para execuções remotas:
+
+1. **Execuções Manuais / Locais (Desenvolvimento)**:
+   O arquivo [`versions.tf`](../vm-nginx-terraform-ansible/versions.tf) **não declara nenhum bloco `backend`**. Com isso, qualquer execução direta (`terraform init` / `apply`) no computador do desenvolvedor armazena o estado no backend **local** (`terraform.tfstate`), sem exigir conexão ou criação de buckets no Google Cloud ou qualquer outro compatível.
+
+2. **Execuções Automatizadas via Morpheus Data (Remoto / GCS)**:
+   Quando a Shell Task [`add_vm_and_apply.sh`](./templates/add_vm_and_apply.sh) é disparada pelo Morpheus, ela gera temporariamente um arquivo de sobreposição chamado `backend_override.tf` contendo a declaração do backend GCS:
+
+   ```hcl
+   terraform {
+     backend "gcs" {
+       bucket = "tfstate-devopsvanilla-samples"
+       prefix = "vm-nginx-terraform-ansible"
+     }
+   }
+   ```
+
+   Em seguida, o script executa `terraform init -reconfigure` para conectar ao bucket GCS e, ao término da execução, um `trap` remove automaticamente o arquivo `backend_override.tf`, mantendo o repositório limpo.
+
+### Suporte a Outros Backends Remotos
+
+Embora o script da PoC gere a configuração para o **Google Cloud Storage (`gcs`)**, a mesma estratégia de `override` permite alternar para **qualquer backend remoto oficial do Terraform** (AWS S3, Azure Blob, HashiCorp Consul, HTTP, etc.) apenas ajustando o bloco gerado no script.
+
 ## Pré-requisitos
 
 - Terraform `>= 1.6` e acesso à internet para baixar o provider `HPE/hpe >= 1.6.0`.

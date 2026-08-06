@@ -10,6 +10,8 @@ POC_DIR="${POC_DIR:-$REPO_DIR/PoCs/vm-nginx-terraform-ansible}"
 ADD_VM_SCRIPT="${ADD_VM_SCRIPT:-$REPO_DIR/scripts/add-vm-to-tfvars.sh}"
 TFVARS_FILE="$POC_DIR/terraform.tfvars"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
+TFSTATE_BUCKET="${TFSTATE_BUCKET:-tfstate-devopsvanilla-samples}"
+TFSTATE_PREFIX="${TFSTATE_PREFIX:-vm-nginx-terraform-ansible}"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
@@ -65,12 +67,36 @@ if [[ -n "$USER_GROUPS" ]]; then
   done
 fi
 
+OVERRIDE_FILE="$POC_DIR/backend_override.tf"
+
+cleanup() {
+  if [[ -f "$OVERRIDE_FILE" ]]; then
+    log_info "Limpando arquivo temporário de override do backend ($OVERRIDE_FILE)..."
+    rm -f "$OVERRIDE_FILE"
+  fi
+}
+trap cleanup EXIT
+
 log_info "Executando: $ADD_VM_SCRIPT ${ARGS[*]}"
 "$ADD_VM_SCRIPT" "${ARGS[@]}"
 
 log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"
-"$TERRAFORM_BIN" init -input=false
+
+if [[ -n "$TFSTATE_BUCKET" ]]; then
+  log_info "Gerando backend_override.tf temporário para GCS (bucket: $TFSTATE_BUCKET, prefix: $TFSTATE_PREFIX)..."
+  cat <<EOF > "$OVERRIDE_FILE"
+terraform {
+  backend "gcs" {
+    bucket = "$TFSTATE_BUCKET"
+    prefix = "$TFSTATE_PREFIX"
+  }
+}
+EOF
+fi
+
+log_info "Inicializando Terraform..."
+"$TERRAFORM_BIN" init -input=false -reconfigure
 "$TERRAFORM_BIN" validate
 "$TERRAFORM_BIN" apply -auto-approve -input=false
 
