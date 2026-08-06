@@ -1,0 +1,71 @@
+# Configurações de conexão com o Morpheus Data
+morpheus_url      = "https://morpheus.seu-dominio.com"
+morpheus_username = "seu_usuario_aqui"
+morpheus_password = "sua_senha_aqui"
+morpheus_access_token = "seu-access-token-aqui"
+morpheus_insecure     = true                                # Permite conexões HTTPS com certificados autoassinados/não validados (true para lab/PoC, false para produção com SSL confiável).
+
+
+# Integração Git no Morpheus Data
+# (Valores de exemplo: ajuste conforme os IDs do seu ambiente no Morpheus)
+integration_id    = 1
+repository_id     = 1
+version_ref       = "main"
+working_path      = "PoCs/vm-nginx-terraform-ansible"
+terraform_version = "1.6.0"
+
+# Metadados do App Blueprint
+blueprint_name        = "vm-nginx-terraform-ansible-native"
+blueprint_description = "Blueprint nativo Terraform para provisionamento de VM Nginx no GCP com estado mantido no Cypher."
+blueprint_category    = "terraform-ansible-samples"
+blueprint_visibility  = "private"
+
+# Nome da chave do segredo no Cypher onde as tfvars serão armazenadas
+cypher_secret_key = "tfvars/vm-nginx-poc"
+
+# ===== Parâmetros Padrão da VM GCP a ser provisionada pelo Blueprint =====
+# (Utilizam os identificadores NATIVOS das APIs do Google Cloud Platform - GCP)
+# (NÃO exige a criação prévia de nenhum template no Morpheus Data)
+# Se estes parâmetros permanecerem comentados (#), os campos do formulário no Morpheus abrirão em branco para preenchimento.
+
+# poc_name                         = "vm-nginx-terraform-ansible"                  # Nome lógico da PoC para tagging e identificação interna.
+# project_id                       = "meu-projeto-gcp-12345"                       # ID do projeto GCP onde os recursos serão criados.
+# region                           = "us-central1"                                 # Região GCP padrão (ex.: us-central1, us-east1, southamerica-east1).
+# zone                             = "us-central1-a"                               # Zona GCP específica da região escolhida (ex.: us-central1-a).
+# vm_name                          = "vm-nginx-poc-01"                             # Nome padrão da instância Compute Engine que será exibido no formulário.
+# machine_series                   = "e2"                                          # Série nativa da família de máquinas GCP (ex.: e2, n2, n1, c2).
+# machine_type_override            = "e2-micro"                                    # Tipo exato de máquina nativa GCP (ex.: e2-micro, e2-medium, n1-standard-1).
+# vcpu_count                       = 1                                             # Quantidade padrão de vCPUs da instância.
+# memory_gb                        = 1                                             # Quantidade de memória RAM em GB da instância.
+# disk_type                        = "pd-standard"                                 # Tipo de disco nativo GCP (ex.: pd-standard, pd-ssd, pd-balanced).
+# disk_size_gb                     = 30                                            # Tamanho do disco de boot em GB.
+# boot_image_project               = "debian-cloud"                                # Projeto nativo da imagem de boot GCP (ex.: debian-cloud, ubuntu-os-cloud).
+# boot_image_family                = "debian-12"                                   # Família nativa da imagem GCP (ex.: debian-12, ubuntu-2204-lts).
+# assign_external_ip               = true                                          # Define se a VM receberá um IP público externo (true/false).
+# manage_vm_external_ip_org_policy = true                                          # Gerencia a restrição constraints/compute.vmExternalIpAccess na Org Policy (true/false).
+# ssh_username                     = "seu_usuario_linux"                           # Usuário Linux padrão a ser criado na VM para SSH.
+# ssh_public_key                   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."   # Chave pública SSH no formato OpenSSH para acesso à VM.
+# network_name                     = "default"                                     # Nome da VPC GCP onde a interface de rede será conectada.
+# subnetwork_name                  = ""                                            # Nome da subnet VPC (deixe em branco "" para usar a sub-rede padrão da região).
+# allowed_http_cidr                = "0.0.0.0/0"                                   # CIDR liberado no firewall para tráfego HTTP porta 80 (ex.: 0.0.0.0/0).
+# allowed_ssh_cidr                 = "203.0.113.10/32"                             # CIDR liberado no firewall para acesso SSH porta 22 (ex.: seu IP/32 ou CIDR administrativo).
+# use_metadata_ssh_keys            = true                                          # Injeta a chave SSH via metadado ssh-keys da instância (true/false).
+# run_ansible                      = true                                          # Executa o playbook Ansible automaticamente após a criação da VM (true/false).
+# ansible_wait_seconds             = 15                                            # Tempo de espera em segundos entre tentativas de conexão do Ansible.
+# ansible_max_retries              = 3                                             # Número máximo de tentativas de execução do playbook Ansible.
+# ansible_ssh_user                 = "usuario_ansible"                             # Usuário SSH utilizado pelo Ansible para conectar e provisionar o Nginx.
+
+# ===== Chave Privada do Ansible (Recuperada com Segurança do Cypher) =====
+# Ao aplicar este manifesto, a chave privada SSH abaixo é gravada de forma criptografada
+# no Cypher do Morpheus (no segredo secret/ansible-private-key).
+# Quando o App Blueprint for executado, o runner nativo do Morpheus recuperará este valor do Cypher
+# automaticamente, sem exigir que o solicitante cole a chave privada no formulário do Catálogo.
+#
+# Descomente o bloco abaixo e cole o conteúdo da sua chave privada SSH:
+#
+# ansible_private_key = <<-EOT
+# -----BEGIN OPENSSH PRIVATE KEY-----
+# b3BlbnNzaC1rZXktdjEAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+# QyNTUxOQAAACBA123...
+# -----END OPENSSH PRIVATE KEY-----
+# EOT

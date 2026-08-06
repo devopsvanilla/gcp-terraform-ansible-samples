@@ -11,7 +11,8 @@ Repositório de provas de conceito (POCs) para Google Cloud Platform com foco em
 ## Índice das POCs existentes
 
 - [PoCs/vm-nginx-terraform-ansible](PoCs/vm-nginx-terraform-ansible)
-- [PoCs/morpheus](PoCs/morpheus): App Blueprint no Morpheus Data (provider `HPE/hpe`) que expõe um formulário de self-service para adicionar VMs ao `terraform.tfvars` da PoC `vm-nginx-terraform-ansible` e aplicar o manifesto correspondente.
+- [PoCs/morpheus-tf-remotebackend](PoCs/morpheus-tf-remotebackend): Integração Morpheus Data via Remote Backend (GCS) executando script wrapper Shell Task e workflow de self-service.
+- [PoCs/morpheus-tf-nativebackend](PoCs/morpheus-tf-nativebackend): App Blueprint Terraform Nativo no Morpheus Data com estado (`tfstate`) mantido no Cypher e formulário de Self-Service com Option Types individuais.
 
 ## Observações gerais de pré-requisitos e segurança
 
