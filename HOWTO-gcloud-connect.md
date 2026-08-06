@@ -51,16 +51,17 @@ gcloud projects add-iam-policy-binding SEU_PROJECT_ID \
   --role="roles/iam.serviceAccountUser"
 ```
 
-### Passo 3: Gerar a Chave JSON da Service Account
+### Passo 3: Gerar a Chave JSON da Service Account no diretório `./scripts`
 
-Crie o arquivo de chave privada em formato JSON:
+Acesse o diretório `./scripts` e crie o arquivo de chave privada em formato JSON:
 
 ```bash
+cd scripts
 gcloud iam service-accounts keys create gcp-key.json \
   --iam-account=morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com
 ```
 
-> ⚠️ **ATENÇÃO:** Nunca versione o arquivo `gcp-key.json` no Git. Ele contém acesso administrativo ao seu projeto GCP.
+> ⚠️ **ATENÇÃO:** O arquivo `gcp-key.json` já está incluído no `.gitignore` para evitar vazamentos de credenciais. Nunca versione este arquivo no Git.
 >
 > 💡 **Nota:** Se a execução deste comando falhar com o erro `FAILED_PRECONDITION: Key creation is not allowed on this service account`, o seu projeto possui uma política de organização bloqueando a criação de chaves. Veja como resolver na seção [Resolução de Problemas Comuns](#5-resolução-de-problemas-comuns).
 
@@ -69,7 +70,7 @@ gcloud iam service-accounts keys create gcp-key.json \
 1. Na interface web do Morpheus Data, acesse **Ferramentas (Tools) > Cypher**.
 2. Clique no botão **+ Adicionar (+ Add)**.
 3. Preencha os dados:
-   * **Chave (Key)**: `secret/gcp-credentials`
+   * **Chave (Key)**: `secret/gcp-terraform-ansible-samples`
    * **Tipo (Type)**: `Secret`
    * **Valor (Value)**: Abra o arquivo `gcp-key.json`, copie todo o conteúdo JSON e cole neste campo.
    * **TTL**: `0` (ilimitado).
@@ -83,7 +84,7 @@ No script da Task (ou em [`templates/add_vm_and_apply.sh`](PoCs/morpheus/templat
 
 ```bash
 # Injeta o conteúdo do segredo lido dinamicamente do Cypher
-export GOOGLE_CREDENTIALS='<%=cypher.read("secret/gcp-credentials")%>'
+export GOOGLE_CREDENTIALS='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 ```
 
 Ao executar `terraform init` e `terraform apply`, o provider utilizará automaticamente essa credencial.
@@ -92,17 +93,29 @@ Ao executar `terraform init` e `terraform apply`, o provider utilizará automati
 
 ## 3. Método 2: Integração Nativa da GCP no Morpheus (Cloud Integration)
 
-Se você estiver utilizando **App Blueprints Nativos do tipo Terraform** no Morpheus Data:
+Se você estiver utilizando **App Blueprints Nativos do tipo Terraform** ou provisionando infraestrutura diretamente pelo catálogo de Clouds do Morpheus Data:
 
 1. Acesse **Infraestrutura (Infrastructure) > Clouds**.
-2. Clique em **+ Adicionar (+ Add)** e selecione **Google Cloud Platform (GCP)**.
-3. Preencha os campos obrigatórios:
-   * **Nome (Name)**: Ex: `GCP Production` ou `GCP Staging`.
-   * **Project ID**: O ID do projeto GCP.
-   * **Service Account Key**: Cole o conteúdo completo do arquivo `gcp-key.json`.
-4. Clique em **Salvar (Save)**.
+2. Clique no botão **+ Adicionar (+ Add)** e selecione **Google Cloud Platform (GCP)**.
+3. Na seção **Detalhes**, defina a forma de fornecimento de credenciais no campo **CREDENCIAIS (Credentials)**:
+   * **`Local Credentials`**: Para informar a chave privada e o e-mail da Service Account diretamente nesta Cloud.
+   * **`New Credentials` -> `email and private key`**: Para criar e salvar um objeto de credencial reutilizável no Gerenciador de Credenciais do Morpheus (**Infraestrutura > Credenciais**), podendo ser associado a outras Clouds no futuro.
+   * **Credencial Existente**: Caso já possua uma credencial previamente salva no Morpheus Credential Manager.
+4. **Extrair e Formatar as Credenciais com o Script Auxiliar**:
+   Para evitar erros de digitação de e-mail ou formatação incorreta das quebras de linha da chave privada, execute o utilitário do repositório:
+   ```bash
+   ./scripts/extract-gcp-credentials.sh
+   ```
+   O script exibirá no terminal os valores formatados e prontos para serem copiados:
+   * **EMAIL DO CLIENTE (Client Email)**: Copie o e-mail da Service Account (ex: `morpheus-tf-runner@poc-terraform-ansible.iam.gserviceaccount.com`).
+     > ⚠️ **IMPORTANTE:** **NÃO utilize o seu e-mail pessoal** (ex: `usuario@gmail.com`). A chave de criptografia pertence exclusivamente ao e-mail da Service Account.
+   * **CHAVE PRIVADA (Private Key)**: Copie todo o bloco contendo a chave privada em múltiplas linhas, desde `-----BEGIN PRIVATE KEY-----` até `-----END PRIVATE KEY-----`.
+5. Após informar o **EMAIL DO CLIENTE** (da Service Account) e a **CHAVE PRIVADA** (com quebras de linha reais), o Morpheus autenticará no GCP e habilitará os seletores:
+   * **ID DO PROJETO (Project ID)**: Selecione no dropdown o projeto GCP (ex: `poc-terraform-ansible`).
+   * **REGIÃO (Region)**: Selecione a região primária do GCP (ex: `us-central1`).
+6. Clique em **Salvar (Save)**.
 
-O Morpheus autenticará na GCP, descobrirá regiões, VPCs e imagens, e repassará essas credenciais automaticamente para as execuções de Blueprints vinculados a essa Cloud.
+O Morpheus autenticará na GCP, descobrirá a infraestrutura (VPCs, subredes, regiões e imagens) e disponibilizará a Cloud para provisionamento de Blueprints nativos.
 
 ---
 
@@ -121,9 +134,10 @@ Caso o Morpheus Data (ou o Runner da Task) esteja rodando em uma máquina virtua
 
 ## 5. Resolução de Problemas Comuns
 
-- **Erro `FAILED_PRECONDITION: Key creation is not allowed on this service account` (`constraints/iam.disableServiceAccountKeyCreation`)**:
-  - Esse erro é provocado por uma política de organização (Organization Policy) do GCP que proíbe a criação de chaves privadas JSON.
-  - Para liberar a criação de chaves no projeto utilizando a API Org Policies v2:
+* **Erro `FAILED_PRECONDITION: Key creation is not allowed on this service account` (`constraints/iam.disableServiceAccountKeyCreation`)**:
+  * Esse erro é provocado por uma política de organização (Organization Policy) do GCP que proíbe a criação de chaves privadas JSON.
+  * Para liberar a criação de chaves no projeto utilizando a API Org Policies v2:
+
     ```bash
     cat <<EOF > override_key_policy.yaml
     name: projects/SEU_PROJECT_ID/policies/iam.disableServiceAccountKeyCreation
@@ -135,24 +149,27 @@ Caso o Morpheus Data (ou o Runner da Task) esteja rodando em uma máquina virtua
     gcloud org-policies set-policy override_key_policy.yaml
     rm -f override_key_policy.yaml
     ```
-  - Confirme se a regra foi desativada (`enforce: false`):
+
+  * Confirme se a regra foi desativada (`enforce: false`):
+
     ```bash
     gcloud org-policies describe iam.disableServiceAccountKeyCreation --project=SEU_PROJECT_ID
     ```
-  - **Aguarde cerca de 60 segundos** para a propagação da política nos servidores do IAM do GCP e tente executar novamente a criação da chave (`gcloud iam service-accounts keys create ...`).
 
-- **Erro `401 Unauthorized` ou `403 Forbidden`**:
-  - Verifique se as APIs do GCP necessárias (como `compute.googleapis.com`, `storage.googleapis.com`) estão ativadas no projeto (`gcloud services enable compute.googleapis.com storage.googleapis.com`).
-  - Confirme se a Service Account possui as roles necessárias no projeto.
-- **Erro `storage.buckets.get permission denied`**:
-  - Garanta que a Service Account possui a role `roles/storage.admin` ou `roles/storage.objectAdmin` no bucket de backend do Terraform.
-- **Formato JSON inválido no Cypher**:
-  - Certifique-se de que colou o JSON bruto da chave sem quebras de linha extras ou aspas adicionais.
+  * **Aguarde cerca de 60 segundos** para a propagação da política nos servidores do IAM do GCP e tente executar novamente a criação da chave (`gcloud iam service-accounts keys create ...`).
+
+* **Erro `401 Unauthorized` ou `403 Forbidden`**:
+  * Verifique se as APIs do GCP necessárias (como `compute.googleapis.com`, `storage.googleapis.com`) estão ativadas no projeto (`gcloud services enable compute.googleapis.com storage.googleapis.com`).
+  * Confirme se a Service Account possui as roles necessárias no projeto.
+* **Erro `storage.buckets.get permission denied`**:
+  * Garanta que a Service Account possui a role `roles/storage.admin` ou `roles/storage.objectAdmin` no bucket de backend do Terraform.
+* **Formato JSON inválido no Cypher**:
+  * Certifique-se de que colou o JSON bruto da chave sem quebras de linha extras ou aspas adicionais.
 
 ---
 
 ## 6. Referências
 
-- [Documentação Oficial do Morpheus Data - Cypher](https://docs.morpheusdata.com/en/latest/tools/cypher/cypher.html)
-- [Documentação do Provider Google do Terraform - Autenticação](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference#authentication)
-- [Guia do Módulo `tfvars` no Cypher](PoCs/morpheus/HOWTO-cypher-tfvars.md)
+* [Documentação Oficial do Morpheus Data - Cypher](https://docs.morpheusdata.com/en/latest/tools/cypher/cypher.html)
+* [Documentação do Provider Google do Terraform - Autenticação](https://registry.terraform.io/providers/hashicorp/google/latest/docs/guides/provider_reference#authentication)
+* [Guia do Módulo `tfvars` no Cypher](PoCs/morpheus/HOWTO-cypher-tfvars.md)
