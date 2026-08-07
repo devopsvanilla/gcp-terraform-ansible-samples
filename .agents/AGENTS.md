@@ -9,6 +9,8 @@ Este documento reúne o conjunto consolidado de regras e padrões do repositóri
 - O repositório é dedicado a **Provas de Conceito (POCs) em Terraform para Google Cloud Platform (GCP) e Morpheus Data (via provedor `HPE/hpe`)** com suporte opcional a **Ansible** para configuração/bootstrap de ativos e scripts auxiliares em **Bash Linux**.
 - As POCs devem focar em unidades mínimas e verificáveis de infraestrutura e automação, com **baixo custo**, **facilidade de reprodução** e **descomissionamento limpo (`terraform destroy`)**.
 - Padrão obrigatório de caminho para POCs: `PoCs/<nome-da-poc>/` (atenção às maiúsculas no prefixo `PoCs/`).
+- **Idioma Obrigatório**: Toda a documentação do repositório deve ser escrita obrigatoriamente em **Português do Brasil (pt-BR)**.
+- **Linter de Markdown**: Todo documento `.md` criado ou alterado deve obrigatoriamente passar por validação com **markdown lint** (`markdownlint` ou `pymarkdown scan`).
 
 ---
 
@@ -65,7 +67,10 @@ Ao criar, evoluir ou refatorar qualquer POC neste repositório, o agente deve se
 - **Logs**: Envie mensagens de erro para STDERR usando prefixos padronizados (`[INFO]`, `[WARN]`, `[ERROR]`).
 - **Quality Gate**: `shellcheck`.
 
-### Documentação (READMEs)
+### Documentação (READMEs e Manuais)
+- **Idioma Obrigatório**: Toda a documentação deve ser redigida exclusivamente em **Português do Brasil (pt-BR)**.
+- **Quality Gate**: Executar obrigatoriamente `pymarkdown scan` ou `markdownlint` em qualquer arquivo `.md` criado ou alterado.
+
 - **README Raiz (`/README.md`)**:
   1. Propósito do repositório.
   2. Organização e estrutura de pastas.

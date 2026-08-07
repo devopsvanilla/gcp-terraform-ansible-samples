@@ -12,7 +12,7 @@ A forma como o Morpheus se conecta ao GCP depende do modelo de execução adotad
 | :--- | :--- | :--- | :--- |
 | **Método 1: Service Account Key via Cypher** | Tasks de Shell / Operational Workflows (Padrão deste repositório) | Injeção da variável `GOOGLE_CREDENTIALS` contendo a chave JSON lida do Cypher | Secret Store no Morpheus (**Tools > Cypher**) |
 | **Método 2: Cloud Integration Nativa** | App Blueprints Nativos de Terraform | Cadastro do GCP como Cloud Provider no Morpheus Data | Cadastro de Cloud no Morpheus (**Infrastructure > Clouds**) |
-| **Método 3: Application Default Credentials (ADC)** | Morpheus / Runner hospedado no próprio GCP (GCE ou GKE) | Autenticação via Metadata Server da GCP / Workload Identity | IAM da VM / Service Account nativa da GCP |
+| **Método 3: Application Default Credentials (ADC)** | Morpheus / Runner hospedado no próprio GCP (Compute Engine) | Autenticação via Metadata Server da GCP | IAM da VM / Service Account nativa da GCP |
 
 ---
 
@@ -63,7 +63,7 @@ gcloud iam service-accounts keys create gcp-key.json \
 
 > ⚠️ **ATENÇÃO:** O arquivo `gcp-key.json` já está incluído no `.gitignore` para evitar vazamentos de credenciais. Nunca versione este arquivo no Git.
 >
-> 💡 **Nota:** Se a execução deste comando falhar com o erro `FAILED_PRECONDITION: Key creation is not allowed on this service account`, o seu projeto possui uma política de organização bloqueando a criação de chaves. Veja como resolver na seção [Resolução de Problemas Comuns](#5-resolução-de-problemas-comuns).
+> ℹ️ **Nota:** Se a execução deste comando falhar com o erro `FAILED_PRECONDITION: Key creation is not allowed on this service account`, o seu projeto possui uma política de organização bloqueando a criação de chaves. Veja como resolver na seção [Resolução de Problemas Comuns](#5-resolução-de-problemas-comuns).
 
 ### Passo 4: Armazenar a Chave no Cypher do Morpheus Data
 
@@ -103,9 +103,11 @@ Se você estiver utilizando **App Blueprints Nativos do tipo Terraform** ou prov
    * **Credencial Existente**: Caso já possua uma credencial previamente salva no Morpheus Credential Manager.
 4. **Extrair e Formatar as Credenciais com o Script Auxiliar**:
    Para evitar erros de digitação de e-mail ou formatação incorreta das quebras de linha da chave privada, execute o utilitário do repositório:
+
    ```bash
    ./scripts/extract-gcp-credentials.sh
    ```
+
    O script exibirá no terminal os valores formatados e prontos para serem copiados:
    * **EMAIL DO CLIENTE (Client Email)**: Copie o e-mail da Service Account (ex: `morpheus-tf-runner@poc-terraform-ansible.iam.gserviceaccount.com`).
      > ⚠️ **IMPORTANTE:** **NÃO utilize o seu e-mail pessoal** (ex: `usuario@gmail.com`). A chave de criptografia pertence exclusivamente ao e-mail da Service Account.
@@ -121,13 +123,11 @@ O Morpheus autenticará na GCP, descobrirá a infraestrutura (VPCs, subredes, re
 
 ## 4. Método 3: Workload Identity / Credentials do Host (Runner no GCP)
 
-Caso o Morpheus Data (ou o Runner da Task) esteja rodando em uma máquina virtual (Compute Engine) ou cluster GKE dentro da GCP:
+Caso o Morpheus Data (ou o Runner da Task) esteja rodando em uma máquina virtual (Compute Engine) dentro da GCP:
 
 1. **Vínculo de Service Account à VM**:
    Ao criar a VM do Runner, associe a Service Account `morpheus-tf-runner` diretamente na criação da instância.
-2. **Workload Identity (GKE)**:
-   Mapeie a Kubernetes Service Account (KSA) do Pod do Runner para a Google Service Account (GSA).
-3. **Execução Transparente**:
+2. **Execução Transparente**:
    Neste cenário, não é necessário gerar arquivos de chave JSON ou injetar tokens. O `gcloud` e o Terraform obtêm as credenciais dinamicamente via **Metadata Server** (`http://metadata.google.internal`).
 
 ---

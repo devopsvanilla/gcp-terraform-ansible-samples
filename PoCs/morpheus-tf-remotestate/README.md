@@ -34,7 +34,7 @@ comportamento pedido, e é o padrão recomendado pelo próprio provider para
 | `hpe_morpheus_option_type_text/number/checkbox` | Cada campo do formulário exibido ao solicitante                |
 | `hpe_morpheus_task_shell_script`          | O script que roda `add-vm-to-tfvars.sh` e o `terraform apply`        |
 | `hpe_morpheus_workflow_operational`       | Agrupa os campos do formulário e a task, em ordem de execução       |
-| `hpe_morpheus_catalog_item_workflow`      | Publica o workflow no catálogo de self-service (o "App Blueprint")   |
+| `hpe_morpheus_catalog_item_workflow`      | Pública o workflow no catálogo de self-service (o "App Blueprint")   |
 
 Todos os arquivos `.tf` desta PoC estão documentados com o objetivo de cada
 recurso; consulte-os para o detalhamento de cada bloco.

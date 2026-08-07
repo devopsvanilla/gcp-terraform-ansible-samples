@@ -1,4 +1,4 @@
-# PoC: Native Backend Terraform App Blueprint no Morpheus Data
+﻿# PoC: Native Backend Terraform App Blueprint no Morpheus Data
 
 ## O que será implantado
 
@@ -45,7 +45,9 @@ Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a eng
    - Repositório sincronizado no Morpheus (obtenha os IDs de `integration_id` e `repository_id` na console em *Administration > Integrations* ou via API/CLI do Morpheus).
    - O repositório deve conter o diretório `PoCs/vm-nginx-terraform-ansible`.
 4. **Projeto GCP e Credenciais**:
-   - O executor do Morpheus Data (ou o Service Account configurado na integração GCP do Morpheus) precisa ter permissão para criar Compute Engine, regras de VPC e Org Policies.
+   - O executor do Morpheus Data (ou a Service Account configurada na integração GCP do Morpheus) precisa ter permissão para criar Compute Engine, regras de VPC e Org Policies.
+
+> 📌 **Guia Complementar de Conectividade GCP e GitHub:** Para um detalhamento passo a passo sobre como criar a Service Account e permissões no GCP, conectar o repositório GitHub e configurar os segredos no Cypher, consulte o guia [`HOWTO-gcloud-connect.md`](./HOWTO-gcloud-connect.md).
 
 ---
 
@@ -53,7 +55,7 @@ Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a eng
 
 ### Passo 1: Acessar o diretório da PoC
 ```bash
-cd PoCs/morpheus-tf-nativebackend
+cd PoCs/morpheus-tf-nativestate
 ```
 
 ### Passo 2: Preparar o arquivo de variáveis `terraform.tfvars`
@@ -64,6 +66,8 @@ cp terraform.tfvars-SAMPLE terraform.tfvars
 
 ### Passo 3: Configurar os parâmetros do `terraform.tfvars`
 Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração descritas abaixo:
+
+> 💡 **Detalhamento Completo:** Para uma explicação minuciosa de cada parâmetro e tabela de referência do `terraform.tfvars`, consulte a seção [Detalhamento dos Parâmetros do terraform.tfvars-SAMPLE](./HOWTO-gcloud-connect.md#6-detalhamento-dos-parâmetros-do-terraformtfvars-sample) no guia `HOWTO-gcloud-connect.md`.
 
 #### A. Conexão com o Morpheus Data
 - **`morpheus_url`**: URL completa da console do Morpheus Data (ex.: `https://morpheus.seu-dominio.com`).
@@ -175,6 +179,8 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 ---
 
 ## Guia de erros comuns
+
+> 💡 **Guia Estendido de Troubleshooting:** Para instruções de como contornar bloqueios de políticas de organização GCP (`constraints/iam.disableServiceAccountKeyCreation` e `constraints/compute.vmExternalIpAccess`), erros de permissão IAM e de chaves no Cypher, consulte a seção [Guia de Resolução de Problemas Comuns](./HOWTO-gcloud-connect.md#7-guia-de-resolução-de-problemas-comuns-troubleshooting) no `HOWTO-gcloud-connect.md`.
 
 ### 1. `Error: Integration / Repository ID invalid`
 - **Causa**: Os valores de `integration_id` ou `repository_id` informados no `terraform.tfvars` não existem na sua instância do Morpheus.

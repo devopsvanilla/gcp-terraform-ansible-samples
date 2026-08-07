@@ -18,6 +18,7 @@ Revise estes arquivos antes de propor mudanças:
 
 - `AGENTS.md`
 - `.agents/AGENTS.md`
+- `.github/copilot-instructions.md`
 - `.github/instructions/terraform-gcp.instructions.md`
 - `.github/instructions/terraform-hpe-morpheus.instructions.md`
 - `.github/instructions/ansible.instructions.md`
@@ -32,6 +33,7 @@ Revise estes arquivos antes de propor mudanças:
 ### 2) Escolha o tipo correto de customização
 
 - **`AGENTS.md` e `.agents/AGENTS.md`**: regras globais do repositório para Agentes de IA
+- **`.github/copilot-instructions.md`**: instruções principais do repositório para GitHub Copilot
 - **`.github/instructions/*.instructions.md`**: regras por tipo de arquivo para GitHub Copilot (ex.: `*.tf`, `*.sh`, `*.yml`)
 - **`.github/prompts/*.prompt.md`**: fluxos reutilizáveis para tarefas recorrentes
 - **`.agents/skills/*/SKILL.md`**: skills especializadas para automações e quality gates
@@ -50,6 +52,8 @@ Para assistências relativas a Morpheus Data, provedor HPE, API, CLI e Console W
 
 Toda evolução deve ser:
 
+- **redigida em Português do Brasil (pt-BR)** para toda documentação e manuais
+- **validada via Markdown Lint** (`markdownlint` ou `pymarkdown scan`) em arquivos `.md`
 - **curta e acionável** (sem texto genérico demais)
 - **testável** (com comandos concretos de validação)
 - **consistente** com `PoCs/<nome-da-poc>/`

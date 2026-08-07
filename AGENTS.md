@@ -12,13 +12,19 @@ As POCs devem implantar **unidades mínimas de software ou configuração** que 
 
 Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras:
 
-1. **Foque em POCs mínimas e verificáveis**
+1. **Documentação em Português do Brasil (pt-BR)**
+   - Toda e qualquer documentação (READMEs, HOWTOs, skills, prompts, instruções e comentários) deve ser redigida em **Português do Brasil (pt-BR)**.
+
+2. **Validação via Markdown Lint**
+   - Todo documento Markdown (`.md`) criado ou alterado deve passar por validação com **markdown lint** (`markdownlint` ou `pymarkdown scan`), respeitando boas práticas de formatação.
+
+3. **Foque em POCs mínimas e verificáveis**
    - Cada POC deve ser pequena, objetiva e com validação clara.
 
-2. **Uma POC por diretório próprio**
+4. **Uma POC por diretório próprio**
    - Use obrigatoriamente o padrão: `PoCs/<nome-da-poc>/` (prefixo `PoCs/` com maiúsculas).
 
-3. **README obrigatório por POC (6 seções estritas)**
+5. **README obrigatório por POC (6 seções estritas)**
    - Cada `PoCs/<nome-da-poc>/README.md` deve conter exatamente as seguintes seções na ordem exata:
      1. `O que será implantado`
      2. `Pré-requisitos`
@@ -27,10 +33,10 @@ Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras
      5. `Como descomissionar`
      6. `Guia de erros comuns`
 
-4. **README raiz obrigatório (`/README.md`)**
+6. **README raiz obrigatório (`/README.md`)**
    - O `README.md` da raiz deve descrever o propósito do projeto, pré-requisitos gerais e servir de índice atualizado das POCs.
 
-5. **Terraform com boas práticas (GCP e HPE Morpheus Data)**
+7. **Terraform com boas práticas (GCP e HPE Morpheus Data)**
    - Divida em arquivos por intenção (`versions.tf`, `providers.tf`, `main.tf`, `variables.tf`, `outputs.tf`).
    - Para Morpheus Data, declare o provedor oficial `HPE/hpe` (`https://registry.terraform.io/providers/HPE/hpe/latest`).
    - Variáveis e outputs sempre documentados com `description`. Marcação `sensitive = true` para tokens de acesso e URLs sensíveis.
@@ -38,24 +44,24 @@ Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras
    - Versionamento explícito de provider/terraform.
    - Sem segredos ou credenciais hardcoded.
 
-6. **Ansible com boas práticas**
+8. **Ansible com boas práticas**
    - Playbooks em `PoCs/<nome-da-poc>/ansible/`.
    - Tasks idempotentes com nomes descritivos.
    - Priorizar módulos nativos Ansible; usar `handlers` para reinícios de serviço.
 
-7. **Scripts preferencialmente em Bash Linux**
+9. **Scripts preferencialmente em Bash Linux**
    - Iniciar com `#!/usr/bin/env bash` e `set -euo pipefail`.
    - Quoting seguro (`"${var}"`), suporte a `--help` e tratamento de erros direcionado a STDERR.
 
-8. **Fluxo em 3 Fases**
-   - Execute modificações utilizando o fluxo em 3 fases (Fase 1: Diagnóstico → Fase 2: Implementação → Fase 3: Validação).
+10. **Fluxo em 3 Fases**
+    - Execute modificações utilizando o fluxo em 3 fases (Fase 1: Diagnóstico → Fase 2: Implementação → Fase 3: Validação).
 
-9. **Use as Skills do repositório (`.agents/skills/`)**
-   - `poc-scaffold`: Automação de scaffolding de POCs.
-   - `poc-readme-validator`: Validação das 6 seções do README.
-   - `terraform-quality-gate`: Quality Gate de Terraform GCP e HPE Morpheus.
-   - `ansible-quality-gate`: Quality Gate de Ansible.
-   - `bash-quality-gate`: Quality Gate de Bash Linux.
+11. **Use as Skills do repositório (`.agents/skills/`)**
+    - `poc-scaffold`: Automação de scaffolding de POCs.
+    - `poc-readme-validator`: Validação das 6 seções do README.
+    - `terraform-quality-gate`: Quality Gate de Terraform GCP e HPE Morpheus.
+    - `ansible-quality-gate`: Quality Gate de Ansible.
+    - `bash-quality-gate`: Quality Gate de Bash Linux.
 
 ---
 
@@ -82,6 +88,7 @@ PoCs/<nome-da-poc>/
 
 ## Convenções de qualidade
 
+- **Markdown**: `pymarkdown scan` ou `markdownlint` (todos os documentos `.md` obrigatoriamente em Português do Brasil).
 - **Terraform**: `terraform fmt`, `terraform validate`, `terraform plan`.
 - **Bash**: `shellcheck`, `set -euo pipefail`, `--help`.
 - **Ansible**: `ansible-lint`, `ansible-playbook --syntax-check`, `ansible-playbook --check --diff`.

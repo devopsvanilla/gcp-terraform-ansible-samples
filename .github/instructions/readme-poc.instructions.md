@@ -27,6 +27,8 @@ Deve conter **exatamente** as seções abaixo (nesta ordem):
 
 ## Regras de redação
 
+- Redigir toda a documentação exclusivamente em **Português do Brasil (pt-BR)**.
+- Validar obrigatoriamente a sintaxe com **markdown lint** (`markdownlint` ou `pymarkdown scan`).
 - Passo a passo objetivo para analista júnior.
 - Comandos de execução e validação claros.
 - Indicar custos/limitações quando relevante.
