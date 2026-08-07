@@ -1,4 +1,4 @@
-﻿# Guia de Configuração e Conexão GCP / GitHub / Cypher - Morpheus Native Backend PoC
+# Guia de Configuração e Conexão GCP / GitHub / Cypher - Morpheus Native Backend PoC
 
 Este documento detalha todos os pré-requisitos, permissões do Google Cloud Platform (GCP), integração com GitHub, segredos no Morpheus Cypher e o preenchimento do arquivo [`terraform.tfvars`](./terraform.tfvars-SAMPLE) para a execução do **App Blueprint Nativo com Backend de Estado no Cypher** (`morpheus-tf-nativestate`).
 
@@ -142,8 +142,10 @@ O Blueprint nativo exige que o repositório Git que contém os arquivos do Terra
 
 Os recursos `hpe_morpheus_app_blueprint_terraform` exigem os IDs numéricos internos do Morpheus Data:
 
-- **`integration_id`**: Abra a integração em **Administration > Integrations** e observe o ID numérico ao final da URL do navegador (ex.: `https://morpheus.dominio.com/#administration/integrations/1` ➡️ ID: `1`).
-- **`repository_id`**: Abra o repositório específico e copie o ID da URL ou inspecione via API do Morpheus.
+- **`integration_id`**: Abra a integração em **Administration > Integrations** e observe o ID numérico na URL do navegador.
+  - *Exemplo*: Na URL `https://morpheus.cec.dev.br/admin/integrations/15/code`, o ID é **`15`**.
+- **`repository_id`**: Acesse **Provisioning > Code > Repositories** (ou navegue pelos repositórios da integração) e observe o ID na URL ao abrir o repositório.
+  - *Exemplo*: Na URL `https://morpheus.cec.dev.br/provisioning/code/repos/63`, o ID é **`63`**.
 
 ---
 
@@ -181,8 +183,8 @@ O arquivo [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE) é o modelo par
 
 ### B. Integração Git no Morpheus Data
 
-- **`integration_id`**: ID numérico da integração SCM/Git configurada no Morpheus Data (*Administration > Integrations*).
-- **`repository_id`**: ID numérico do repositório Git sincronizado no Morpheus Data.
+- **`integration_id`**: ID numérico da integração SCM/Git configurada no Morpheus Data (*Administration > Integrations*). Exemplo: na URL `https://morpheus.cec.dev.br/admin/integrations/15/code`, o ID é `15`.
+- **`repository_id`**: ID numérico do repositório Git sincronizado no Morpheus Data (*Provisioning > Code > Repositories*). Exemplo: na URL `https://morpheus.cec.dev.br/provisioning/code/repos/63`, o ID é `63`.
 - **`version_ref`**: Branch ou Tag do Git que contém o código da aplicação (ex.: `main`).
 - **`working_path`**: Caminho relativo do manifesto Terraform dentro do repositório (`PoCs/vm-nginx-terraform-ansible`).
 - **`terraform_version`**: Versão do Terraform executada pelo runner nativo do Morpheus (ex.: `1.6.0`).
@@ -265,7 +267,7 @@ EOT
 
 - **Sintoma**: O `terraform apply` falha informando que a integração ou repositório não foi encontrado.
 - **Causa**: Os valores de `integration_id` ou `repository_id` informados no `terraform.tfvars` não existem ou a integração GitHub não está sincronizada.
-- **Solução**: Acesse **Administration > Integrations**, abra a integração Git/GitHub, copie os IDs numéricos corretos e clique no botão **Sync Repository**.
+- **Solução**: Acesse **Administration > Integrations** (para `integration_id`) e **Provisioning > Code > Repositories** (para `repository_id`), abra o recurso desejado e copie o ID numérico da URL do navegador (ex.: `15` em `/admin/integrations/15/code` e `63` em `/provisioning/code/repos/63`). Em seguida, clique no botão **Sync Repository**.
 
 ### 3. Erros `401 Unauthorized` ou `403 Forbidden` no GCP
 

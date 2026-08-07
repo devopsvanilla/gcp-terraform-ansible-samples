@@ -1,4 +1,4 @@
-﻿# PoC: Native Backend Terraform App Blueprint no Morpheus Data
+# PoC: Native Backend Terraform App Blueprint no Morpheus Data
 
 ## O que será implantado
 
@@ -54,13 +54,15 @@ Quando um usuário solicita o App Blueprint no catálogo do Morpheus Data, a eng
 ## Como implantar
 
 ### Passo 1: Acessar o diretório da PoC
-```bash
+
+```sh
 cd PoCs/morpheus-tf-nativestate
 ```
 
 ### Passo 2: Preparar o arquivo de variáveis `terraform.tfvars`
 Crie o seu arquivo de variáveis a partir do modelo [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE):
-```bash
+
+```sh
 cp terraform.tfvars-SAMPLE terraform.tfvars
 ```
 
@@ -77,7 +79,11 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 
 #### B. Integração com o Repositório Git
 - **`integration_id`**: ID numérico da integração SCM/Git configurada no Morpheus Data (*Administration > Integrations*).
+  - *Como obter*: Acesse **Administration > Integrations**, abra a integração Git/GitHub e copie o ID numérico exibido na URL do navegador.
+  - *Exemplo*: Na URL `https://morpheus.loonar.dev/admin/integrations/15/code`, o ID da integração é **`15`**.
 - **`repository_id`**: ID numérico do repositório Git sincronizado no Morpheus Data.
+  - *Como obter*: Acesse **Provisioning > Code > Repositories** (ou a aba de repositórios dentro da integração em *Administration > Integrations*) e abra o repositório desejado. O ID numérico estará na URL.
+  - *Exemplo*: Na URL `https://morpheus.cec.loonar.dev/provisioning/code/repos/63`, o ID do repositório é **`63`**.
 - **`version_ref`**: Branch ou Tag do Git que contém o código da aplicação (ex.: `main`).
 - **`working_path`**: Caminho do manifesto Terraform alvo dentro do repositório (`PoCs/vm-nginx-terraform-ansible`).
 - **`terraform_version`**: Versão do Terraform utilizada pelo runner nativo do Morpheus (ex.: `1.6.0`).
@@ -116,37 +122,43 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 
 #### F. Chave Privada SSH do Ansible (`ansible_private_key`)
 - Fornecida no `terraform.tfvars` da automação via bloco multilinha `<<-EOT`:
-  ```hcl
+
+```hcl
   ansible_private_key = <<-EOT
   -----BEGIN OPENSSH PRIVATE KEY-----
   b3BlbnNzaC1rZXktdjEAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW...
   -----END OPENSSH PRIVATE KEY-----
   EOT
-  ```
+```
+
 - **Segurança**: O `terraform apply` salva essa chave no segredo criptografado `secret/ansible-private-key` no Cypher do Morpheus. O solicitante final no Catálogo **nunca visualiza ou precisa fornecer a chave privada no formulário**.
 
 ---
 
 ### Passo 4: Executar a automação no Terraform
 1. Inicialize os provedores do Terraform:
-   ```bash
+
+```sh
    terraform init
-   ```
+```
 
 2. Valide a sintaxe do projeto:
-   ```bash
+
+```sh
    terraform validate
-   ```
+```
 
 3. Visualize os recursos que serão criados no Morpheus Data:
-   ```bash
+
+```sh
    terraform plan
-   ```
+```
 
 4. Aplique a automação para criar os Option Types, Cypher Secrets e o App Blueprint:
-   ```bash
+
+```sh
    terraform apply -auto-approve
-   ```
+```
 
 ---
 
@@ -170,9 +182,10 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 ## Como descomissionar
 
 1. Para remover o App Blueprint, o item de catálogo, os Option Types e os segredos do Cypher no Morpheus Data, execute:
-   ```bash
+
+```sh
    terraform destroy -auto-approve
-   ```
+```
 
 2. Para descomissionar instâncias de VM provisionadas via Catálogo no Morpheus, acesse **Provisioning > Apps**, selecione a aplicação desejada e clique em **Delete App**. O runner nativo do Morpheus executará `terraform destroy` utilizando o `tfstate` armazenado no Cypher.
 
@@ -184,7 +197,7 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 
 ### 1. `Error: Integration / Repository ID invalid`
 - **Causa**: Os valores de `integration_id` ou `repository_id` informados no `terraform.tfvars` não existem na sua instância do Morpheus.
-- **Solução**: Acesse a console web do Morpheus em **Administration > Integrations**, abra a integração Git/GitHub e copie o ID numérico da URL ou inspecione via API.
+- **Solução**: Acesse a console web do Morpheus em **Administration > Integrations** (para a integração) ou **Provisioning > Code > Repositories** (para o repositório), abra o recurso desejado e copie o ID numérico da URL do navegador (ex.: `15` em `/admin/integrations/15/code` e `63` em `/provisioning/code/repos/63`).
 
 ### 2. `Error: Cypher key already exists`
 - **Causa**: O caminho informado em `cypher_secret_key` já está em uso no Cypher.
@@ -197,3 +210,11 @@ Edite o arquivo `terraform.tfvars` preenchendo as seções de configuração des
 ### 4. `Terraform execution error in Morpheus App Instance`
 - **Causa**: Credenciais do Google Cloud ausentes ou inválidas no runner do Morpheus Data.
 - **Solução**: Certifique-se de que a conta de serviço do GCP (Service Account) esteja configurada na integração Cloud do Morpheus ou que o Application Default Credentials (`ADC`) esteja ativo na máquina onde o Morpheus executa.
+
+### 5. `Error: Invalid escape sequence` (ao informar usuário com domínio/barra invertida no `terraform.tfvars`)
+- **Causa**: Ao utilizar a barra invertida `\` no nome de usuário (ex.: `POC\administrator`), o parser HCL do Terraform interpreta o caractere após a barra (ex.: `\a`) como uma sequência de escape inválida.
+- **Solução**: Escape a barra invertida utilizando duas barras invertidas (`\\`) no `terraform.tfvars`:
+
+```hcl
+  morpheus_username = "POC\\administrator"
+```

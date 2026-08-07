@@ -7,7 +7,6 @@ resource "hpe_morpheus_app_blueprint_terraform" "vm_nginx" {
   name              = var.blueprint_name
   description       = var.blueprint_description
   category          = var.blueprint_category
-  visibility        = var.blueprint_visibility
   source_type       = "repository"
   integration_id    = var.integration_id
   repository_id     = var.repository_id

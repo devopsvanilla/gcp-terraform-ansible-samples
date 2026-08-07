@@ -44,15 +44,27 @@ cypher_secret_key = "tfvars/vm-nginx-poc"
 # label_run_ansible         = "Executar Ansible (Instalação Nginx)"
 
 
-# ===== Parâmetros Padrão da VM GCP a ser provisionada pelo Blueprint =====
-# (Utilizam os identificadores NATIVOS das APIs do Google Cloud Platform - GCP)
-# (NÃO exige a criação prévia de nenhum template no Morpheus Data)
+# ===== Parâmetros Globais do Projeto e Automação Ansible =====
+# (Configurações do projeto GCP, rede, regras de firewall e orquestração do Ansible/SSH)
 # Se estes parâmetros permanecerem comentados (#), os campos do formulário no Morpheus abrirão em branco para preenchimento.
 
 # poc_name                         = "vm-nginx-terraform-ansible"                  # Nome lógico da PoC para tagging e identificação interna.
 # project_id                       = "meu-projeto-gcp-12345"                       # ID do projeto GCP onde os recursos serão criados.
 # region                           = "us-central1"                                 # Região GCP padrão (ex.: us-central1, us-east1, southamerica-east1).
 # zone                             = "us-central1-a"                               # Zona GCP específica da região escolhida (ex.: us-central1-a).
+# network_name                     = "default"                                     # Nome da VPC GCP onde a interface de rede será conectada.
+# subnetwork_name                  = ""                                            # Nome da subnet VPC (deixe em branco "" para usar a sub-rede padrão da região).
+# allowed_http_cidr                = "0.0.0.0/0"                                   # CIDR liberado no firewall para tráfego HTTP porta 80 (ex.: 0.0.0.0/0).
+# allowed_ssh_cidr                 = "203.0.113.10/32"                             # CIDR liberado no firewall para acesso SSH porta 22 (ex.: seu IP/32 ou CIDR administrativo).
+# use_metadata_ssh_keys            = true                                          # Injeta a chave SSH via metadado ssh-keys da instância (true/false).
+# run_ansible                      = true                                          # Executa o playbook Ansible automaticamente após a criação da VM (true/false).
+# ansible_wait_seconds             = 15                                            # Tempo de espera em segundos entre tentativas de conexão do Ansible.
+# ansible_max_retries              = 3                                             # Número máximo de tentativas de execução do playbook Ansible.
+# ansible_ssh_user                 = "usuario_ansible"                             # Usuário SSH utilizado pelo Ansible para conectar e provisionar o Nginx.
+
+# ===== Parâmetros Padrão da Instância VM (Blueprint) =====
+# (Especificações de hardware, imagem de boot, IP externo e credenciais SSH da VM)
+
 # vm_name                          = "vm-nginx-poc-01"                             # Nome padrão da instância Compute Engine que será exibido no formulário.
 # machine_series                   = "e2"                                          # Série nativa da família de máquinas GCP (ex.: e2, n2, n1, c2).
 # machine_type_override            = "e2-micro"                                    # Tipo exato de máquina nativa GCP (ex.: e2-micro, e2-medium, n1-standard-1).
@@ -66,15 +78,6 @@ cypher_secret_key = "tfvars/vm-nginx-poc"
 # manage_vm_external_ip_org_policy = true                                          # Gerencia a restrição constraints/compute.vmExternalIpAccess na Org Policy (true/false).
 # ssh_username                     = "seu_usuario_linux"                           # Usuário Linux padrão a ser criado na VM para SSH.
 # ssh_public_key                   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."   # Chave pública SSH no formato OpenSSH para acesso à VM.
-# network_name                     = "default"                                     # Nome da VPC GCP onde a interface de rede será conectada.
-# subnetwork_name                  = ""                                            # Nome da subnet VPC (deixe em branco "" para usar a sub-rede padrão da região).
-# allowed_http_cidr                = "0.0.0.0/0"                                   # CIDR liberado no firewall para tráfego HTTP porta 80 (ex.: 0.0.0.0/0).
-# allowed_ssh_cidr                 = "203.0.113.10/32"                             # CIDR liberado no firewall para acesso SSH porta 22 (ex.: seu IP/32 ou CIDR administrativo).
-# use_metadata_ssh_keys            = true                                          # Injeta a chave SSH via metadado ssh-keys da instância (true/false).
-# run_ansible                      = true                                          # Executa o playbook Ansible automaticamente após a criação da VM (true/false).
-# ansible_wait_seconds             = 15                                            # Tempo de espera em segundos entre tentativas de conexão do Ansible.
-# ansible_max_retries              = 3                                             # Número máximo de tentativas de execução do playbook Ansible.
-# ansible_ssh_user                 = "usuario_ansible"                             # Usuário SSH utilizado pelo Ansible para conectar e provisionar o Nginx.
 
 # ===== Chave Privada do Ansible (Recuperada com Segurança do Cypher) =====
 # Ao aplicar este manifesto, a chave privada SSH abaixo é gravada de forma criptografada
