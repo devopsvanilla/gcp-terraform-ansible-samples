@@ -6,7 +6,7 @@ Esta PoC utiliza o provedor oficial [`HPE/hpe`](https://registry.terraform.io/pr
 
 ### Diferenciais da Arquitetura Nativa:
 - **Runner Nativo**: O Morpheus Data executa diretamente o ciclo de vida do Terraform (`init`, `plan`, `apply`) a partir do repositório Git vinculado.
-- **Gerenciamento do Estado (`tfstate`) no Cypher**: O arquivo de estado `.tfstate` é mantido e criptografado nativamente no **Morpheus Cypher**, dispensando a necessidade de buckets externos no Google Cloud Storage (GCS) ou arquivos de estado locais.
+- **Gerenciamento do Estado (`tfstate`) no Cypher**: O arquivo de estado `.tfstate` é mantido e criptografado nativamente no **Morpheus Cypher**, dispensando a necessidade de buckets externos no Google Cloud Storage (GCS) ou arquivos de estado locais. Para instruções de como extrair esse estado e gerenciar *drifts* locais, veja [`HOWTO-tfstate-drift.md`](./HOWTO-tfstate-drift.md).
 - **Injeção de Parâmetros via Cypher (`tfvar_secret`)**: Os valores das variáveis do `terraform.tfvars` são gravados em um segredo do Cypher (`hpe_morpheus_cypher_secret`) e injetados automaticamente no plano do Terraform.
 - **Formulário Amigável de Provisionamento**: Cada parâmetro da VM (`vm_name`, `machine_type_override`, `disk_size_gb`, `assign_external_ip`, `ssh_username`, `ssh_public_key`, `network_name`, `allowed_ssh_cidr`, etc.) é exposto como um campo individual e amigável (Option Types) no Self-Service.
 - **Obrigatoriedade e Rótulos Customizáveis**: Todos os campos do formulário são marcados como obrigatórios (com exceção de `subnetwork_name`), e os rótulos de cada campo exibidos na interface gráfica do Morpheus podem ser totalmente customizados via `terraform.tfvars`.
