@@ -14,6 +14,8 @@ Esta PoC implanta **uma ou várias VMs Linux na GCP** usando Terraform, com:
 - criação automática de um usuário remoto na VM via startup script, com grupos opcionais definidos por VM (`user_groups`);
 - execução automática do **Nginx via Ansible** pelo Terraform após a criação da VM, quando `run_ansible = true`.
 
+> 📖 **Arquitetura e Diagramas:** Para uma visão detalhada dos fluxos de provisionamento (Git → Morpheus → GCP), autenticação e credenciais, com diagramas de sequência e componentes, consulte o [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
 ## Pré-requisitos
 
 - Linux com ferramentas instaladas:
