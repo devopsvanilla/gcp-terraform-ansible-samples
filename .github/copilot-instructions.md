@@ -56,3 +56,10 @@ Este arquivo estabelece os padrões e regras obrigatórias que o GitHub Copilot 
 - **Fase 1: Diagnóstico** — Avaliar estrutura e propor plano incremental.
 - **Fase 2: Implementação** — Escrever código e documentação em pt-BR.
 - **Fase 3: Validação** — Executar quality gates (`terraform fmt`, `shellcheck`, `ansible-lint`, `markdownlint`).
+
+<!-- mermaid-ai-skills:start -->
+## Mermaid Diagrams
+
+When the user asks to create, edit, or visualize a diagram, follow the
+instructions in `.github/instructions/mermaid.instructions.md`.
+<!-- mermaid-ai-skills:end -->
