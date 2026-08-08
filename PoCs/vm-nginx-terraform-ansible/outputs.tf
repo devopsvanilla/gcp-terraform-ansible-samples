@@ -47,7 +47,7 @@ locals {
       vm_internal_ip                   = vm.network_interface[0].network_ip
       vm_external_ip                   = try(vm.network_interface[0].access_config[0].nat_ip, null)
       ansible_target_host              = try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? try(vm.network_interface[0].access_config[0].nat_ip, null) : vm.network_interface[0].network_ip
-      ssh_access_hint                  = try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? "ssh -i <caminho-da-chave-privada> ${local.vm_configs[vm_key].ssh_username}@${try(vm.network_interface[0].access_config[0].nat_ip, null)}" : "VM sem IP externo. Use VPN, bastion ou IAP para alcançar ${vm.network_interface[0].network_ip}."
+      ssh_access_hint                  = try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? format("ssh -i <caminho-da-chave-privada> %s@%s", local.vm_configs[vm_key].ssh_username, try(vm.network_interface[0].access_config[0].nat_ip, "")) : format("VM sem IP externo. Use VPN, bastion ou IAP para alcançar %s.", vm.network_interface[0].network_ip)
       tags                             = vm.tags
     }
   }

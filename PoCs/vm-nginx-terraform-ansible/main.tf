@@ -291,7 +291,7 @@ resource "null_resource" "configure_os_login_ssh_key" {
       echo "Usando chave privada SSH do Ansible em $ansible_private_key_file"
       if [ ! -f "$ansible_private_key_file" ]; then
         echo "Chave privada ausente; gerando nova chave ed25519 em $ansible_private_key_file"
-        ssh-keygen -t ed25519 -N '' -f "$ansible_private_key_file" -C "${each.value.ssh_username}@gcp-poc" >/dev/null 2>&1
+        ssh-keygen -t ed25519 -N '' -f "$ansible_private_key_file" -C "${each.value.ssh_username}-gcp-poc" >/dev/null 2>&1
       fi
 
       ansible_public_key=""
@@ -364,7 +364,7 @@ resource "null_resource" "run_ansible" {
       if [ ! -f "$private_key_file" ]; then
         echo "Chave privada não encontrada em $private_key_file; gerando uma nova chave ed25519" >&2
         mkdir -p "$(dirname "$private_key_file")"
-        ssh-keygen -t ed25519 -N '' -f "$private_key_file" -C "${var.ansible_ssh_user}@gcp-poc" >/dev/null 2>&1
+        ssh-keygen -t ed25519 -N '' -f "$private_key_file" -C "${var.ansible_ssh_user}-gcp-poc" >/dev/null 2>&1
       fi
 
       if [ ! -f "$private_key_file" ]; then
@@ -390,7 +390,7 @@ resource "null_resource" "run_ansible" {
       while [ "$attempt" -le "$max_retries" ]; do
         echo "Tentativa $attempt/$max_retries para $target_host"
 
-        if ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i "$private_key_file" "$ssh_user@$target_host" 'true' >/dev/null 2>&1; then
+        if ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i "$private_key_file" "$$ssh_user@$$target_host" 'true' >/dev/null 2>&1; then
           echo "SSH respondeu para $target_host"
         else
           echo "SSH ainda não respondeu para $target_host" >&2
