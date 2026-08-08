@@ -1,21 +1,25 @@
 variable "poc_name" {
   type        = string
   description = "Nome lógico da PoC."
+  default     = "vm-nginx-terraform-ansible"
 }
 
 variable "project_id" {
   type        = string
   description = "ID do projeto GCP onde os recursos serão criados."
+  default     = "poc-terraform-ansible"
 }
 
 variable "region" {
   type        = string
   description = "Região GCP para a PoC."
+  default     = "us-central1"
 }
 
 variable "zone" {
   type        = string
   description = "Zona GCP para a VM."
+  default     = "us-central1-a"
 }
 
 variable "vms" {
@@ -40,6 +44,13 @@ variable "vms" {
     manage_vm_external_ip_org_policy = optional(bool)
   }))
   description = "Mapa de VMs da PoC. Cada entrada pode habilitar ou não IP público individualmente e, quando assign_external_ip = true, a allowlist da Org Policy é calculada automaticamente para a VM."
+  default = {
+    vm_nginx_poc = {
+      vm_name            = "vm-nginx-poc"
+      machine_series     = "e2"
+      assign_external_ip = true
+    }
+  }
 
   validation {
     condition     = length(var.vms) > 0
@@ -66,11 +77,13 @@ variable "manage_vm_external_ip_org_policy" {
 variable "ssh_username" {
   type        = string
   description = "Usuário Linux para metadado de SSH."
+  default     = "devopsvanilla"
 }
 
 variable "ssh_public_key" {
   type        = string
   description = "Chave pública SSH no formato OpenSSH."
+  default     = ""
 }
 
 variable "use_metadata_ssh_keys" {
@@ -82,6 +95,7 @@ variable "use_metadata_ssh_keys" {
 variable "network_name" {
   type        = string
   description = "Nome da VPC para a interface de rede da VM."
+  default     = "default"
 }
 
 variable "subnetwork_name" {
@@ -93,6 +107,7 @@ variable "subnetwork_name" {
 variable "allowed_http_cidr" {
   type        = string
   description = "CIDR liberado para HTTP (porta 80)."
+  default     = "0.0.0.0/0"
 
   validation {
     condition     = can(cidrhost(var.allowed_http_cidr, 0))
@@ -103,6 +118,7 @@ variable "allowed_http_cidr" {
 variable "allowed_ssh_cidr" {
   type        = string
   description = "CIDR liberado para SSH (porta 22)."
+  default     = "0.0.0.0/0"
 
   validation {
     condition     = can(cidrhost(var.allowed_ssh_cidr, 0))
@@ -148,4 +164,77 @@ variable "ansible_ssh_user" {
   type        = string
   description = "Usuário SSH/OS Login usado pelo Ansible para conectar na VM."
   default     = "devopsvanillaofficial_gmail_com"
+}
+
+# ===== Variáveis Flat enviadas pelos formulários de Catálogo do Morpheus =====
+variable "name" {
+  type        = string
+  description = "Nome da VM enviado pelo Morpheus Form."
+  default     = ""
+}
+
+variable "vm_name" {
+  type        = string
+  description = "Nome da VM caso enviado como vm_name."
+  default     = ""
+}
+
+variable "machine_series" {
+  type        = string
+  description = "Série da máquina Compute Engine."
+  default     = "e2"
+}
+
+variable "machine_type_override" {
+  type        = string
+  description = "Tipo exato de máquina Compute Engine."
+  default     = "e2-micro"
+}
+
+variable "vcpu_count" {
+  type        = number
+  description = "Quantidade de vCPUs."
+  default     = 1
+}
+
+variable "memory_gb" {
+  type        = number
+  description = "Memória RAM em GB."
+  default     = 1
+}
+
+variable "disk_type" {
+  type        = string
+  description = "Tipo de disco de boot."
+  default     = "pd-standard"
+}
+
+variable "disk_size_gb" {
+  type        = number
+  description = "Tamanho do disco em GB."
+  default     = 30
+}
+
+variable "boot_image_project" {
+  type        = string
+  description = "Projeto da imagem de boot."
+  default     = "debian-cloud"
+}
+
+variable "boot_image_family" {
+  type        = string
+  description = "Família da imagem de boot."
+  default     = "debian-12"
+}
+
+variable "assign_external_ip" {
+  type        = bool
+  description = "Define se a VM terá IP público."
+  default     = true
+}
+
+variable "user_groups" {
+  type        = list(string)
+  description = "Grupos adicionais de usuário Linux."
+  default     = ["sudo", "www-data"]
 }

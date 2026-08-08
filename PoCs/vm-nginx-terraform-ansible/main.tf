@@ -3,7 +3,38 @@ data "google_project" "current" {
 }
 
 locals {
-  vm_configs = {
+  effective_form_vm_name = coalesce(
+    trimspace(var.name) != "" ? var.name : null,
+    trimspace(var.vm_name) != "" ? var.vm_name : null,
+    "vm-nginx-poc"
+  )
+
+  form_vm_config = {
+    (local.effective_form_vm_name) = {
+      vm_name                          = local.effective_form_vm_name
+      machine_type_override            = var.machine_type_override
+      machine_series                   = var.machine_series
+      vcpu_count                       = var.vcpu_count
+      memory_gb                        = var.memory_gb
+      memory_mb                        = var.memory_gb * 1024
+      machine_type                     = trimspace(var.machine_type_override) != "" ? var.machine_type_override : "${var.machine_series}-custom-${var.vcpu_count}-${var.memory_gb * 1024}"
+      disk_type                        = var.disk_type
+      disk_size_gb                     = var.disk_size_gb
+      boot_image_project               = var.boot_image_project
+      boot_image_family                = var.boot_image_family
+      assign_external_ip               = var.assign_external_ip
+      ssh_username                     = var.ssh_username
+      ssh_public_key                   = var.ssh_public_key
+      user_groups                      = var.user_groups
+      network_name                     = var.network_name
+      subnetwork_name                  = var.subnetwork_name
+      allowed_http_cidr                = var.allowed_http_cidr
+      allowed_ssh_cidr                 = var.allowed_ssh_cidr
+      manage_vm_external_ip_org_policy = var.manage_vm_external_ip_org_policy
+    }
+  }
+
+  map_vm_configs = {
     for vm_key, vm in var.vms : vm_key => {
       vm_name                          = vm.vm_name
       machine_type_override            = vm.machine_type_override
@@ -27,6 +58,8 @@ locals {
       manage_vm_external_ip_org_policy = coalesce(try(vm.manage_vm_external_ip_org_policy, null), var.manage_vm_external_ip_org_policy)
     }
   }
+
+  vm_configs = (trimspace(var.name) != "" || trimspace(var.vm_name) != "") ? local.form_vm_config : local.map_vm_configs
 
   vm_external_ip_allowed_values = distinct(flatten([
     for vm in values(local.vm_configs) : [
