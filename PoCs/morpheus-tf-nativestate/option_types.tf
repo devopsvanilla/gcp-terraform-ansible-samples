@@ -105,6 +105,7 @@ resource "hpe_morpheus_option_type_textarea" "ssh_public_key" {
   field_label   = var.label_ssh_public_key
   description   = "Chave pública SSH no formato OpenSSH."
   default_value = var.ssh_public_key
+  rows          = "3"
   required      = true
 }
 
