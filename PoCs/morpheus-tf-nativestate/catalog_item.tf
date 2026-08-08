@@ -7,6 +7,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
   enabled     = true
 
   blueprint_id    = tonumber(hpe_morpheus_app_blueprint_terraform.vm_nginx.id)
+  app_spec        = ""
   option_type_ids = local.vm_nginx_option_type_ids
 
   content = <<-EOT
