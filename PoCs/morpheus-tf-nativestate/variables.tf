@@ -226,7 +226,7 @@ variable "label_run_ansible" {
 variable "poc_name" {
   type        = string
   description = "Nome lógico da PoC."
-  default     = null
+  default     = "vm-nginx-terraform-ansible"
 }
 
 variable "project_id" {
@@ -238,13 +238,13 @@ variable "project_id" {
 variable "region" {
   type        = string
   description = "Região GCP para os recursos."
-  default     = null
+  default     = "us-central1"
 }
 
 variable "zone" {
   type        = string
   description = "Zona GCP para a VM."
-  default     = null
+  default     = "us-central1-a"
 }
 
 variable "vm_name" {

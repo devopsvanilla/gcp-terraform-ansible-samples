@@ -6,23 +6,23 @@ resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
   ttl = var.cypher_secret_ttl
 
   value = <<-EOT
-poc_name                         = ${var.poc_name != null ? "\"${var.poc_name}\"" : "null"}
+poc_name                         = ${var.poc_name != null ? "\"${var.poc_name}\"" : "\"vm-nginx-terraform-ansible\""}
 project_id                       = ${var.project_id != null ? "\"${var.project_id}\"" : "null"}
-region                           = ${var.region != null ? "\"${var.region}\"" : "null"}
-zone                             = ${var.zone != null ? "\"${var.zone}\"" : "null"}
-manage_vm_external_ip_org_policy = ${var.manage_vm_external_ip_org_policy != null ? tostring(var.manage_vm_external_ip_org_policy) : "null"}
-ssh_username                     = ${var.ssh_username != null ? "\"${var.ssh_username}\"" : "null"}
-ssh_public_key                   = ${var.ssh_public_key != null ? "\"${var.ssh_public_key}\"" : "null"}
-network_name                     = ${var.network_name != null ? "\"${var.network_name}\"" : "null"}
+region                           = ${var.region != null ? "\"${var.region}\"" : "\"us-central1\""}
+zone                             = ${var.zone != null ? "\"${var.zone}\"" : "\"us-central1-a\""}
+manage_vm_external_ip_org_policy = ${var.manage_vm_external_ip_org_policy != null ? tostring(var.manage_vm_external_ip_org_policy) : "true"}
+ssh_username                     = ${var.ssh_username != null ? "\"${var.ssh_username}\"" : "\"devops\""}
+ssh_public_key                   = ${var.ssh_public_key != null ? "\"${var.ssh_public_key}\"" : "\"\""}
+network_name                     = ${var.network_name != null ? "\"${var.network_name}\"" : "\"default\""}
 subnetwork_name                  = ${var.subnetwork_name != null ? "\"${var.subnetwork_name}\"" : "\"\""}
-allowed_http_cidr                = ${var.allowed_http_cidr != null ? "\"${var.allowed_http_cidr}\"" : "null"}
-allowed_ssh_cidr                 = ${var.allowed_ssh_cidr != null ? "\"${var.allowed_ssh_cidr}\"" : "null"}
-use_metadata_ssh_keys            = ${var.use_metadata_ssh_keys != null ? tostring(var.use_metadata_ssh_keys) : "null"}
-run_ansible                      = ${var.run_ansible != null ? tostring(var.run_ansible) : "null"}
-ansible_wait_seconds             = ${var.ansible_wait_seconds != null ? tostring(var.ansible_wait_seconds) : "null"}
-ansible_max_retries              = ${var.ansible_max_retries != null ? tostring(var.ansible_max_retries) : "null"}
+allowed_http_cidr                = ${var.allowed_http_cidr != null ? "\"${var.allowed_http_cidr}\"" : "\"0.0.0.0/0\""}
+allowed_ssh_cidr                 = ${var.allowed_ssh_cidr != null ? "\"${var.allowed_ssh_cidr}\"" : "\"0.0.0.0/0\""}
+use_metadata_ssh_keys            = ${var.use_metadata_ssh_keys != null ? tostring(var.use_metadata_ssh_keys) : "true"}
+run_ansible                      = ${var.run_ansible != null ? tostring(var.run_ansible) : "true"}
+ansible_wait_seconds             = ${var.ansible_wait_seconds != null ? tostring(var.ansible_wait_seconds) : "15"}
+ansible_max_retries              = ${var.ansible_max_retries != null ? tostring(var.ansible_max_retries) : "10"}
 ansible_private_key_file         = ${var.ansible_private_key_file != null ? "\"${var.ansible_private_key_file}\"" : (var.ansible_private_key != null ? "\"<%=cypher.read('secret/ansible-private-key')%>\"" : "null")}
-ansible_ssh_user                 = ${var.ansible_ssh_user != null ? "\"${var.ansible_ssh_user}\"" : "null"}
+ansible_ssh_user                 = ${var.ansible_ssh_user != null ? "\"${var.ansible_ssh_user}\"" : "\"devops\""}
 
 vms = {
   "${var.vm_name != null ? var.vm_name : "vm-nginx-poc"}" = {
