@@ -8,6 +8,9 @@ resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
   value = <<-EOT
 poc_name                         = ${var.poc_name != null ? "\"${var.poc_name}\"" : "\"vm-nginx-terraform-ansible\""}
 project_id                       = ${var.project_id != null ? "\"${var.project_id}\"" : "null"}
+gcp_credentials                  = <<-GCP_SA_KEY_EOF
+${var.gcp_credentials != null ? var.gcp_credentials : "<%=cypher.read('secret/gcp-terraform-ansible-samples')%>"}
+GCP_SA_KEY_EOF
 region                           = ${var.region != null ? "\"${var.region}\"" : "\"us-central1\""}
 zone                             = ${var.zone != null ? "\"${var.zone}\"" : "\"us-central1-a\""}
 manage_vm_external_ip_org_policy = ${var.manage_vm_external_ip_org_policy != null ? tostring(var.manage_vm_external_ip_org_policy) : "true"}
