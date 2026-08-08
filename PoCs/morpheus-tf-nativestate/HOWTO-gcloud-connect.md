@@ -98,19 +98,23 @@ O Morpheus Data pode autenticar no GCP de três maneiras distintas:
 5. Selecione o **Project ID** (`SEU_PROJECT_ID`) e a **Region** (`us-central1`).
 6. Clique em **Save**.
 
-### Método 2: Armazenamento da Chave no Cypher (GOOGLE_CREDENTIALS)
+### Método 2: Armazenamento da Chave no Cypher (`secret/gcp-terraform-ansible-samples`)
 
-Caso o Morpheus execute as Tasks via scripts customizados do Terraform CLI, insira a chave JSON inteira no Cypher:
+Para permitir que tanto o **App Blueprint Nativo** (`morpheus-tf-nativestate`) quanto as **Tasks de Shell Script** (`morpheus-tf-remotestate`) autentiquem com segurança:
 
-1. Acesse **Tools > Cypher > + Add**.
-2. **Key**: `secret/gcp-terraform-ansible-samples`
-3. **Type**: `Secret`
-4. **Value**: Cole todo o conteúdo bruto do arquivo `gcp-key.json`.
-5. **TTL**: `0`.
-6. No script da Task, injete a variável de ambiente:
+1. **Gerar a chave em formato Base64**:
+   Execute o utilitário do repositório para codificar a chave em uma única linha Base64:
    ```bash
-   export GOOGLE_CREDENTIALS='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
+   ./scripts/encode-gcp-key.sh
    ```
+2. **Cadastrar no Cypher**:
+   - Acesse **Tools > Cypher > + Add**.
+   - **Key**: `secret/gcp-terraform-ansible-samples`
+   - **Type**: `Secret`
+   - **Value**: Cole o hash Base64 de linha única gerado pelo script.
+   - **TTL**: `0`.
+
+> 💡 **Como funciona**: Para App Blueprints Nativos, a chave em Base64 é lida em linha única no `-var-file` sem erros de parsing de aspas/quebras de linha, e decodificada automaticamente no `providers.tf` da aplicação. Para Tasks de Shell, o script decodifica ou exporta diretamente para `GOOGLE_CREDENTIALS`.
 
 ### Método 3: Credentials do Host / ADC (Runner no GCP)
 
