@@ -159,67 +159,78 @@ sequenceDiagram
 
 ## 3. Fluxo de Autenticação e Credenciais
 
-O Terraform Nativo do Morpheus **não injeta automaticamente** as credenciais da Cloud GCP cadastrada em *Infrastructure > Clouds* no provider `google`. A autenticação é feita através da variável `gcp_credentials`, cujo valor é lido do **Morpheus Cypher** via tag ERB na montagem do arquivo de variáveis (`tfvar_secret`).
+Existem dois modelos distintos suportados neste repositório para autenticar no Google Cloud Platform (GCP):
 
-### Como as Credenciais Fluem
+### Modelo A: App Blueprint Nativo (`morpheus-tf-nativestate`) — Injeção via Base64 em `tfvar_secret`
+
+No App Blueprint Nativo, o Morpheus gera um arquivo `.tfvars` a partir da chave do Cypher `tfvars/vm-nginx-poc`. Como o JSON da Service Account possui múltiplas linhas e aspas que corrompem o parser de `tfvars` do Morpheus se injetados diretamente, a chave é codificada em **Base64 de linha única** durante a renderização ERB do Cypher.
 
 ```mermaid
 flowchart TD
-    A["Administrador cria a<br/>Service Account no GCP"]
-    B["Gera gcp-key.json<br/>(chave privada JSON)"]
-    C["Cadastra no Morpheus Cypher<br/>secret/gcp-terraform-ansible-samples"]
-    D["cypher.tf define tfvars com heredoc:<br/>gcp_credentials = <<-GCP_SA_KEY_EOF<br/><%=cypher.read('secret/gcp-...')%><br/>GCP_SA_KEY_EOF"]
-    E["Morpheus Engine processa ERB no tfvar_secret<br/>ao montar o morpheus-xxx.tfvars"]
-    F["Tag ERB é substituída pelo JSON real da chave<br/>dentro do heredoc no arquivo .tfvars"]
-    G["providers.tf recebe var.gcp_credentials<br/>e passa para o provider google"]
-    H["Terraform autentica<br/>na API do GCP"]
-    I["Recursos criados<br/>com sucesso"]
+    A["Administrador cria Service Account no GCP"]
+    B["Cadastra JSON no Morpheus Cypher<br/>secret/gcp-terraform-ansible-samples"]
+    C["cypher.tf define tfvars com Base64 ERB:<br/>gcp_credentials = '<%= Base64.strict_encode64(cypher.read(...)) %>'"]
+    D["Morpheus Engine gera morpheus-xxx.tfvars<br/>com string Base64 em linha única"]
+    E["providers.tf detecta Base64 e executa<br/>base64decode(var.gcp_credentials)"]
+    F["Provider google recebe o JSON reconstruído<br/>e autentica na API do GCP"]
 
-    A --> B --> C
-    D --> E --> F --> G --> H --> I
+    A --> B --> C --> D --> E --> F
 
     style A fill:#FBBC04,color:#000
-    style B fill:#FBBC04,color:#000
-    style C fill:#6C2DC7,color:#fff
-    style D fill:#24292e,color:#fff
-    style E fill:#6C2DC7,color:#fff
-    style F fill:#6C2DC7,color:#fff
-    style G fill:#4285F4,color:#fff
-    style H fill:#34A853,color:#fff
-    style I fill:#34A853,color:#fff
+    style B fill:#6C2DC7,color:#fff
+    style C fill:#24292e,color:#fff
+    style D fill:#6C2DC7,color:#fff
+    style E fill:#4285F4,color:#fff
+    style F fill:#34A853,color:#fff
 ```
 
-### Mecanismo no Código
-
-No arquivo [`providers.tf`](./providers.tf), o provider `google` consome a variável `var.gcp_credentials`:
+#### Mecanismo no Código (`providers.tf`)
 
 ```hcl
+locals {
+  raw_gcp_credentials = try(trimspace(var.gcp_credentials), "")
+  gcp_credentials_json = (
+    local.raw_gcp_credentials == ""
+    ? null
+    : can(jsondecode(local.raw_gcp_credentials))
+    ? local.raw_gcp_credentials
+    : can(base64decode(local.raw_gcp_credentials))
+    ? base64decode(local.raw_gcp_credentials)
+    : local.raw_gcp_credentials
+  )
+}
+
 provider "google" {
   project               = var.project_id
   region                = var.region
   zone                  = var.zone
   billing_project       = var.project_id
   user_project_override = true
-  credentials           = try(trimspace(var.gcp_credentials), "") != "" ? var.gcp_credentials : null
+  credentials           = local.gcp_credentials_json
 }
 ```
 
-No arquivo [`cypher.tf`](../morpheus-tf-nativestate/cypher.tf), a variável é injetada no segredo do Cypher (`tfvars/vm-nginx-poc`) usando um bloco **heredoc HCL**:
+---
 
-```hcl
-poc_name                         = "vm-nginx-terraform-ansible"
-project_id                       = null
-gcp_credentials                  = <<-GCP_SA_KEY_EOF
-<%=cypher.read('secret/gcp-terraform-ansible-samples')%>
-GCP_SA_KEY_EOF
-region                           = "us-central1"
+### Modelo B: Operational Workflow / Task (`morpheus-tf-remotestate`) — Padrão `loonar-morpheus-aws-s3-catalog`
+
+No modelo baseado em **Workflow Operacional** (`hpe_morpheus_catalog_item_workflow` + `hpe_morpheus_task_shell_script`), o Morpheus executa um script Shell Bash no runner. 
+
+Neste caso, a tag ERB `<%=cypher.read("secret/gcp-terraform-ansible-samples")%>` é avaliada diretamente pelo interpretador de tarefas do Morpheus e exportada como variável de ambiente `GOOGLE_CREDENTIALS`:
+
+```bash
+# Injeção automática em add_vm_and_apply.sh
+export GOOGLE_CREDENTIALS='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 ```
 
-| Ambiente | O que acontece | Resultado |
+O provider `google` do Terraform lê automaticamente a variável de ambiente `GOOGLE_CREDENTIALS` sem necessidade de qualquer alteração no manifesto HCL.
+
+| Ambiente / Modelo | O que acontece | Resultado |
 |---|---|---|
-| **Morpheus Data** | O Morpheus lê `tfvars/vm-nginx-poc`, processa a tag ERB no `tfvar_secret` e grava o JSON real da chave dentro do heredoc no `-var-file` temporário. | ✅ `var.gcp_credentials` recebe o JSON e autentica no GCP |
-| **Local com `gcp_credentials` no tfvars** | O administrador passa o JSON da chave diretamente via `terraform.tfvars` ou CLI. | ✅ Variável explícita usada |
-| **Local com ADC (`gcloud auth`)** | `var.gcp_credentials` permanece com string vazia (`""`). `credentials` é avaliado como `null`. | ✅ ADC usado automaticamente no ambiente local |
+| **App Blueprint (Native)** | Morpheus gera `gcp_credentials = "eyJ0e..."` (Base64) no `.tfvars`. `providers.tf` decodifica automaticamente. | ✅ JSON reconstruído via Base64 |
+| **Workflow Task (Shell)** | Script Bash exporta `GOOGLE_CREDENTIALS` no ambiente do runner. | ✅ Provider `google` lê env var nativa |
+| **Local com `gcp_credentials`** | Administrador informa JSON bruto ou Base64 em `terraform.tfvars`. | ✅ Variável explícita usada |
+| **Local com ADC (`gcloud auth`)** | `var.gcp_credentials` é vazio. `credentials` resolve para `null`. | ✅ Fallback automático para ADC |
 
 ### Estrutura dos Segredos no Cypher
 

@@ -83,6 +83,14 @@ log_info "Executando: $ADD_VM_SCRIPT ${ARGS[*]}"
 log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"
 
+if [[ -z "${GOOGLE_CREDENTIALS:-}" ]]; then
+  GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
+  if [[ -n "$GCP_CREDS_SECRET" && "$GCP_CREDS_SECRET" != *"cypher.read"* ]]; then
+    log_info "Injetando GOOGLE_CREDENTIALS a partir do Cypher secret/gcp-terraform-ansible-samples..."
+    export GOOGLE_CREDENTIALS="$GCP_CREDS_SECRET"
+  fi
+fi
+
 if [[ -n "$TFSTATE_BUCKET" ]]; then
   log_info "Gerando backend_override.tf temporário para GCS (bucket: $TFSTATE_BUCKET, prefix: $TFSTATE_PREFIX)..."
   cat <<EOF > "$OVERRIDE_FILE"
