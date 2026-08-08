@@ -10,6 +10,13 @@ variable "project_id" {
   default     = "poc-terraform-ansible"
 }
 
+variable "gcp_credentials" {
+  type        = string
+  description = "Conteúdo JSON da chave de Service Account do GCP para autenticação no provider."
+  default     = ""
+  sensitive   = true
+}
+
 variable "region" {
   type        = string
   description = "Região GCP para a PoC."

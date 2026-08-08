@@ -241,6 +241,13 @@ variable "project_id" {
   default     = null
 }
 
+variable "gcp_credentials" {
+  type        = string
+  description = "Conteúdo JSON da chave da Service Account GCP. Se mantido nulo, buscará do Cypher em secret/gcp-terraform-ansible-samples."
+  default     = null
+  sensitive   = true
+}
+
 variable "region" {
   type        = string
   description = "Região GCP para os recursos."
