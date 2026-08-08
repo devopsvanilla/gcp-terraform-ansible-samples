@@ -41,6 +41,7 @@ cypher_secret_key = "tfvars/vm-nginx-poc"
 # label_subnetwork_name     = "Subnet VPC (Opcional - deixe vazio para utilizar a sub-rede padrão da região)"
 # label_allowed_http_cidr   = "CIDR Liberado HTTP (Porta 80)"
 # label_allowed_ssh_cidr    = "CIDR Liberado SSH (Porta 22)"
+# label_user_groups         = "Grupos Linux Adicionais (separados por vírgula)"
 # label_run_ansible         = "Executar Ansible (Instalação Nginx)"
 
 
@@ -78,6 +79,7 @@ cypher_secret_key = "tfvars/vm-nginx-poc"
 # manage_vm_external_ip_org_policy = true                                          # Gerencia a restrição constraints/compute.vmExternalIpAccess na Org Policy (true/false).
 # ssh_username                     = "seu_usuario_linux"                           # Usuário Linux padrão a ser criado na VM para SSH.
 # ssh_public_key                   = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ..."   # Chave pública SSH no formato OpenSSH para acesso à VM.
+# user_groups                      = "sudo,www-data"                               # Grupos Linux adicionais separados por vírgula.
 
 # ===== Chave Privada do Ansible (Recuperada com Segurança do Cypher) =====
 # Ao aplicar este manifesto, a chave privada SSH abaixo é gravada de forma criptografada

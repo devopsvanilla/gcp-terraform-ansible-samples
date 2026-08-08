@@ -218,6 +218,12 @@ variable "label_run_ansible" {
   default     = "Executar Ansible (Instalação Nginx)"
 }
 
+variable "label_user_groups" {
+  type        = string
+  description = "Rótulo do campo Grupos de Usuários no formulário."
+  default     = "Grupos Linux Adicionais (separados por vírgula)"
+}
+
 
 # ===== Parâmetros da VM e Ambiente GCP (Sem valores padrão para os opcionais) =====
 # Se estes parâmetros não forem definidos no terraform.tfvars, os campos do formulário no Morpheus
@@ -323,6 +329,12 @@ variable "ssh_public_key" {
   type        = string
   description = "Chave pública SSH no formato OpenSSH para acesso à VM."
   default     = null
+}
+
+variable "user_groups" {
+  type        = string
+  description = "Grupos Linux adicionais separados por vírgula (ex.: sudo, www-data)."
+  default     = "sudo,www-data"
 }
 
 variable "network_name" {

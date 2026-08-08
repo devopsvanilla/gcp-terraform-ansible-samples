@@ -109,6 +109,15 @@ resource "hpe_morpheus_option_type_textarea" "ssh_public_key" {
   required      = true
 }
 
+resource "hpe_morpheus_option_type_text" "user_groups" {
+  name          = "vm-native-user-groups"
+  field_name    = "user_groups"
+  field_label   = var.label_user_groups
+  description   = "Grupos adicionais no Linux (ex.: sudo, www-data)."
+  default_value = var.user_groups
+  required      = false
+}
+
 resource "hpe_morpheus_option_type_text" "network_name" {
   name          = "vm-native-network-name"
   field_name    = "network_name"
@@ -164,6 +173,7 @@ locals {
     tonumber(hpe_morpheus_option_type_checkbox.assign_external_ip.id),
     tonumber(hpe_morpheus_option_type_text.ssh_username.id),
     tonumber(hpe_morpheus_option_type_textarea.ssh_public_key.id),
+    tonumber(hpe_morpheus_option_type_text.user_groups.id),
     tonumber(hpe_morpheus_option_type_text.network_name.id),
     tonumber(hpe_morpheus_option_type_text.subnetwork_name.id),
     tonumber(hpe_morpheus_option_type_text.allowed_http_cidr.id),
