@@ -51,6 +51,7 @@ cypher_secret_key = "tfvars/vm-nginx-poc"
 
 # poc_name                         = "vm-nginx-terraform-ansible"                  # Nome lógico da PoC para tagging e identificação interna.
 # project_id                       = "meu-projeto-gcp-12345"                       # ID do projeto GCP onde os recursos serão criados.
+# gcp_credentials                  = "ewogICJ0eXBlIjogInNlcnZpY2VfYWN..."          # Conteúdo Base64 da chave GCP obtido com ./scripts/encode-gcp-key.sh.
 # region                           = "us-central1"                                 # Região GCP padrão (ex.: us-central1, us-east1, southamerica-east1).
 # zone                             = "us-central1-a"                               # Zona GCP específica da região escolhida (ex.: us-central1-a).
 # network_name                     = "default"                                     # Nome da VPC GCP onde a interface de rede será conectada.
