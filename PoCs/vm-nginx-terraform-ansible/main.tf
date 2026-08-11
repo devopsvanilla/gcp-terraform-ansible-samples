@@ -81,7 +81,7 @@ locals {
 
   vm_metadata_ssh_key_entries = {
     for vm_key, vm in local.vm_configs : vm_key => compact([
-      for key_value in local.vm_metadata_ssh_keys[vm_key] : (trimspace(key_value) != "" ? "${vm.ssh_username}:${key_value}" : "")
+      for key_value in local.vm_metadata_ssh_keys[vm_key] : (trimspace(key_value) != "" ? format("%s:%s", vm.ssh_username, key_value) : "")
     ])
   }
 
