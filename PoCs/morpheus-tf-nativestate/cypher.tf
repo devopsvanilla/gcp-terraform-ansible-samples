@@ -5,7 +5,7 @@ resource "tls_private_key" "ansible_ssh_key" {
 
 # Armazena a chave privada do Ansible no Cypher do Morpheus sob a chave secret/ansible-private-key.
 resource "hpe_morpheus_cypher_secret" "ansible_private_key" {
-  key   = "secret/ansible-private-key"
+  key   = "ansible-private-key"
   value = var.ansible_private_key != null ? var.ansible_private_key : tls_private_key.ansible_ssh_key.private_key_openssh
   ttl   = var.cypher_secret_ttl
 }
