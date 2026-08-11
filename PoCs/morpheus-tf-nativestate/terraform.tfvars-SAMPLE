@@ -21,7 +21,7 @@ blueprint_category    = "terraform-ansible-samples"
 blueprint_visibility  = "private"
 
 # Nome da chave do segredo no Cypher onde as tfvars serão armazenadas
-cypher_secret_key = "tfvars/vm-nginx-poc"
+cypher_secret_key = "secret/tfvars/vm-nginx-poc"
 
 # ===== Customização Opcional dos Rótulos (Labels) exibidos no Formulário =====
 # Descomente e altere os textos abaixo caso queira personalizar os rótulos dos campos no Morpheus:
