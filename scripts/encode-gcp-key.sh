@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Utilitário para gerar a credencial GCP codificada em Base64 para armazenar no Morpheus Cypher.
+# Utilitário para formatar a credencial GCP para armazenamento no Morpheus Cypher ou terraform.tfvars.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,11 +12,15 @@ if [[ ! -f "$KEY_FILE" ]]; then
 fi
 
 echo "========================================================================="
-echo "   CHAVE GCP EM BASE64 PARA ARMAZENAR NO MORPHEUS CYPHER"
+echo "   1. FORMATO JSON EM LINHA ÚNICA (RECOMENDADO PARA PROVIDER GOOGLE)"
 echo "========================================================================="
-echo "Copie TODO o texto abaixo e cole no campo 'Value' do segredo no Cypher:"
-echo "Key: secret/gcp-terraform-ansible-samples"
-echo "Type: Secret"
+echo "Copie o texto JSON abaixo e cole em gcp_credentials no terraform.tfvars:"
 echo "-------------------------------------------------------------------------"
+jq -c . "$KEY_FILE"
+echo "-------------------------------------------------------------------------"
+echo ""
+echo "========================================================================="
+echo "   2. FORMATO BASE64 (PARA SEGREDO CENTRAL secret/gcp-terraform-ansible-samples)"
+echo "========================================================================="
 python3 -c "import base64; print(base64.b64encode(open('$KEY_FILE', 'rb').read()).decode('utf-8'))"
 echo "-------------------------------------------------------------------------"
