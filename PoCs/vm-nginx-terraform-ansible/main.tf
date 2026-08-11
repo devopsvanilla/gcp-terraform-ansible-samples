@@ -10,7 +10,7 @@ locals {
   )
 
   form_vm_config = {
-    (local.effective_form_vm_name) = {
+    for k in [local.effective_form_vm_name] : k => {
       vm_name                          = local.effective_form_vm_name
       machine_type_override            = var.machine_type_override
       machine_series                   = var.machine_series
@@ -59,7 +59,7 @@ locals {
     }
   }
 
-  vm_configs = (trimspace(var.name) != "" || trimspace(var.vm_name) != "") ? local.form_vm_config : local.map_vm_configs
+  vm_configs = trimspace(var.name) != "" || trimspace(var.vm_name) != "" ? local.form_vm_config : local.map_vm_configs
 
   vm_external_ip_allowed_values = distinct(flatten([
     for vm in values(local.vm_configs) : [
