@@ -17,7 +17,7 @@ locals {
       vcpu_count                       = var.vcpu_count
       memory_gb                        = var.memory_gb
       memory_mb                        = var.memory_gb * 1024
-      machine_type                     = trimspace(var.machine_type_override) != "" ? var.machine_type_override : "${var.machine_series}-custom-${var.vcpu_count}-${var.memory_gb * 1024}"
+      machine_type                     = trimspace(var.machine_type_override) != "" ? var.machine_type_override : format("%s-custom-%d-%d", var.machine_series, var.vcpu_count, var.memory_gb * 1024)
       disk_type                        = var.disk_type
       disk_size_gb                     = var.disk_size_gb
       boot_image_project               = var.boot_image_project
@@ -42,7 +42,7 @@ locals {
       vcpu_count                       = vm.vcpu_count
       memory_gb                        = vm.memory_gb
       memory_mb                        = vm.memory_gb * 1024
-      machine_type                     = trimspace(vm.machine_type_override) != "" ? vm.machine_type_override : "${vm.machine_series}-custom-${vm.vcpu_count}-${vm.memory_gb * 1024}"
+      machine_type                     = trimspace(vm.machine_type_override) != "" ? vm.machine_type_override : format("%s-custom-%d-%d", vm.machine_series, vm.vcpu_count, vm.memory_gb * 1024)
       disk_type                        = vm.disk_type
       disk_size_gb                     = vm.disk_size_gb
       boot_image_project               = vm.boot_image_project
