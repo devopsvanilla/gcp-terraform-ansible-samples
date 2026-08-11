@@ -50,7 +50,7 @@ locals {
       assign_external_ip               = vm.assign_external_ip
       ssh_username                     = try(trimspace(vm.ssh_username), "") != "" ? vm.ssh_username : var.ssh_username
       ssh_public_key                   = try(trimspace(vm.ssh_public_key), "") != "" ? vm.ssh_public_key : var.ssh_public_key
-      user_groups                      = flatten([for g in(can(tolist(vm.user_groups)) ? tolist(vm.user_groups) : split(",", replace(replace(tostring(vm.user_groups), "[", ""), "]", ""))) : trimspace(g) if trimspace(g) != ""])
+      user_groups                      = compact([for g in(can(tolist(vm.user_groups)) ? tolist(vm.user_groups) : split(",", replace(replace(tostring(vm.user_groups), "[", ""), "]", ""))) : trimspace(g)])
       network_name                     = try(trimspace(vm.network_name), "") != "" ? vm.network_name : var.network_name
       subnetwork_name                  = try(trimspace(vm.subnetwork_name), "") != "" ? vm.subnetwork_name : var.subnetwork_name
       allowed_http_cidr                = try(trimspace(vm.allowed_http_cidr), "") != "" ? vm.allowed_http_cidr : var.allowed_http_cidr
@@ -62,11 +62,10 @@ locals {
   vm_configs = trimspace(var.name) != "" || trimspace(var.vm_name) != "" ? local.form_vm_config : local.map_vm_configs
 
   vm_external_ip_allowed_values = distinct(flatten([
-    for vm in values(local.vm_configs) : [
+    for vm in values(local.vm_configs) : (vm.assign_external_ip && vm.manage_vm_external_ip_org_policy ? [
       "projects/${var.project_id}/zones/${var.zone}/instances/${vm.vm_name}",
       "projects/${data.google_project.current.number}/zones/${var.zone}/instances/${vm.vm_name}",
-    ]
-    if vm.assign_external_ip && vm.manage_vm_external_ip_org_policy
+    ] : [])
   ]))
 
   manage_vm_external_ip_org_policy_effective = var.manage_vm_external_ip_org_policy && length(local.vm_external_ip_allowed_values) > 0
@@ -81,8 +80,8 @@ locals {
   }
 
   vm_metadata_ssh_key_entries = {
-    for vm_key, vm in local.vm_configs : vm_key => tolist([
-      for key_value in local.vm_metadata_ssh_keys[vm_key] : "${vm.ssh_username}:${key_value}" if trimspace(key_value) != ""
+    for vm_key, vm in local.vm_configs : vm_key => compact([
+      for key_value in local.vm_metadata_ssh_keys[vm_key] : (trimspace(key_value) != "" ? "${vm.ssh_username}:${key_value}" : "")
     ])
   }
 
