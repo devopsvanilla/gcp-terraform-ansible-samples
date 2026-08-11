@@ -17,6 +17,8 @@ resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
   key = var.cypher_secret_key
   ttl = var.cypher_secret_ttl
 
+  depends_on = [hpe_morpheus_cypher_secret.ansible_private_key]
+
   value = <<-EOT
 poc_name                         = ${var.poc_name != null ? "\"${var.poc_name}\"" : "\"vm-nginx-terraform-ansible\""}
 project_id                       = ${var.project_id != null ? "\"${var.project_id}\"" : "null"}
