@@ -10,8 +10,8 @@ resource "hpe_morpheus_cypher_secret" "ansible_private_key" {
   ttl   = var.cypher_secret_ttl
 }
 
-# Cria o segredo principal de tfvars no Cypher do Morpheus em formato JSON válido.
-# O Morpheus TerraformService utiliza JsonSlurper para ler o segredo do Cypher e gerar o morpheus-*.tfvars.
+# Cria o segredo principal de tfvars no Cypher do Morpheus em formato JSON válido sem arrays aninhados.
+# O Morpheus HCLParser legado falha com "Error Processing Tuple from source not a List" ao encontrar arrays em mapas.
 resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
   key = var.cypher_secret_key
   ttl = var.cypher_secret_ttl
@@ -52,7 +52,7 @@ resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
         assign_external_ip               = var.assign_external_ip != null ? var.assign_external_ip : true
         ssh_username                     = var.ssh_username != null && var.ssh_username != "" ? var.ssh_username : "devopsvanilla"
         ssh_public_key                   = var.ssh_public_key != null ? var.ssh_public_key : ""
-        user_groups                      = [for g in split(",", var.user_groups != null && var.user_groups != "" ? var.user_groups : "sudo, www-data") : trimspace(g)]
+        user_groups                      = var.user_groups != null && var.user_groups != "" ? var.user_groups : "sudo, www-data"
         network_name                     = var.network_name != null && var.network_name != "" ? var.network_name : "default"
         subnetwork_name                  = var.subnetwork_name != null ? var.subnetwork_name : ""
         allowed_http_cidr                = var.allowed_http_cidr != null && var.allowed_http_cidr != "" ? var.allowed_http_cidr : "0.0.0.0/0"
