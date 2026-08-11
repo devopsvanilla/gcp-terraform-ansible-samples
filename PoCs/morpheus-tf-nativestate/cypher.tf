@@ -1,3 +1,15 @@
+# Gera uma chave privada SSH dedicada para o Ansible via Terraform caso nenhuma seja fornecida.
+resource "tls_private_key" "ansible_ssh_key" {
+  algorithm = "ED25519"
+}
+
+# Armazena a chave privada do Ansible no Cypher do Morpheus sob a chave secret/ansible-private-key.
+resource "hpe_morpheus_cypher_secret" "ansible_private_key" {
+  key   = "secret/ansible-private-key"
+  value = var.ansible_private_key != null ? var.ansible_private_key : tls_private_key.ansible_ssh_key.private_key_openssh
+  ttl   = var.cypher_secret_ttl
+}
+
 # Cria o segredo principal de tfvars no Cypher do Morpheus.
 # Quando o App Blueprint for executado pelo Morpheus, a engine nativa
 # injetará este conteúdo de tfvars durante o terraform plan/apply.
@@ -22,7 +34,7 @@ use_metadata_ssh_keys            = ${var.use_metadata_ssh_keys != null ? tostrin
 run_ansible                      = ${var.run_ansible != null ? tostring(var.run_ansible) : "true"}
 ansible_wait_seconds             = ${var.ansible_wait_seconds != null ? tostring(var.ansible_wait_seconds) : "15"}
 ansible_max_retries              = ${var.ansible_max_retries != null ? tostring(var.ansible_max_retries) : "3"}
-ansible_private_key_file         = ${var.ansible_private_key_file != null ? "\"${var.ansible_private_key_file}\"" : "\"\""}
+ansible_private_key_file         = ${var.ansible_private_key_file != null ? "\"${var.ansible_private_key_file}\"" : "\"<%=cypher.read('secret/ansible-private-key')%>\""}
 ansible_ssh_user                 = ${var.ansible_ssh_user != null ? "\"${var.ansible_ssh_user}\"" : "\"devopsvanilla_ansible\""}
 
 vms = {
@@ -48,14 +60,4 @@ vms = {
   }
 }
   EOT
-}
-
-# Se a chave privada do Ansible for fornecida na automação, cria um segredo dedicado
-# no Cypher do Morpheus em secret/ansible-private-key para recuperação segura.
-resource "hpe_morpheus_cypher_secret" "ansible_private_key" {
-  count = var.ansible_private_key != null ? 1 : 0
-
-  key   = "secret/ansible-private-key"
-  value = var.ansible_private_key
-  ttl   = var.cypher_secret_ttl
 }
