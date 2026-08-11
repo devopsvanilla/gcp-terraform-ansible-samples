@@ -22,7 +22,7 @@ use_metadata_ssh_keys            = ${var.use_metadata_ssh_keys != null ? tostrin
 run_ansible                      = ${var.run_ansible != null ? tostring(var.run_ansible) : "true"}
 ansible_wait_seconds             = ${var.ansible_wait_seconds != null ? tostring(var.ansible_wait_seconds) : "15"}
 ansible_max_retries              = ${var.ansible_max_retries != null ? tostring(var.ansible_max_retries) : "3"}
-ansible_private_key_file         = ${var.ansible_private_key_file != null ? "\"${var.ansible_private_key_file}\"" : (var.ansible_private_key != null ? "\"<%=cypher.read('secret/ansible-private-key')%>\"" : "null")}
+ansible_private_key_file         = ${var.ansible_private_key_file != null ? "\"${var.ansible_private_key_file}\"" : "\"\""}
 ansible_ssh_user                 = ${var.ansible_ssh_user != null ? "\"${var.ansible_ssh_user}\"" : "\"devopsvanilla_ansible\""}
 
 vms = {
