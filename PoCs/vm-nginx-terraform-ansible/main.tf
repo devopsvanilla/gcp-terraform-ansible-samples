@@ -50,7 +50,7 @@ locals {
       assign_external_ip               = vm.assign_external_ip
       ssh_username                     = try(trimspace(vm.ssh_username), "") != "" ? vm.ssh_username : var.ssh_username
       ssh_public_key                   = try(trimspace(vm.ssh_public_key), "") != "" ? vm.ssh_public_key : var.ssh_public_key
-      user_groups                      = try(vm.user_groups, [])
+      user_groups                      = flatten([for g in(can(tolist(vm.user_groups)) ? tolist(vm.user_groups) : split(",", replace(replace(tostring(vm.user_groups), "[", ""), "]", ""))) : trimspace(g) if trimspace(g) != ""])
       network_name                     = try(trimspace(vm.network_name), "") != "" ? vm.network_name : var.network_name
       subnetwork_name                  = try(trimspace(vm.subnetwork_name), "") != "" ? vm.subnetwork_name : var.subnetwork_name
       allowed_http_cidr                = try(trimspace(vm.allowed_http_cidr), "") != "" ? vm.allowed_http_cidr : var.allowed_http_cidr

@@ -43,7 +43,7 @@ variable "vms" {
     assign_external_ip               = optional(bool, false)
     ssh_username                     = optional(string)
     ssh_public_key                   = optional(string)
-    user_groups                      = optional(list(string), [])
+    user_groups                      = optional(any, [])
     network_name                     = optional(string)
     subnetwork_name                  = optional(string)
     allowed_http_cidr                = optional(string)

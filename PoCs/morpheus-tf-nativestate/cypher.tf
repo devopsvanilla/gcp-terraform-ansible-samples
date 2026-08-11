@@ -53,7 +53,7 @@ vms = {
     assign_external_ip               = ${var.assign_external_ip != null ? tostring(var.assign_external_ip) : "true"}
     ssh_username                     = ${var.ssh_username != null ? "\"${var.ssh_username}\"" : "\"devopsvanilla\""}
     ssh_public_key                   = ${var.ssh_public_key != null ? "\"${var.ssh_public_key}\"" : "\"\""}
-    user_groups                      = ${var.user_groups != null ? jsonencode([for g in split(",", var.user_groups) : trimspace(g)]) : "[\"sudo\", \"www-data\"]"}
+    user_groups                      = [${join(", ", [for g in split(",", coalesce(var.user_groups, "sudo, www-data")) : "\"${trimspace(g)}\""])}]
     network_name                     = ${var.network_name != null ? "\"${var.network_name}\"" : "\"default\""}
     subnetwork_name                  = ${var.subnetwork_name != null ? "\"${var.subnetwork_name}\"" : "\"\""}
     allowed_http_cidr                = ${var.allowed_http_cidr != null ? "\"${var.allowed_http_cidr}\"" : "\"0.0.0.0/0\""}
