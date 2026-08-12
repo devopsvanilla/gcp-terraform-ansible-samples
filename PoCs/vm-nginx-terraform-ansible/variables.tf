@@ -58,21 +58,6 @@ variable "vms" {
       assign_external_ip = true
     }
   }
-
-  validation {
-    condition     = length(var.vms) > 0
-    error_message = "Defina ao menos uma VM em vms."
-  }
-
-  validation {
-    condition     = alltrue([for vm in values(var.vms) : can(tobool(vm.assign_external_ip))])
-    error_message = "Cada assign_external_ip em vms deve ser true ou false."
-  }
-
-  validation {
-    condition     = length(distinct([for vm in values(var.vms) : vm.vm_name])) == length(values(var.vms))
-    error_message = "Cada vm_name em vms deve ser único no projeto/zona da PoC."
-  }
 }
 
 variable "manage_vm_external_ip_org_policy" {

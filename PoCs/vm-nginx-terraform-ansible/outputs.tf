@@ -59,7 +59,7 @@ locals {
     vms                                        = local.vm_details
   }
 
-  single_vm_details = length(local.vm_details) == 1 ? values(local.vm_details)[0] : null
+  single_vm_details = length(local.vm_details) == 1 ? local.vm_details[keys(local.vm_details)[0]] : null
 }
 
 output "input_parameters" {

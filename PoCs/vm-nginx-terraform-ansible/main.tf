@@ -62,7 +62,7 @@ locals {
   vm_configs = trimspace(var.name) != "" || trimspace(var.vm_name) != "" ? local.form_vm_config : local.map_vm_configs
 
   vm_external_ip_allowed_values = distinct(flatten([
-    for vm in values(local.vm_configs) : (vm.assign_external_ip && vm.manage_vm_external_ip_org_policy ? [
+    for k, vm in local.vm_configs : (vm.assign_external_ip && vm.manage_vm_external_ip_org_policy ? [
       "projects/${var.project_id}/zones/${var.zone}/instances/${vm.vm_name}",
       "projects/${data.google_project.current.number}/zones/${var.zone}/instances/${vm.vm_name}",
     ] : [])
