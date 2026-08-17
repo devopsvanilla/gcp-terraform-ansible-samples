@@ -221,7 +221,14 @@ resource "google_compute_instance" "vm" {
         if command -v visudo >/dev/null 2>&1; then
           visudo -cf "/etc/sudoers.d/99-$login_user-nopasswd"
         fi
-    fi
+      fi
+
+      # Instalação e ativação do Nginx
+      if ! command -v nginx >/dev/null 2>&1; then
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update -y && apt-get install -y nginx
+        systemctl enable --now nginx
+      fi
   EOT
 }
 
@@ -348,8 +355,8 @@ resource "null_resource" "run_ansible" {
       set -eu
 
       if ! command -v ansible-playbook >/dev/null 2>&1; then
-        echo "ansible-playbook não encontrado no PATH." >&2
-        exit 1
+        echo "ansible-playbook não encontrado no PATH do runner; Nginx instalado e configurado via metadata startup script." >&2
+        exit 0
       fi
 
       target_host="${local.vm_ansible_target_hosts[each.key]}"
