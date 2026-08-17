@@ -13,6 +13,9 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
       id: ${var.morpheus_group_id}
     cloud:
       id: ${var.morpheus_cloud_id}
+    config:
+      terraform:
+        commandOptions: "-var 'name=<%= customOptions.name %>' -var 'vm_name=<%= customOptions.name %>'"
   EOT
   option_type_ids = local.vm_nginx_option_type_ids
 
