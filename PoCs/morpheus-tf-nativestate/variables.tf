@@ -37,6 +37,18 @@ variable "morpheus_insecure" {
   default     = false
 }
 
+# ===== Cloud e Group para Provisionamento do App Blueprint =====
+
+variable "morpheus_cloud_id" {
+  type        = number
+  description = "ID da Cloud no Morpheus Data onde o App Blueprint será provisionado (ex.: ID da cloud GCP em Infrastructure > Clouds)."
+}
+
+variable "morpheus_group_id" {
+  type        = number
+  description = "ID do Group no Morpheus Data associado à Cloud de provisionamento (ex.: ID do group em Infrastructure > Groups)."
+}
+
 # ===== Integração Git e Execução do Terraform no Morpheus =====
 
 variable "integration_id" {

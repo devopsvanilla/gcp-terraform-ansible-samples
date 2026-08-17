@@ -7,7 +7,11 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
   enabled     = true
 
   blueprint_id    = tonumber(hpe_morpheus_app_blueprint_terraform.vm_nginx.id)
-  app_spec        = "name: '<%= customOptions.name %>'"
+  app_spec = yamlencode({
+    name         = "<%= customOptions.name %>"
+    group        = { id = var.morpheus_group_id }
+    defaultCloud = { id = var.morpheus_cloud_id }
+  })
   option_type_ids = local.vm_nginx_option_type_ids
 
   content = <<-EOT
