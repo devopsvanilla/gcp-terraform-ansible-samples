@@ -277,8 +277,8 @@ resource "null_resource" "configure_os_login_ssh_key" {
       set -eu
 
       if ! command -v gcloud >/dev/null 2>&1; then
-        echo "gcloud não encontrado no PATH." >&2
-        exit 1
+        echo "gcloud CLI não encontrado no PATH do runner; pulando registro de chave no OS Login." >&2
+        exit 0
       fi
 
       ansible_private_key_file="${var.ansible_private_key_file}"

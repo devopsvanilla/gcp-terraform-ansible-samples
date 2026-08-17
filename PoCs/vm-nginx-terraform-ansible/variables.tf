@@ -81,7 +81,7 @@ variable "ssh_public_key" {
 variable "use_metadata_ssh_keys" {
   type        = bool
   description = "Quando true, injeta a chave SSH via metadado ssh-keys da instância. Desative em projetos com OS Login obrigatório (constraints/compute.requireOsLogin)."
-  default     = false
+  default     = true
 }
 
 variable "network_name" {
