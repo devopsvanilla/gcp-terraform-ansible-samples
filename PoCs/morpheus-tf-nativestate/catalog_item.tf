@@ -22,7 +22,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
   content = <<-EOT
     ### ${var.blueprint_name}
 
-    Provisiona uma instância Compute Engine com Nginx no Google Cloud Platform (GCP)
+    Provisiona uma instância Compute Engine no Google Cloud Platform (GCP)
     através do engine **Terraform Nativo** do Morpheus Data.
 
     - **Estado (.tfstate)**: Mantido automaticamente no Cypher do Morpheus.

@@ -72,7 +72,7 @@ variable "version_ref" {
 variable "working_path" {
   type        = string
   description = "Caminho do diretório da PoC Terraform alvo dentro do repositório Git."
-  default     = "PoCs/vm-nginx-terraform-ansible"
+  default     = "PoCs/gcp-create-vm"
 }
 
 variable "terraform_version" {
@@ -86,19 +86,19 @@ variable "terraform_version" {
 variable "blueprint_name" {
   type        = string
   description = "Nome exibido para o App Blueprint no Morpheus Data."
-  default     = "vm-nginx-terraform-ansible-native"
+  default     = "gcp-create-vm-native"
 }
 
 variable "blueprint_description" {
   type        = string
   description = "Descrição do App Blueprint no Morpheus Data."
-  default     = "Blueprint nativo Terraform para provisionamento de VM Nginx no GCP com suporte a Ansible e tfstate gerenciado no Cypher."
+  default     = "Blueprint nativo Terraform para provisionamento declarativo de VM no Google Cloud Platform (GCP) com tfstate gerenciado no Cypher."
 }
 
 variable "blueprint_category" {
   type        = string
   description = "Categoria do App Blueprint no Morpheus Data."
-  default     = "terraform-ansible-samples"
+  default     = "gcp-compute"
 }
 
 variable "blueprint_visibility" {
@@ -224,12 +224,6 @@ variable "label_allowed_ssh_cidr" {
   default     = "CIDR Liberado SSH (Porta 22)"
 }
 
-variable "label_run_ansible" {
-  type        = string
-  description = "Rótulo do campo Executar Ansible no formulário."
-  default     = "Executar Ansible (Instalação Nginx)"
-}
-
 variable "label_user_groups" {
   type        = string
   description = "Rótulo do campo Grupos de Usuários no formulário."
@@ -244,7 +238,7 @@ variable "label_user_groups" {
 variable "poc_name" {
   type        = string
   description = "Nome lógico da PoC."
-  default     = "vm-nginx-terraform-ansible"
+  default     = "gcp-create-vm"
 }
 
 variable "project_id" {
@@ -384,42 +378,5 @@ variable "use_metadata_ssh_keys" {
   type        = bool
   description = "Quando true, injeta a chave SSH via metadado da instância."
   default     = null
-}
-
-variable "run_ansible" {
-  type        = bool
-  description = "Quando true, o Terraform dispara a automação Ansible para provisionamento do Nginx."
-  default     = null
-}
-
-variable "ansible_wait_seconds" {
-  type        = number
-  description = "Tempo em segundos entre tentativas do Ansible."
-  default     = null
-}
-
-variable "ansible_max_retries" {
-  type        = number
-  description = "Número máximo de tentativas de execução do Ansible."
-  default     = null
-}
-
-variable "ansible_private_key_file" {
-  type        = string
-  description = "Caminho do arquivo de chave privada SSH usada pelo Ansible."
-  default     = null
-}
-
-variable "ansible_ssh_user" {
-  type        = string
-  description = "Usuário SSH utilizado pelo Ansible."
-  default     = null
-}
-
-variable "ansible_private_key" {
-  type        = string
-  description = "Conteúdo da chave privada SSH usada pelo Ansible. Armazenada de forma segura no Cypher no segredo secret/ansible-private-key."
-  default     = null
-  sensitive   = true
 }
 

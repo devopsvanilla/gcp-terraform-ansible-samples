@@ -1,0 +1,41 @@
+# Configuração do Projeto GCP
+poc_name        = "gcp-create-vm"
+project_id      = "poc-terraform-ansible"
+region          = "us-central1"
+zone            = "us-central1-a"
+gcp_credentials = ""
+
+# Rede e Segurança
+network_name          = "default"
+subnetwork_name       = ""
+allowed_http_cidr     = "0.0.0.0/0"
+allowed_ssh_cidr      = "0.0.0.0/0"
+use_metadata_ssh_keys = true
+
+# Acesso SSH
+ssh_username   = "devopsvanilla"
+ssh_public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcPB/xV54Ux56mwHp7Z+G95prF5mxOenihK9cePpxqGgwSijDgPkQjCyuu3/fP6so7AJq68Hv01X2hyKpoTcGUkk9cUXBxhR7ufoNNCQmkuQGIoZuF54nFjn2q66QoZN5HuPQLSIzvEkniImfK+6Nd0SiSI9v38bBwlZlbMmf1C4jZjZOoYqQ31L9NFAdbxyiG4NrV8XuCXRzPoQaxbjglSxv8Otdiw1t6RV4BXuSNDJkwfGBQ7pAxYfdvwW6kmVMtwvlxN73xPMo/hDhTnhmU+8a/JnnYOUtJN8iaegcBf+duUZm3HHboa7+P6zRM3vrwHiofj6ebwLjhU43ZrAV50rn4vbtLKmQYwEw3QsPWTNEbz4hTJWi8xyIT1D1c7VUP4rkqwVW0K/KMrNniCZFGRVRHp9vujfAJJ4DkWehCYJFEp7dMP5EC6IU4352wqk1vqDquyyiJq/ZwkNt29FXH+W45Xz4SR6vonS1+3/vZG3gWIson3CvFKAlWiT8rZvs= devopsvanilla"
+user_groups    = ["sudo"]
+
+# Definição das VMs
+vms = {
+  vm_poc = {
+    vm_name               = "vm-gcp-poc"
+    machine_series        = "e2"
+    machine_type_override = "e2-micro"
+    vcpu_count            = 1
+    memory_gb             = 1
+    disk_type             = "pd-standard"
+    disk_size_gb          = 30
+    boot_image_project    = "debian-cloud"
+    boot_image_family     = "debian-12"
+    assign_external_ip    = true
+    ssh_username          = "devopsvanilla"
+    ssh_public_key        = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcPB/xV54Ux56mwHp7Z+G95prF5mxOenihK9cePpxqGgwSijDgPkQjCyuu3/fP6so7AJq68Hv01X2hyKpoTcGUkk9cUXBxhR7ufoNNCQmkuQGIoZuF54nFjn2q66QoZN5HuPQLSIzvEkniImfK+6Nd0SiSI9v38bBwlZlbMmf1C4jZjZOoYqQ31L9NFAdbxyiG4NrV8XuCXRzPoQaxbjglSxv8Otdiw1t6RV4BXuSNDJkwfGBQ7pAxYfdvwW6kmVMtwvlxN73xPMo/hDhTnhmU+8a/JnnYOUtJN8iaegcBf+duUZm3HHboa7+P6zRM3vrwHiofj6ebwLjhU43ZrAV50rn4vbtLKmQYwEw3QsPWTNEbz4hTJWi8xyIT1D1c7VUP4rkqwVW0K/KMrNniCZFGRVRHp9vujfAJJ4DkWehCYJFEp7dMP5EC6IU4352wqk1vqDquyyiJq/ZwkNt29FXH+W45Xz4SR6vonS1+3/vZG3gWIson3CvFKAlWiT8rZvs= devopsvanilla"
+    user_groups           = ["sudo"]
+    network_name          = "default"
+    subnetwork_name       = ""
+    allowed_http_cidr     = "0.0.0.0/0"
+    allowed_ssh_cidr      = "0.0.0.0/0"
+  }
+}

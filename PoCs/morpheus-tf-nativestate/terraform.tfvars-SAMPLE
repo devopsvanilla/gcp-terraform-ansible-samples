@@ -6,22 +6,25 @@ morpheus_access_token = "seu-access-token-aqui"
 morpheus_insecure     = true                                # Permite conexões HTTPS com certificados autoassinados/não validados (true para lab/PoC, false para produção com SSL confiável).
 
 
+# Cloud e Group do Morpheus Data para provisionamento do App Blueprint
+morpheus_cloud_id = 24  # loonar-gcp-terraform-ansible-samples (Google Cloud)
+morpheus_group_id = 5   # GCP Loonar
+
 # Integração Git no Morpheus Data
-# (Valores de exemplo: ajuste conforme os IDs do seu ambiente no Morpheus)
-integration_id    = 1
-repository_id     = 1
+integration_id    = 15
+repository_id     = 63
 version_ref       = "main"
-working_path      = "PoCs/vm-nginx-terraform-ansible"
+working_path      = "PoCs/gcp-create-vm"
 terraform_version = "1.6.0"
 
 # Metadados do App Blueprint
-blueprint_name        = "vm-nginx-terraform-ansible-native"
-blueprint_description = "Blueprint nativo Terraform para provisionamento de VM Nginx no GCP com estado mantido no Cypher."
-blueprint_category    = "terraform-ansible-samples"
+blueprint_name        = "gcp-create-vm-native"
+blueprint_description = "Blueprint nativo Terraform para provisionamento de VM no GCP com estado mantido no Cypher."
+blueprint_category    = "gcp-compute"
 blueprint_visibility  = "private"
 
 # Nome da chave do segredo no Cypher onde as tfvars serão armazenadas
-cypher_secret_key = "tfvars/vm-nginx-poc"
+cypher_secret_key = "tfvars/gcp-create-vm-poc"
 
 # ===== Customização Opcional dos Rótulos (Labels) exibidos no Formulário =====
 # Descomente e altere os textos abaixo caso queira personalizar os rótulos dos campos no Morpheus:

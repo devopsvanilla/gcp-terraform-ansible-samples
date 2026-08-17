@@ -152,13 +152,6 @@ resource "hpe_morpheus_option_type_text" "allowed_ssh_cidr" {
   required      = true
 }
 
-resource "hpe_morpheus_option_type_checkbox" "run_ansible" {
-  name            = "vm-native-run-ansible"
-  field_name      = "run_ansible"
-  field_label     = var.label_run_ansible
-  default_checked = var.run_ansible != null ? var.run_ansible : false
-}
-
 locals {
   vm_nginx_option_type_ids = [
     tonumber(hpe_morpheus_option_type_text.vm_name.id),
@@ -177,7 +170,6 @@ locals {
     tonumber(hpe_morpheus_option_type_text.network_name.id),
     tonumber(hpe_morpheus_option_type_text.subnetwork_name.id),
     tonumber(hpe_morpheus_option_type_text.allowed_http_cidr.id),
-    tonumber(hpe_morpheus_option_type_text.allowed_ssh_cidr.id),
-    tonumber(hpe_morpheus_option_type_checkbox.run_ansible.id)
+    tonumber(hpe_morpheus_option_type_text.allowed_ssh_cidr.id)
   ]
 }
