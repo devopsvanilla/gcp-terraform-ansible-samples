@@ -113,11 +113,11 @@ resource "null_resource" "set_quota_project" {
   provisioner "local-exec" {
     command = <<-EOT
       set -eu
-      if ! command -v gcloud >/dev/null 2>&1; then
-        echo "gcloud não encontrado no PATH." >&2
-        exit 1
+      if command -v gcloud >/dev/null 2>&1; then
+        gcloud auth application-default set-quota-project "${var.project_id}" || true
+      else
+        echo "gcloud CLI não encontrado no PATH do runner; ignorando set-quota-project."
       fi
-      gcloud auth application-default set-quota-project "${var.project_id}"
     EOT
   }
 }
