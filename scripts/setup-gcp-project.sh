@@ -132,16 +132,13 @@ echo "Quota project configurado."
 
 if [[ "${allow_external_ip}" == true ]]; then
   policy_name="projects/${project_id}/policies/compute.vmExternalIpAccess"
-  if [[ -n "${instance_name}" && -n "${zone}" ]]; then
-    echo "Configurando allowlist de IP externo para a instância ${instance_name}..."
-    allowed_value="projects/${project_id}/zones/${zone}/instances/${instance_name}"
-  else
-    echo "Configurando policy de IP externo para o projeto ${project_id}..."
-    allowed_value="projects/${project_id}/zones/${zone}/instances/${instance_name}"
-  fi
+  echo "Configurando política de IP externo (compute.vmExternalIpAccess) para o projeto ${project_id}..."
 
   tmp_policy="$(mktemp)"
-  cat > "${tmp_policy}" <<EOF_JSON
+  if [[ -n "${instance_name}" && -n "${zone}" && "${instance_name}" != "vm-nginx-poc" ]]; then
+    echo "Aplicando allowlist para a instância ${instance_name} (${zone})..."
+    allowed_value="projects/${project_id}/zones/${zone}/instances/${instance_name}"
+    cat > "${tmp_policy}" <<EOF_JSON
 {
   "name": "${policy_name}",
   "spec": {
@@ -157,10 +154,25 @@ if [[ "${allow_external_ip}" == true ]]; then
   }
 }
 EOF_JSON
+  else
+    echo "Liberando uso de IP externo para todas as VMs do projeto (allowAll: true)..."
+    cat > "${tmp_policy}" <<EOF_JSON
+{
+  "name": "${policy_name}",
+  "spec": {
+    "rules": [
+      {
+        "allowAll": true
+      }
+    ]
+  }
+}
+EOF_JSON
+  fi
 
   gcloud org-policies set-policy "${tmp_policy}" --project="${project_id}" >/dev/null
   rm -f "${tmp_policy}"
-  echo "Allowlist aplicada."
+  echo "Política de IP externo aplicada com sucesso."
 fi
 
 echo "Setup concluído."

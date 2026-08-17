@@ -64,13 +64,10 @@ if ! gcloud services list --enabled --project="${project_id}" --format='value(co
   gcloud services enable orgpolicy.googleapis.com --project="${project_id}"
 fi
 
-if [[ -n "${instance_name}" && -n "${zone}" ]]; then
-  echo "Aplicando allowlist para a instância ${instance_name} no projeto ${project_id}..."
-else
-  echo "Aplicando policy de IP externo para o projeto ${project_id}..."
-fi
-
-cat > /tmp/vm-external-ip-policy.json <<EOF
+if [[ -n "${instance_name}" && -n "${zone}" && "${instance_name}" != "vm-nginx-poc" ]]; then
+  echo "Aplicando allowlist para a instância ${instance_name} (${zone}) no projeto ${project_id}..."
+  allowed_value="projects/${project_id}/zones/${zone}/instances/${instance_name}"
+  cat > /tmp/vm-external-ip-policy.json <<EOF
 {
   "name": "${policy_name}",
   "spec": {
@@ -86,14 +83,29 @@ cat > /tmp/vm-external-ip-policy.json <<EOF
   }
 }
 EOF
+else
+  echo "Aplicando policy de IP externo (allowAll: true) para o projeto ${project_id}..."
+  cat > /tmp/vm-external-ip-policy.json <<EOF
+{
+  "name": "${policy_name}",
+  "spec": {
+    "rules": [
+      {
+        "allowAll": true
+      }
+    ]
+  }
+}
+EOF
+fi
 
 gcloud org-policies set-policy /tmp/vm-external-ip-policy.json \
   --project="${project_id}"
 
 rm -f /tmp/vm-external-ip-policy.json
 
-if [[ -n "${instance_name}" && -n "${zone}" ]]; then
+if [[ -n "${instance_name}" && -n "${zone}" && "${instance_name}" != "vm-nginx-poc" ]]; then
   echo "Pronto. A VM ${instance_name} foi adicionada à allowlist de IP externo para o projeto ${project_id}."
 else
-  echo "Pronto. A política de IP externo foi aplicada ao projeto ${project_id}."
+  echo "Pronto. A política de IP externo (allowAll) foi aplicada ao projeto ${project_id}."
 fi
