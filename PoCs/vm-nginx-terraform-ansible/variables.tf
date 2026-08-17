@@ -63,7 +63,7 @@ variable "vms" {
 variable "manage_vm_external_ip_org_policy" {
   type        = bool
   description = "Quando true, a PoC gerencia no projeto a policy constraints/compute.vmExternalIpAccess em modo restrito para as VMs definidas em vms com assign_external_ip = true."
-  default     = true
+  default     = false
 }
 
 variable "ssh_username" {
