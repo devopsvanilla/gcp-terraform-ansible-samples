@@ -14,18 +14,18 @@ locals {
       vm_name               = local.effective_form_vm_name
       machine_type_override = var.machine_type_override
       machine_series        = var.machine_series
-      vcpu_count            = var.vcpu_count
-      memory_gb             = var.memory_gb
-      memory_mb             = var.memory_gb * 1024
-      machine_type          = trimspace(var.machine_type_override) != "" ? var.machine_type_override : format("%s-custom-%d-%d", var.machine_series, var.vcpu_count, var.memory_gb * 1024)
+      vcpu_count            = try(tonumber(var.vcpu_count), 1)
+      memory_gb             = try(tonumber(var.memory_gb), 1)
+      memory_mb             = try(tonumber(var.memory_gb), 1) * 1024
+      machine_type          = trimspace(var.machine_type_override) != "" && trimspace(var.machine_type_override) != "custom" ? var.machine_type_override : format("%s-custom-%d-%d", var.machine_series, try(tonumber(var.vcpu_count), 1), try(tonumber(var.memory_gb), 1) * 1024)
       disk_type             = var.disk_type
-      disk_size_gb          = var.disk_size_gb
+      disk_size_gb          = try(tonumber(var.disk_size_gb), 30)
       boot_image_project    = var.boot_image_project
       boot_image_family     = var.boot_image_family
-      assign_external_ip    = var.assign_external_ip
+      assign_external_ip    = can(tobool(var.assign_external_ip)) ? tobool(var.assign_external_ip) : (lower(tostring(var.assign_external_ip)) == "true" || lower(tostring(var.assign_external_ip)) == "on")
       ssh_username          = var.ssh_username
       ssh_public_key        = var.ssh_public_key
-      user_groups           = var.user_groups
+      user_groups           = compact([for g in(can(tolist(var.user_groups)) ? tolist(var.user_groups) : split(",", replace(replace(tostring(var.user_groups), "[", ""), "]", ""))) : trimspace(g)])
       network_name          = var.network_name
       subnetwork_name       = var.subnetwork_name
       allowed_http_cidr     = var.allowed_http_cidr

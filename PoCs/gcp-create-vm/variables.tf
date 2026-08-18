@@ -137,13 +137,13 @@ variable "machine_type_override" {
 }
 
 variable "vcpu_count" {
-  type        = number
+  type        = any
   description = "Quantidade de vCPUs."
   default     = 1
 }
 
 variable "memory_gb" {
-  type        = number
+  type        = any
   description = "Memória RAM em GB."
   default     = 1
 }
@@ -155,7 +155,7 @@ variable "disk_type" {
 }
 
 variable "disk_size_gb" {
-  type        = number
+  type        = any
   description = "Tamanho do disco em GB."
   default     = 30
 }
@@ -173,13 +173,13 @@ variable "boot_image_family" {
 }
 
 variable "assign_external_ip" {
-  type        = bool
+  type        = any
   description = "Define se a VM terá IP público."
   default     = true
 }
 
 variable "user_groups" {
-  type        = list(string)
+  type        = any
   description = "Grupos adicionais de usuário Linux."
   default     = ["sudo"]
 }
