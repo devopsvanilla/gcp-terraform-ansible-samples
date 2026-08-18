@@ -13,7 +13,7 @@ KEY_FILE=""
 if [[ $# -gt 0 ]]; then
   KEY_FILE="$1"
 elif [[ -f "${SCRIPT_DIR}/gcp-key.json" ]]; then
-  KEY_FILE="$dleR{SCRIPT_DIR}/gcp-key.json"
+  KEY_FILE="${SCRIPT_DIR}/gcp-key.json"
 elif [[ -f "${REPO_ROOT}/gcp-key.json" ]]; then
   KEY_FILE="${REPO_ROOT}/gcp-key.json"
 elif [[ -f "./gcp-key.json" ]]; then
