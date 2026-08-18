@@ -2,7 +2,7 @@
 
 ## Objetivo deste repositório
 
-Este repositório é dedicado a **provas de conceito (POCs) em Terraform para GCP e Morpheus Data (via provedor oficial `HPE/hpe`)**, com suporte opcional a **Ansible** para provisionamento e configuração de serviços, e scripts auxiliares em **Bash Linux**.
+Este repositório é dedicado a **provas de conceito (POCs) em Terraform para GCP e Morpheus Data (via provedor oficial `HPE/hpe`)**, com suporte amplo a **Ansible** para construção, diagnóstico, documentação e afins utilizando como base a coleção oficial [`morpheus.core`](https://github.com/HewlettPackard/ansible-collection-morpheus-core) disponibilizada pela HPE (bem como provisionamento/configuração de serviços e ativos em geral), e scripts auxiliares em **Bash Linux**.
 
 As POCs devem implantar **unidades mínimas de software ou configuração** que comprovem funcionamento com baixo custo, simplicidade e facilidade de limpeza (`terraform destroy`).
 
@@ -44,10 +44,13 @@ Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras
    - Versionamento explícito de provider/terraform.
    - Sem segredos ou credenciais hardcoded.
 
-8. **Ansible com boas práticas**:
-   - Playbooks em `PoCs/<nome-da-poc>/ansible/`.
+8. **Ansible com boas práticas e Coleção HPE Morpheus Core**:
+   - Playbooks organizados em `PoCs/<nome-da-poc>/ansible/`.
+   - Para automação, construção, diagnóstico e documentação envolvendo Morpheus Data, utilizar como padrão a coleção oficial [`morpheus.core`](https://github.com/HewlettPackard/ansible-collection-morpheus-core) (`ansible-collection-morpheus-core` da HPE).
+   - Declarar dependências de coleção em `requirements.yml` (ex.: `morpheus.core`).
    - Tasks idempotentes com nomes descritivos.
-   - Priorizar módulos nativos Ansible; usar `handlers` para reinícios de serviço.
+   - Priorizar módulos nativos Ansible e módulos da coleção `morpheus.core`; usar `handlers` para reinícios de serviço.
+   - Autenticação e credenciais (`MORPHEUS_API_URL`, `MORPHEUS_API_TOKEN` / `MORPHEUS_ACCESS_TOKEN`) passadas de forma segura via variáveis de ambiente ou Ansible Vault, nunca hardcoded.
 
 9. **Scripts preferencialmente em Bash Linux**:
    - Iniciar com `#!/usr/bin/env bash` e `set -euo pipefail`.
@@ -60,7 +63,7 @@ Ao criar ou alterar conteúdo neste repositório, siga estritamente estas regras
     - `poc-scaffold`: Automação de scaffolding de POCs.
     - `poc-readme-validator`: Validação das 6 seções do README.
     - `terraform-quality-gate`: Quality Gate de Terraform GCP e HPE Morpheus.
-    - `ansible-quality-gate`: Quality Gate de Ansible.
+    - `ansible-quality-gate`: Quality Gate de Ansible (incluindo validação de playbooks, roles e coleções como `morpheus.core`).
     - `bash-quality-gate`: Quality Gate de Bash Linux.
 
 ---
@@ -76,7 +79,8 @@ PoCs/<nome-da-poc>/
 ├── providers.tf
 ├── terraform.tfvars.example
 ├── README.md
-├── ansible/            (opcional: playbooks, roles e inventários)
+├── ansible/            (opcional: playbooks, roles, coleções e inventários)
+│   ├── requirements.yml
 │   ├── site.yml
 │   ├── inventories/
 │   ├── group_vars/
@@ -103,9 +107,10 @@ PoCs/<nome-da-poc>/
 - Terraform no Google Cloud: <https://docs.cloud.google.com/docs/terraform>
 - GCP Terraform Best Practices: <https://docs.cloud.google.com/docs/terraform/best-practices/general-style-structure>
 
-### HPE Morpheus Data
+### HPE Morpheus Data (Terraform & Ansible)
 
 - Provedor Terraform HPE: <https://registry.terraform.io/providers/HPE/hpe/latest>
+- Coleção Ansible Morpheus Core (HPE): <https://github.com/HewlettPackard/ansible-collection-morpheus-core>
 - Configurações da solução e uso da console web: <https://support.hpe.com/hpesc/public/docDisplay?docId=sd00008014en_us&page=GUID-709AAADB-A9C1-40B6-AD22-958EE7E6F312.html>
 - API e CLI Morpheus Data: <https://support.hpe.com/hpesc/public/docDisplay?docId=sd00008014en_us&page=GUID-F695DE83-0DF8-4C5E-A932-79B60E12C7B4.html>
 - Repositórios no GitHub (HPE): <https://github.com/HewlettPackard/?q=morpheus&type=all&language=&sort=>
@@ -115,4 +120,5 @@ PoCs/<nome-da-poc>/
 
 - Guia de estilo Bash (Google): <https://google.github.io/styleguide/shellguide.html>
 - Ansible Documentation & Best Practices: <https://docs.ansible.com/>
+- Coleção Ansible HPE Morpheus Core: <https://github.com/HewlettPackard/ansible-collection-morpheus-core>
 - Ansible Lint: <https://ansible.readthedocs.io/projects/lint/>
