@@ -1,0 +1,95 @@
+---
+# ==============================================================================
+# Playbook 09: Configuração e Gerenciamento Interno de VMs via Inventário Dinâmico
+# ==============================================================================
+# Finalidade:
+#   Utiliza o inventário dinâmico do Morpheus (`inventory/morpheus_inventory.yml`)
+#   para conectar diretamente via SSH nas VMs provisionadas no GCP e executar
+#   configurações de SO (instalação de pacotes, docker/nginx, hardening, etc.).
+#
+# Execução (Exemplos):
+#   # Executar em todas as instâncias do grupo 'gcp_instances':
+#   ansible-playbook -i inventory/morpheus_inventory.yml playbooks/09-configure-with-inventory.yml \
+#     -e "ansible_user=devopsvanilla"
+#
+#   # Executar apenas em uma VM específica:
+#   ansible-playbook -i inventory/morpheus_inventory.yml playbooks/09-configure-with-inventory.yml \
+#     --limit "vm-gcp-poc" -e "ansible_user=devopsvanilla"
+# ==============================================================================
+
+- name: Configurar Serviços e Pacotes nas VMs GCP Descobertas pelo Morpheus
+  hosts: gcp_instances:gcp_poc_vms:all
+  gather_facts: true
+  become: true
+  vars:
+    # Pacotes básicos a garantir nas VMs
+    base_packages:
+      - curl
+      - wget
+      - git
+      - htop
+      - ufw
+      - jq
+      - unzip
+
+    # Serviços a gerenciar
+    enable_nginx_example: false
+
+  tasks:
+    - name: Exibir detalhes da VM conectada
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Configurando Host: {{ inventory_hostname }} "
+          - " IP Primário:      {{ ansible_default_ipv4.address | default(ansible_host | default('N/A')) }} "
+          - " Distribuição:     {{ ansible_distribution | default('Linux') }} {{ ansible_distribution_version | default('') }} "
+          - "=========================================================="
+
+    - name: Atualizar cache de pacotes APT (Debian/Ubuntu)
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Instalar pacotes essenciais do sistema
+      ansible.builtin.package:
+        name: "{{ base_packages }}"
+        state: present
+
+    - name: Configurar timezone para America/Sao_Paulo
+      community.general.timezone:
+        name: America/Sao_Paulo
+      ignore_errors: true
+
+    - name: Instalar e iniciar servidor Web Nginx (Opcional)
+      when: enable_nginx_example | bool
+      block:
+        - name: Instalar Nginx
+          ansible.builtin.package:
+            name: nginx
+            state: present
+
+        - name: Garantir que o Nginx está em execução e habilitado no boot
+          ansible.builtin.service:
+            name: nginx
+            state: started
+            enabled: true
+
+        - name: Criar página HTML customizada
+          ansible.builtin.copy:
+            dest: /var/www/html/index.html
+            mode: '0644'
+            content: |
+              <!DOCTYPE html>
+              <html>
+              <head><title>Morpheus Data + GCP + Ansible</title></head>
+              <body style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
+                <h1>🚀 VM Provisionada no GCP via Morpheus Data</h1>
+                <p>Configurada com sucesso utilizando a coleção <b>ansible-collection-morpheus-core</b>!</p>
+                <p>Host: <code>{{ inventory_hostname }}</code></p>
+              </body>
+              </html>
+
+    - name: Status final da configuração
+      ansible.builtin.debug:
+        msg: "Configuração básica concluída com sucesso no host {{ inventory_hostname }}!"

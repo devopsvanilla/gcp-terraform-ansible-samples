@@ -1,0 +1,35 @@
+---
+# ==============================================================================
+# Configurações de Conexão com Morpheus Data
+# ==============================================================================
+# Este arquivo contém as variáveis globais para autenticação na API do Morpheus.
+# Em ambientes de produção, recomenda-se criptografar com ansible-vault:
+#   ansible-vault encrypt group_vars/morpheus.yml
+# ==============================================================================
+
+# URL base do Morpheus Appliance
+morpheus_url: "https://morpheus.cec.dev.br"
+
+# Desabilita verificação SSL (útil para certificados autoassinados/ambientes de teste)
+morpheus_ssl_verify: false
+
+# Autenticação via API Token (Recomendado se disponível):
+# morpheus_api_token: "SEU_API_TOKEN_AQUI"
+
+# Autenticação via Usuário / Senha (Fallback):
+morpheus_username: "POC\\administrator"
+morpheus_password: "C0p132022!#hpe50POC"
+
+# ==============================================================================
+# Configurações do Provedor GCP no Morpheus
+# ==============================================================================
+# IDs e Nomes correspondentes à integração GCP configurada no Morpheus
+morpheus_gcp_cloud_id: 24
+morpheus_gcp_cloud_name: "loonar-gcp-terraform-ansible-samples"
+morpheus_gcp_group_id: 5
+morpheus_gcp_group_name: "GCP Loonar"
+
+# Identificadores de teste / padrão
+sample_instance_name: "vm-gcp-poc"
+sample_cypher_key: "tfvars/gcp-create-vm-poc"
+sample_keypair_name: "devopsvanilla-gcp-key"

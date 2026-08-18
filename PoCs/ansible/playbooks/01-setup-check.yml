@@ -1,0 +1,43 @@
+---
+# ==============================================================================
+# Playbook 01: Verificação de Conectividade e Facts do Morpheus Data
+# ==============================================================================
+# Finalidade:
+#   Valida a conexão entre o Ansible e a API do Morpheus Appliance,
+#   coletando informações como versão, status do sistema e estatísticas gerais.
+#
+# Execução:
+#   ansible-playbook playbooks/01-setup-check.yml
+# ==============================================================================
+
+- name: Validar Conexão com Morpheus Data e Coletar Facts
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+
+  tasks:
+    - name: Coletar facts do Morpheus Appliance
+      morpheus.core.appliance_facts:
+        morpheus_url: "{{ morpheus_url }}"
+        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
+        morpheus_username: "{{ morpheus_username | default(omit) }}"
+        morpheus_password: "{{ morpheus_password | default(omit) }}"
+        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
+      register: appliance_facts_result
+
+    - name: Exibir status e versão do Morpheus Data
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Conexão estabelecida com sucesso com o Morpheus Data! "
+          - "=========================================================="
+          - "URL do Appliance:  {{ morpheus_url }}"
+          - "Versão do Morpheus: {{ appliance_facts_result.morpheus_appliance_facts.appliance.version | default('N/A') }}"
+          - "Status da Conexão:  {{ appliance_facts_result.morpheus_appliance_facts.appliance.status | default('Online') }}"
+          - "=========================================================="
+
+    - name: Exibir detalhes completos (modo verboso)
+      ansible.builtin.debug:
+        var: appliance_facts_result.morpheus_appliance_facts
+        verbosity: 1

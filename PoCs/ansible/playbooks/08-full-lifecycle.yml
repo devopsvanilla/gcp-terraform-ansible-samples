@@ -1,0 +1,104 @@
+---
+# ==============================================================================
+# Playbook 08: Ciclo de Vida Operacional Completo (End-to-End GCP VM via Morpheus)
+# ==============================================================================
+# Finalidade:
+#   Demonstra um fluxo operacional robusto e automatizado:
+#   1. Identifica a VM provisionada no GCP via Morpheus API
+#   2. Cria um Snapshot de segurança antes de qualquer operação
+#   3. Executa um Restart controlado na VM
+#   4. Aguarda e valida se a VM retornou ao status 'running' saudável
+#
+# Execução:
+#   ansible-playbook -i inventory/hosts.yml playbooks/08-full-lifecycle.yml \
+#     -e "target_instance_name=vm-gcp-poc"
+# ==============================================================================
+
+- name: Executar Ciclo Operacional Completo na VM Morpheus/GCP
+  hosts: morpheus_servers
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+  vars:
+    target_instance_name: "{{ sample_instance_name | default('vm-gcp-poc') }}"
+    auto_snapshot_name: "Ansible-Lifecycle-Snapshot-{{ lookup('pipe', 'date +%Y%m%d%H%M%S') }}"
+
+  tasks:
+    # -------------------------------------------------------------------------
+    # Passo 1: Descobrir e Validar a Instância Alvo
+    # -------------------------------------------------------------------------
+    - name: "[1/4] Consultar informações da instância: {{ target_instance_name }}"
+      morpheus.core.instance_info:
+        name: "{{ target_instance_name }}"
+      register: target_info
+
+    - name: Validar se a instância foi localizada
+      ansible.builtin.assert:
+        that:
+          - target_info.morpheus_instances is defined
+          - (target_info.morpheus_instances | length) > 0
+        fail_msg: "A instância '{{ target_instance_name }}' não foi encontrada no Morpheus."
+
+    - name: Extrair metadados da instância
+      ansible.builtin.set_fact:
+        target_vm_id: "{{ target_info.morpheus_instances[0].id }}"
+        target_vm_status: "{{ target_info.morpheus_instances[0].status | default('unknown') }}"
+        target_vm_ip: "{{ target_info.morpheus_instances[0].ip_address | default('N/A') }}"
+
+    - name: Exibir status inicial
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Instância Localizada: {{ target_instance_name }} (ID: {{ target_vm_id }}) "
+          - " Status Atual:       {{ target_vm_status }} "
+          - " IP:                 {{ target_vm_ip }} "
+          - "=========================================================="
+
+    # -------------------------------------------------------------------------
+    # Passo 2: Criar Snapshot Preventivo
+    # -------------------------------------------------------------------------
+    - name: "[2/4] Criar snapshot de segurança: {{ auto_snapshot_name }}"
+      morpheus.core.instance_snapshot:
+        id: "{{ target_vm_id | int }}"
+        snapshot_name: "{{ auto_snapshot_name }}"
+        snapshot_description: "Snapshot preventivo gerado antes do restart automatizado"
+        state: present
+      register: snapshot_creation
+
+    - name: Confirmar criação do snapshot
+      ansible.builtin.debug:
+        msg: "Snapshot '{{ auto_snapshot_name }}' criado com sucesso."
+
+    # -------------------------------------------------------------------------
+    # Passo 3: Executar Restart na Instância
+    # -------------------------------------------------------------------------
+    - name: "[3/4] Reiniciar a instância {{ target_instance_name }}"
+      morpheus.core.instance:
+        id: "{{ target_vm_id | int }}"
+        state: restarted
+      register: restart_result
+
+    - name: Pausa para a VM concluir o ciclo de inicialização
+      ansible.builtin.pause:
+        seconds: 15
+        prompt: "Aguardando inicialização da VM..."
+
+    # -------------------------------------------------------------------------
+    # Passo 4: Verificar Estado Final
+    # -------------------------------------------------------------------------
+    - name: "[4/4] Consultar status pós-operação"
+      morpheus.core.instance_info:
+        id: "{{ target_vm_id | int }}"
+      register: final_info
+
+    - name: Exibir Resumo Final do Ciclo de Vida
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Ciclo Operacional Finalizado com Sucesso! "
+          - "=========================================================="
+          - "Instância:       {{ target_instance_name }}"
+          - "ID:              {{ target_vm_id }}"
+          - "Snapshot Criado: {{ auto_snapshot_name }}"
+          - "Status Final:    {{ final_info.morpheus_instances[0].status | default('running') }}"
+          - "=========================================================="

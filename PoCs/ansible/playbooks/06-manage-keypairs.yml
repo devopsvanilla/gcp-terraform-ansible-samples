@@ -1,0 +1,76 @@
+---
+# ==============================================================================
+# Playbook 06: Gerenciamento de Pares de Chaves SSH no Morpheus Data
+# ==============================================================================
+# Finalidade:
+#   Cria (gera), importa ou remove pares de chaves SSH no Morpheus.
+#   Essas chaves podem ser injetadas automaticamente nas VMs do GCP no provisionamento.
+#
+# Execução (Exemplos):
+#   # Gerar um par de chaves automaticamente no Morpheus:
+#   ansible-playbook -i inventory/hosts.yml playbooks/06-manage-keypairs.yml \
+#     -e "keypair_name=devopsvanilla-gcp-key keypair_action=present"
+#
+#   # Remover uma chave pelo ID:
+#   ansible-playbook -i inventory/hosts.yml playbooks/06-manage-keypairs.yml \
+#     -e "keypair_id=50 keypair_action=absent"
+# ==============================================================================
+
+- name: Gerenciar Chaves SSH no Morpheus
+  hosts: morpheus_servers
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+  vars:
+    keypair_name: "{{ sample_keypair_name | default('devopsvanilla-gcp-key') }}"
+    keypair_id: null
+    keypair_action: "present"    # Opções: present (criar/importar), absent (remover)
+    public_key_content: null     # Se omitido ao criar, o Morpheus gera uma chave nova
+    private_key_content: null
+
+  tasks:
+    - name: Consultar chaves SSH existentes no Morpheus
+      morpheus.core.key_pair_info:
+      register: keypairs_info
+
+    - name: Exibir chaves existentes
+      ansible.builtin.debug:
+        msg: >-
+          ID: {{ item.id }} |
+          Nome: {{ item.name }} |
+          Fingerprint: {{ item.fingerprint | default('N/A') }}
+      loop: "{{ keypairs_info.morpheus_key_pairs | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: "Criar ou Importar Chave SSH: {{ keypair_name }}"
+      morpheus.core.key_pair:
+        name: "{{ keypair_name }}"
+        public_key: "{{ public_key_content if (public_key_content is not none) else omit }}"
+        private_key: "{{ private_key_content if (private_key_content is not none) else omit }}"
+        state: present
+      register: keypair_create_result
+      when: keypair_action == 'present'
+
+    - name: Exibir detalhes da chave criada/gerada
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Par de Chaves SSH Configurado com Sucesso! "
+          - "=========================================================="
+          - "ID:          {{ keypair_create_result.key_pair.id | default('N/A') }}"
+          - "Nome:        {{ keypair_create_result.key_pair.name | default('N/A') }}"
+          - "Fingerprint: {{ keypair_create_result.key_pair.fingerprint | default('N/A') }}"
+          - "=========================================================="
+      when:
+        - keypair_action == 'present'
+        - keypair_create_result is defined
+        - keypair_create_result.key_pair is defined
+
+    - name: "Remover Chave SSH pelo ID: {{ keypair_id }}"
+      morpheus.core.key_pair:
+        id: "{{ keypair_id }}"
+        state: absent
+      when:
+        - keypair_action == 'absent'
+        - keypair_id is not none

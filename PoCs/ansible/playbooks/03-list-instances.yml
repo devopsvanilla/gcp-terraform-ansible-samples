@@ -1,0 +1,53 @@
+---
+# ==============================================================================
+# Playbook 03: Listar Instâncias (VMs) Provisionadas no Morpheus
+# ==============================================================================
+# Finalidade:
+#   Consulta e exibe detalhes de instâncias (VMs) gerenciadas pelo Morpheus,
+#   incluindo status de energia, IPs internos/externos, plano de compute e cloud.
+#
+# Execução:
+#   ansible-playbook playbooks/03-list-instances.yml
+#   ansible-playbook playbooks/03-list-instances.yml -e "filter_name=vm-gcp"
+# ==============================================================================
+
+- name: Listar Instâncias e VMs no Morpheus
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+  vars:
+    filter_name: ""
+
+  tasks:
+    - name: Consultar instâncias no Morpheus
+      morpheus.core.instance_info:
+        morpheus_url: "{{ morpheus_url }}"
+        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
+        morpheus_username: "{{ morpheus_username | default(omit) }}"
+        morpheus_password: "{{ morpheus_password | default(omit) }}"
+        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
+        name: "{{ filter_name if (filter_name | length > 0) else omit }}"
+      register: instances_result
+
+    - name: Exibir resumo das instâncias encontradas
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - "Instância ID:    {{ item.id }}"
+          - "Nome:            {{ item.name }}"
+          - "Status:          {{ item.status | default('N/A') }}"
+          - "Cloud:           {{ item.cloud.name | default('N/A') }}"
+          - "Layout/Tipo:     {{ item.instance_type.name | default('N/A') }}"
+          - "Plano:           {{ item.plan.name | default('N/A') }}"
+          - "IP Primário:     {{ item.ip_address | default(item.connection_info.ip | default('N/A')) }}"
+          - "Criado em:       {{ item.date_created | default('N/A') }}"
+          - "=========================================================="
+      loop: "{{ instances_result.morpheus_instances | default([]) }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Informar caso nenhuma instância seja encontrada
+      ansible.builtin.debug:
+        msg: "Nenhuma instância encontrada com os filtros informados."
+      when: (instances_result.morpheus_instances | default([]) | length) == 0

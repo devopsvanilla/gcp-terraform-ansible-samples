@@ -1,0 +1,63 @@
+---
+# ==============================================================================
+# Playbook 04: Gerenciar Estado de Instâncias (VMs) no Morpheus (GCP)
+# ==============================================================================
+# Finalidade:
+#   Altera o estado operacional de VMs provisionadas no Morpheus (ex: GCP):
+#   - started / running : Inicia a VM
+#   - stopped           : Desliga a VM
+#   - restarted         : Reinicia a VM
+#   - suspended         : Suspende a VM
+#   - locked / unlocked : Bloqueia/desbloqueia ações contra deleção acidental
+#   - backup            : Dispara backup imediato da VM
+#
+# Execução (Exemplos):
+#   # Iniciar uma VM pelo nome:
+#   ansible-playbook -i inventory/hosts.yml playbooks/04-manage-instance.yml \
+#     -e "target_instance_name=vm-gcp-poc target_state=started"
+#
+#   # Reiniciar uma VM pelo ID:
+#   ansible-playbook -i inventory/hosts.yml playbooks/04-manage-instance.yml \
+#     -e "target_instance_id=200 target_state=restarted"
+#
+#   # Testar com dry-run / check-mode:
+#   ansible-playbook -i inventory/hosts.yml playbooks/04-manage-instance.yml \
+#     -e "target_instance_name=vm-gcp-poc target_state=stopped" --check
+# ==============================================================================
+
+- name: Gerenciar Estado Operacional de VM no Morpheus
+  hosts: morpheus_servers
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+  vars:
+    target_instance_name: "{{ sample_instance_name | default('vm-gcp-poc') }}"
+    target_instance_id: null
+    target_state: "started"   # Opções: started, stopped, restarted, suspended, locked, unlocked, backup
+    match_strategy: "first"   # Opções: first, last, all, none
+
+  tasks:
+    - name: Validar parâmetro de estado
+      ansible.builtin.assert:
+        that:
+          - target_state in ['started', 'running', 'stopped', 'restarted', 'suspended', 'locked', 'unlocked', 'backup', 'eject']
+        fail_msg: "Estado '{{ target_state }}' invalido. Use: started, stopped, restarted, suspended, locked, unlocked, backup."
+
+    - name: "Aplicar estado '{{ target_state }}' na VM (via Nome: {{ target_instance_name }})"
+      morpheus.core.instance:
+        name: "{{ target_instance_name if (target_instance_id is none) else omit }}"
+        id: "{{ target_instance_id if (target_instance_id is not none) else omit }}"
+        match_name: "{{ match_strategy }}"
+        state: "{{ target_state }}"
+      register: instance_action_result
+
+    - name: Exibir resultado da ação
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Operação executada com sucesso! "
+          - "=========================================================="
+          - "Estado solicitado: {{ target_state }}"
+          - "Modificado:       {{ instance_action_result.changed }}"
+          - "Detalhes:         {{ instance_action_result.instance_state | default([]) }}"
+          - "=========================================================="

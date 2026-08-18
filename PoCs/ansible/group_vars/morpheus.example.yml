@@ -1,0 +1,23 @@
+---
+# ==============================================================================
+# Exemplo de Configuração de Conexão com Morpheus Data (Template)
+# ==============================================================================
+morpheus_url: "https://morpheus.exemplo.com"
+morpheus_ssl_verify: false
+
+# Autenticação por Token (Recomendado):
+morpheus_api_token: "seu-access-token-aqui"
+
+# Ou por usuário e senha:
+# morpheus_username: "usuario"
+# morpheus_password: "senha"
+
+# Mapeamento do Cloud GCP no Morpheus:
+morpheus_gcp_cloud_id: 24
+morpheus_gcp_cloud_name: "loonar-gcp-terraform-ansible-samples"
+morpheus_gcp_group_id: 5
+morpheus_gcp_group_name: "GCP Loonar"
+
+sample_instance_name: "vm-gcp-poc"
+sample_cypher_key: "tfvars/gcp-create-vm-poc"
+sample_keypair_name: "devopsvanilla-gcp-key"

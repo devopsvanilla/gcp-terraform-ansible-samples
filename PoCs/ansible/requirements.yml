@@ -1,0 +1,5 @@
+---
+# Morpheus Core Collection dependencies
+collections:
+  - name: morpheus.core
+    version: ">=0.7.1"

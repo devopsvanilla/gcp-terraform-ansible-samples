@@ -1,0 +1,38 @@
+---
+# ==============================================================================
+# Plugin de Inventário Dinâmico Morpheus Data
+# ==============================================================================
+# Este plugin consulta a API do Morpheus e gera inventários Ansible em tempo real
+# com base em instâncias provisionadas no GCP (ou outras clouds).
+#
+# Para testar este inventário:
+#   ansible-inventory -i inventory/morpheus_inventory.yml --graph
+#   ansible-inventory -i inventory/morpheus_inventory.yml --list
+# ==============================================================================
+
+plugin: morpheus.core.morpheus_inventory
+
+morpheus_url: "https://morpheus.cec.dev.br"
+morpheus_ssl_verify: false
+
+# Autenticação
+morpheus_user: "POC\\administrator"
+morpheus_password: "C0p132022!#hpe50POC"
+# morpheus_api_key: "SEU_API_TOKEN_AQUI"
+
+# Definição de grupos dinâmicos por filtro
+groups:
+  # Agrupa todas as VMs pertencentes à Cloud GCP do Morpheus
+  - name: gcp_instances
+    searchtype: cloud
+    searchstring: "loonar-gcp-terraform-ansible-samples"
+
+  # Agrupa instâncias por prefixo de nome
+  - name: gcp_poc_vms
+    searchtype: name
+    searchstring: "vm-gcp"
+
+  # Agrupa instâncias por label
+  - name: gcp_labeled_vms
+    searchtype: label
+    searchstring: "poc"

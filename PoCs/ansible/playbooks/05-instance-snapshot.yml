@@ -1,0 +1,64 @@
+---
+# ==============================================================================
+# Playbook 05: Gerenciamento de Snapshots de VMs no Morpheus
+# ==============================================================================
+# Finalidade:
+#   Cria, reverte ou remove snapshots de VMs gerenciadas pelo Morpheus.
+#   Essencial para procedimentos de manutenção, rollback seguro e backups rápidos.
+#
+# Execução (Exemplos):
+#   # Criar snapshot de uma VM:
+#   ansible-playbook -i inventory/hosts.yml playbooks/05-instance-snapshot.yml \
+#     -e "target_instance_name=vm-gcp-poc snapshot_name='Snapshot-Pre-Deploy' snapshot_action=present"
+#
+#   # Reverter VM para o snapshot mais recente:
+#   ansible-playbook -i inventory/hosts.yml playbooks/05-instance-snapshot.yml \
+#     -e "target_instance_name=vm-gcp-poc snapshot_name='Snapshot-Pre-Deploy' snapshot_action=revert"
+#
+#   # Remover todos os snapshots de uma VM:
+#   ansible-playbook -i inventory/hosts.yml playbooks/05-instance-snapshot.yml \
+#     -e "target_instance_name=vm-gcp-poc snapshot_action=remove_all"
+# ==============================================================================
+
+- name: Gerenciar Snapshots de VMs no Morpheus
+  hosts: morpheus_servers
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+  vars:
+    target_instance_name: "{{ sample_instance_name | default('vm-gcp-poc') }}"
+    target_instance_id: null
+    snapshot_action: "present"        # Opções: present (criar), revert (reverter), absent (remover), remove_all
+    snapshot_name: "Ansible-Snapshot-{{ lookup('pipe', 'date +%Y%m%d-%H%M%S') }}"
+    snapshot_description: "Snapshot automatizado criado via Ansible em {{ lookup('pipe', 'date') }}"
+    snapshot_age: "latest"            # Opções: latest, oldest (usado com revert/absent)
+
+  tasks:
+    - name: Validar ação de snapshot
+      ansible.builtin.assert:
+        that:
+          - snapshot_action in ['present', 'revert', 'absent', 'remove_all']
+        fail_msg: "Ação '{{ snapshot_action }}' inválida. Opções: present, revert, absent, remove_all."
+
+    - name: "Executar ação de snapshot ({{ snapshot_action }}) na instância {{ target_instance_name }}"
+      morpheus.core.instance_snapshot:
+        name: "{{ target_instance_name if (target_instance_id is none) else omit }}"
+        id: "{{ target_instance_id if (target_instance_id is not none) else omit }}"
+        match_name: "first"
+        snapshot_name: "{{ snapshot_name if (snapshot_action != 'remove_all') else omit }}"
+        snapshot_description: "{{ snapshot_description if (snapshot_action == 'present') else omit }}"
+        snapshot_age: "{{ snapshot_age if (snapshot_action in ['revert', 'absent']) else omit }}"
+        state: "{{ snapshot_action }}"
+      register: snapshot_result
+
+    - name: Exibir resultado da operação de Snapshot
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Operação de Snapshot Concluída! "
+          - "=========================================================="
+          - "Instância: {{ target_instance_name }}"
+          - "Ação:      {{ snapshot_action }}"
+          - "Snapshot:  {{ snapshot_name }}"
+          - "Resultados: {{ snapshot_result.snapshot_results | default([]) }}"
+          - "=========================================================="

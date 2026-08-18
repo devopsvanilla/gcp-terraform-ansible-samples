@@ -1,0 +1,76 @@
+---
+# ==============================================================================
+# Playbook 02: Listar Clouds e Grupos no Morpheus (Foco em GCP)
+# ==============================================================================
+# Finalidade:
+#   Consulta todas as Clouds configuradas no Morpheus (incluindo o GCP),
+#   seus respectivos IDs, status, tipos e grupos associados.
+#
+# Execução:
+#   ansible-playbook playbooks/02-list-clouds.yml
+# ==============================================================================
+
+- name: Listar Clouds e Grupos Configurados no Morpheus
+  hosts: localhost
+  gather_facts: false
+  vars_files:
+    - ../group_vars/morpheus.yml
+
+  tasks:
+    - name: Consultar Clouds configuradas no Morpheus
+      morpheus.core.cloud_info:
+        morpheus_url: "{{ morpheus_url }}"
+        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
+        morpheus_username: "{{ morpheus_username | default(omit) }}"
+        morpheus_password: "{{ morpheus_password | default(omit) }}"
+        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
+      register: clouds_result
+
+    - name: Consultar Grupos de Infraestrutura no Morpheus
+      morpheus.core.group_info:
+        morpheus_url: "{{ morpheus_url }}"
+        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
+        morpheus_username: "{{ morpheus_username | default(omit) }}"
+        morpheus_password: "{{ morpheus_password | default(omit) }}"
+        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
+      register: groups_result
+
+    - name: Exibir resumo das Clouds encontradas
+      ansible.builtin.debug:
+        msg: >-
+          Cloud ID: {{ item.id }} |
+          Nome: {{ item.name }} |
+          Tipo: {{ item.cloud_type.name | default(item.code | default('Desconhecido')) }} |
+          Status: {{ item.status | default('N/A') }} |
+          Ativo: {{ item.enabled | default(true) }}
+      loop: "{{ clouds_result.morpheus_clouds }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Destacar Cloud GCP configurada
+      vars:
+        gcp_clouds: "{{ clouds_result.morpheus_clouds | selectattr('name', 'search', 'gcp|google', ignorecase=true) | list }}"
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Cloud GCP Identificada no Morpheus: "
+          - "=========================================================="
+          - "ID: {{ item.id }}"
+          - "Nome: {{ item.name }}"
+          - "Tipo: {{ item.cloud_type.name | default('Google Cloud') }}"
+          - "Localização: {{ item.location | default('global') }}"
+          - "=========================================================="
+      loop: "{{ gcp_clouds }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Exibir resumo dos Grupos encontrados
+      ansible.builtin.debug:
+        msg: >-
+          Grupo ID: {{ item.id }} |
+          Nome: {{ item.name }} |
+          Código: {{ item.code | default('N/A') }} |
+          Localização: {{ item.location | default('N/A') }}
+      loop: "{{ groups_result.morpheus_groups }}"
+      loop_control:
+        label: "{{ item.name }}"
