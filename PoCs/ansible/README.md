@@ -10,11 +10,11 @@ O diagrama abaixo ilustra o fluxo de controle e comunicação entre o Ansible, a
 
 ```mermaid
 graph LR
-    A["Ansible Playbook / CLI<br/>(Sua Estação / Runner)"] -->|HTTPAPI / REST| B["Morpheus Data<br/>(Appliance API)"]
-    B -->|Cloud Provider| C["Google Cloud Platform<br/>(GCP)"]
-    B -->|Orquestra / Gerencia| D["VMs Compute Engine<br/>(GCP Instances)"]
-    A -->|Dynamic Inventory Plugin| B
-    A -.->|SSH Config (Pós-Provisionamento)| D
+    A["Ansible Playbook / CLI<br/>(Sua Estação / Runner)"] -->|"HTTPAPI / REST"| B["Morpheus Data<br/>(Appliance API)"]
+    B -->|"Cloud Provider"| C["Google Cloud Platform<br/>(GCP)"]
+    B -->|"Orquestra / Gerencia"| D["VMs Compute Engine<br/>(GCP Instances)"]
+    A -->|"Dynamic Inventory Plugin"| B
+    A -.->|"SSH Config (Pós-Provisionamento)"| D
 ```
 
 ---
