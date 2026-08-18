@@ -1,41 +1,71 @@
-# gcp-terraform-ansible-samples
+# GCP + Terraform + Ansible + Morpheus Data — Proof of Concept Hub
 
-Repositório de provas de conceito (PoCs) para Google Cloud Platform com foco em Terraform e automações auxiliares, priorizando baixo custo, simplicidade e validação objetiva.
+Repositório unificado de **Provas de Conceito (PoCs)**, modelos arquiteturais e automações para **Google Cloud Platform (GCP)**, integrando **Terraform (IaC)**, **Ansible (Configuration Management & Day-2 Ops)** e a plataforma multicloud **Morpheus Data CMP**.
 
-## Como o repositório está organizado
+O objetivo deste repositório é fornecer padrões de automação reproduzíveis, seguros e de baixo custo, cobrindo desde o provisionamento de infraestrutura básica até a governança avançada de ciclo de vida e catálogos de autosserviço.
 
-- `PoCs/<nome-da-poc>/`: cada PoC fica isolada em um diretório próprio.
-- `scripts/`: utilitários e automações de apoio (setup do projeto GCP, codificação de credenciais, etc.).
-- `.github/instructions/`: padrões de qualidade e convenções do repositório.
+---
 
-## Índice das PoCs
+## 🏛️ Estrutura do Repositório
 
-| PoC | Descrição |
-|---|---|
-| [`PoCs/gcp-create-vm`](PoCs/gcp-create-vm/README.md) | Terraform puro para provisionamento de VM Compute Engine no GCP (sem Ansible, sem Nginx). |
-| [`PoCs/morpheus-tf-nativestate`](PoCs/morpheus-tf-nativestate/README.md) | App Blueprint Terraform Nativo no Morpheus Data com estado (`tfstate`) no Cypher e formulário de Self-Service. Aponta para `PoCs/gcp-create-vm`. |
-| [`PoCs/morpheus-tf-remotestate`](PoCs/morpheus-tf-remotestate/README.md) | Integração Morpheus Data via Remote Backend (GCS) com script wrapper Shell Task. |
-| [`PoCs/vm-nginx-terraform-ansible`](PoCs/vm-nginx-terraform-ansible/README.md) | PoC original com Terraform + Ansible para instalação automatizada do Nginx. |
+```
+gcp-terraform-ansible-samples/
+├── PoCs/
+│   ├── gcp-create-vm/                 # 1. Provisionamento básico de VM no GCP com Terraform puro
+│   ├── morpheus-tf-nativestate/       # 2. App Blueprint Morpheus com estado nativo no Cypher
+│   ├── morpheus-tf-remotestate/       # 3. Morpheus Data com Remote State no Google Cloud Storage (GCS)
+│   ├── vm-nginx-terraform-ansible/    # 4. Provisionamento Terraform + Configuração Nginx via Ansible
+│   └── ansible/                       # 5. Gerenciamento Morpheus & VMs GCP via coleção Ansible morpheus.core
+├── scripts/                           # Utilitários de apoio (setup GCP, codificação de chaves, hooks)
+└── .github/                           # Convenções e instruções do repositório
+```
 
-## Pré-requisitos gerais
+---
 
-### Ferramentas no host de execução
+## 📋 Catálogo de Provas de Conceito (PoCs)
 
-| Ferramenta | Versão mínima | Uso |
+| PoC | Foco Tecnológico | Descrição |
 |---|---|---|
-| `terraform` | >= 1.6.0 | Provisionar infraestrutura e configurar o Morpheus Data |
-| `gcloud` CLI | Última estável | Configuração do projeto GCP, APIs, Org Policies e IAM |
-| `git` | Qualquer | Versionamento e push para o repositório remoto |
+| 🚀 [`PoCs/gcp-create-vm`](PoCs/gcp-create-vm/README.md) | **Terraform Puro + GCP** | Provisionamento enxuto de instância Compute Engine (Debian/Ubuntu) no GCP com regras de firewall e IP público. |
+| 🎛️ [`PoCs/morpheus-tf-nativestate`](PoCs/morpheus-tf-nativestate/README.md) | **Morpheus Data + Terraform + Cypher** | App Blueprint nativo do Morpheus consumindo código Terraform com estado (`tfstate`) e variáveis mantidos no cofre Cypher. |
+| 🗄️ [`PoCs/morpheus-tf-remotestate`](PoCs/morpheus-tf-remotestate/README.md) | **Morpheus Data + GCS Backend** | Automação Morpheus utilizando backend remoto no Google Cloud Storage (GCS) com script wrapper Shell Task. |
+| 🌐 [`PoCs/vm-nginx-terraform-ansible`](PoCs/vm-nginx-terraform-ansible/README.md) | **Terraform + Ansible Local** | PoC de provisionamento de VM seguido de execução local do Ansible para instalação e configuração do servidor Web Nginx. |
+| ⚡ [`PoCs/ansible`](PoCs/ansible/README.md) | **Ansible Collection `morpheus.core`** | Orquestração da API do Morpheus para gerenciar VMs GCP (Start/Stop, Snapshots, Cypher, Inventário Dinâmico e Day-2 Ops). |
 
-> **Nota:** O runner nativo do Morpheus Data **não possui** `gcloud` nem `ansible-playbook` instalados. Todo código executado dentro do Blueprint deve ser autossuficiente (APIs GCP nativas do provider Terraform, `metadata_startup_script`, etc.).
+---
 
-### Autenticação no GCP
+## 📚 Guias Práticos e Documentações Detalhadas
 
-- Configure a autenticação antes de aplicar infraestrutura. Consulte o guia [`HOWTO-gcloud-connect.md`](PoCs/morpheus-tf-nativestate/HOWTO-gcloud-connect.md).
-- Use o script [`scripts/setup-gcp-project.sh`](scripts/setup-gcp-project.sh) para habilitar APIs, configurar Org Policies e preparar o projeto GCP.
+### ☁️ Conexão e Gestão de Estado no Morpheus/GCP
+- 📖 [Guia de Autenticação e Conexão gcloud CLI](PoCs/morpheus-tf-nativestate/HOWTO-gcloud-connect.md): Passo a passo para autenticar no GCP e configurar chaves de Service Account.
+- 📖 [Guia de Resolução de Drift e Sincronização de Estado](PoCs/morpheus-tf-nativestate/HOWTO-tfstate-drift.md): Procedimentos para lidar com drift de estado no Cypher/Terraform.
 
-## Observações de segurança
+### 🎛️ Automação Visual e Day-2 no Morpheus Data
+- 📖 [HOWTO: Criar e Executar Ansible Tasks na UI](PoCs/ansible/HOWTO-ansible-tasks-ui.md): Configuração de tarefas Ansible Playbook integradas ao Git no Morpheus.
+- 📖 [HOWTO: Workflows e Ciclo de Vida (Provisioning & Day-2)](PoCs/ansible/HOWTO-workflows-lifecycle.md): Encadeamento de fases (Post-Provision, Teardown e Operacional).
+- 📖 [HOWTO: Disparando Automações pelo Menu Actions da Instância](PoCs/ansible/HOWTO-instance-actions-day2.md): Execução direta e auditoria na aba History de qualquer VM.
+- 📖 [HOWTO: Publicar Playbooks no Catálogo Self-Service](PoCs/ansible/HOWTO-service-catalog-forms.md): Criação de formulários com Option Types/Inputs para usuários finais.
 
-- **Nunca versione** credenciais, chaves privadas ou arquivos de estado Terraform (`.tfstate`, `terraform.tfvars`).
-- Sempre revise `terraform plan` antes de `terraform apply`.
-- Descomissione recursos ao final dos testes (`terraform destroy`) para evitar custos desnecessários.
+---
+
+## 🛠️ Pré-requisitos Gerais
+
+| Ferramenta | Versão Mínima | Finalidade |
+|---|---|---|
+| `terraform` | `>= 1.6.0` | Provisionar infraestrutura no GCP e configurar recursos no Morpheus |
+| `ansible-core` | `>= 2.11` | Executar playbooks locais, inventário dinâmico e coleção `morpheus.core` |
+| `python3` / `pip` | `>= 3.10` | Execução de dependências (`requests`, `packaging`) |
+| `gcloud` CLI | Última estável | Gerenciamento de projetos, APIs, IAM e políticas da organização |
+| `git` | Qualquer | Controle de versão |
+
+> [!NOTE]
+> O runner nativo de blueprints Terraform do Morpheus Data **não possui** `gcloud` nem `ansible-playbook` instalados dentro do seu container de execução. Portanto, o código do Blueprint deve utilizar APIs nativas do provider Terraform, enquanto playbooks Ansible operam via **Ansible Tasks/Workflows** ou externamente via transporte **HTTPAPI**.
+
+---
+
+## 🔒 Boas Práticas e Segurança
+
+- **Credenciais**: Nunca faça commit de arquivos `.tfstate`, `terraform.tfvars`, arquivos `*.key.json` ou senhas em texto puro.
+- **Ansible Vault**: Utilize `ansible-vault encrypt` para proteger arquivos sensíveis como `group_vars/morpheus.yml`.
+- **Morpheus Cypher**: Centralize segredos, certificados e arquivos `tfvars` no cofre Cypher do Morpheus (`secret/`, `tfvars/`).
+- **Descomissionamento**: Execute `terraform destroy` ou remova instâncias no Morpheus ao concluir testes para otimizar custos no GCP.
