@@ -1,4 +1,4 @@
-# Guia de Configuração e Conexão GCP / GitHub / Cypher - Morpheus Native Backend PoC
+# Guia de Configuração e Conexão GCP / GitHub / Cypher — Morpheus Native Backend PoC
 
 Este documento detalha todos os pré-requisitos, permissões do Google Cloud Platform (GCP), integração com GitHub, segredos no Morpheus Cypher e o preenchimento do arquivo [`terraform.tfvars`](./terraform.tfvars-SAMPLE) para a execução do **App Blueprint Nativo com Backend de Estado no Cypher** (`morpheus-tf-nativestate`).
 
@@ -10,20 +10,41 @@ Este documento detalha todos os pré-requisitos, permissões do Google Cloud Pla
 
 Nesta arquitetura **Native State**, o Morpheus Data atua diretamente como o orquestrador do ciclo de vida do Terraform (`init`, `plan`, `apply`, `destroy`), utilizando o código-fonte hospedado no repositório **GitHub** e armazenando o arquivo de estado (`.tfstate`) de forma segura e criptografada no **Morpheus Cypher**.
 
-Para que essa automação funcione sem intervenções manuais, a infraestrutura exige quatro pilares de preparação:
+Para que essa automação funcione sem intervenções manuais, a infraestrutura exige três pilares de preparação:
 
-1. **GCP Project & IAM**: Conta de serviço (Service Account) com roles adequadas para criar instâncias Compute Engine, regras de firewall VPC e ajustar Org Policies.
+1. **GCP Project & IAM**: Conta de serviço (Service Account) com roles adequadas para criar instâncias Compute Engine e regras de firewall VPC.
 2. **GitHub SCM Integration**: Repositório vinculado no Morpheus Data para download automático do código Terraform.
-3. **Morpheus Cypher**: Segredos configurados para injeção automática de variáveis (`tfvars/vm-nginx-poc`) e da chave privada SSH do Ansible (`secret/ansible-private-key`).
-4. **Morpheus Provider (`terraform.tfvars`)**: Definição dos parâmetros da automação que aplicará o Blueprint e os Option Types no Morpheus Data.
+3. **Morpheus Cypher**: Segredo configurado para injeção automática de variáveis (`tfvars/<cypher_secret_key>`).
+
+### Limitações do Runner Nativo do Morpheus
+
+> ⚠️ **Importante:** O runner nativo do Morpheus Data executa o Terraform dentro de um container que **não possui** `gcloud`, `ansible-playbook` nem outras ferramentas CLI no PATH. Consequências:
+>
+> - **Nunca use provisioners `local-exec`** que dependam de CLI externas no código do Blueprint.
+> - Use `metadata_startup_script` para configuração pós-boot da VM.
+> - Use o provider Terraform nativo do Google (`hashicorp/google`) para todas as operações de API.
+> - Use `metadata.ssh-keys` para injeção de chaves SSH.
 
 ---
 
 ## 2. Permissões e Recursos a Criar Antecipadamente no GCP
 
-### Passo 1: Habilitar as APIs Necessárias no Projeto GCP
+### Passo 1: Executar o script de setup do projeto (Recomendado)
 
-No projeto GCP onde a infraestrutura da VM será provisionada (substitua `SEU_PROJECT_ID` pelo ID do seu projeto GCP):
+O script [`scripts/setup-gcp-project.sh`](../../scripts/setup-gcp-project.sh) automatiza todos os passos abaixo. Execute com uma conta administrativa:
+
+```bash
+./scripts/setup-gcp-project.sh --project-id SEU_PROJECT_ID
+```
+
+O script:
+- Habilita as APIs necessárias (Compute Engine, Org Policy, Service Usage, IAM, Cloud Resource Manager).
+- Define o quota project para a conta ADC atual.
+- Configura a Org Policy `compute.vmExternalIpAccess` com `allowAll: true` para permitir IP externo nas VMs.
+
+### Passo 2: Habilitar as APIs Necessárias (Manual)
+
+Se preferir executar manualmente:
 
 ```bash
 gcloud services enable \
@@ -31,12 +52,11 @@ gcloud services enable \
   orgpolicy.googleapis.com \
   cloudresourcemanager.googleapis.com \
   iam.googleapis.com \
+  serviceusage.googleapis.com \
   --project=SEU_PROJECT_ID
 ```
 
-### Passo 2: Criar a Service Account da Automação
-
-Crie a Service Account no GCP que será utilizada pelo Morpheus Data para criar as VMs e Firewalls:
+### Passo 3: Criar a Service Account da Automação
 
 ```bash
 gcloud iam service-accounts create morpheus-tf-runner \
@@ -44,9 +64,7 @@ gcloud iam service-accounts create morpheus-tf-runner \
   --project=SEU_PROJECT_ID
 ```
 
-### Passo 3: Atribuir Roles IAM Necessárias
-
-Conceda as permissões requeridas à Service Account no projeto GCP:
+### Passo 4: Atribuir Roles IAM Necessárias
 
 ```bash
 # Permissão para gerenciar instâncias Compute Engine, discos e regras de firewall VPC
@@ -54,29 +72,24 @@ gcloud projects add-iam-policy-binding SEU_PROJECT_ID \
   --member="serviceAccount:morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/compute.admin"
 
-# Permissão para gerenciar a Org Policy compute.vmExternalIpAccess (caso manage_vm_external_ip_org_policy = true)
-gcloud projects add-iam-policy-binding SEU_PROJECT_ID \
-  --member="serviceAccount:morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com" \
-  --role="roles/orgpolicy.policyAdmin"
-
 # Permissão para associar Service Accounts às instâncias criadas
 gcloud projects add-iam-policy-binding SEU_PROJECT_ID \
   --member="serviceAccount:morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com" \
   --role="roles/iam.serviceAccountUser"
 ```
 
-### Passo 4: Gerar a Chave Privada JSON da Service Account
+> ⚠️ **Nota sobre `orgpolicy.policyAdmin`:** Esta role **não é suportada em nível de projeto** (`INVALID_ARGUMENT: Role roles/orgpolicy.policyAdmin is not supported for this resource`). Para gerenciar Org Policies, use o script `setup-gcp-project.sh` com uma conta que tenha permissão organizacional. O código em `PoCs/gcp-create-vm` **não manipula Org Policies**.
 
-Crie o arquivo de chave privada em formato JSON:
+### Passo 5: Gerar a Chave Privada JSON da Service Account
 
 ```bash
 gcloud iam service-accounts keys create gcp-key.json \
   --iam-account=morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com
 ```
 
-> ⚠️ **ATENÇÃO:** O arquivo `gcp-key.json` contém credenciais administrativas do GCP. Nunca versione este arquivo no Git.
+> ⚠️ **ATENÇÃO:** O arquivo `gcp-key.json` contém credenciais administrativas do GCP. **Nunca versione este arquivo no Git.**
 >
-> 💡 **Nota de Org Policy:** Se o comando acima falhar com o erro `FAILED_PRECONDITION: Key creation is not allowed on this service account`, o GCP possui uma política de organização bloqueando a criação de chaves (`constraints/iam.disableServiceAccountKeyCreation`). Veja como resolver na seção de [Troubleshooting](#7-guia-de-resolução-de-problemas-comuns-troubleshooting).
+> 💡 **Nota de Org Policy:** Se o comando acima falhar com `FAILED_PRECONDITION: Key creation is not allowed on this service account`, o GCP possui uma política de organização bloqueando a criação de chaves (`constraints/iam.disableServiceAccountKeyCreation`). Veja como resolver na seção de [Troubleshooting](#7-guia-de-resolução-de-problemas-comuns-troubleshooting).
 
 ---
 
@@ -91,19 +104,18 @@ O Morpheus Data pode autenticar no GCP de três maneiras distintas:
 3. Em **Credentials**, selecione `Local Credentials` ou `New Credentials`:
    - **Client Email**: E-mail da Service Account (`morpheus-tf-runner@SEU_PROJECT_ID.iam.gserviceaccount.com`).
    - **Private Key**: Chave privada com quebras de linha (`-----BEGIN PRIVATE KEY-----\n...`).
-4. Para extrair esses valores com a formatação correta a partir do `gcp-key.json`, utilize o script auxiliar no repositório:
+4. Para extrair esses valores com a formatação correta a partir do `gcp-key.json`, utilize o script auxiliar:
    ```bash
    ./scripts/extract-gcp-credentials.sh
    ```
 5. Selecione o **Project ID** (`SEU_PROJECT_ID`) e a **Region** (`us-central1`).
 6. Clique em **Save**.
 
-### Método 2: Armazenamento da Chave no Cypher (`secret/gcp-terraform-ansible-samples`)
+### Método 2: Armazenamento da Chave no Cypher
 
-Para permitir que tanto o **App Blueprint Nativo** (`morpheus-tf-nativestate`) quanto as **Tasks de Shell Script** (`morpheus-tf-remotestate`) autentiquem com segurança:
+Para permitir que o App Blueprint Nativo autentique com segurança:
 
 1. **Gerar a chave em formato Base64**:
-   Execute o utilitário do repositório para codificar a chave em uma única linha Base64:
    ```bash
    ./scripts/encode-gcp-key.sh
    ```
@@ -113,8 +125,6 @@ Para permitir que tanto o **App Blueprint Nativo** (`morpheus-tf-nativestate`) q
    - **Type**: `Secret`
    - **Value**: Cole o hash Base64 de linha única gerado pelo script.
    - **TTL**: `0`.
-
-> 💡 **Como funciona**: Para App Blueprints Nativos, a chave em Base64 é lida em linha única no `-var-file` sem erros de parsing de aspas/quebras de linha, e decodificada automaticamente no `providers.tf` da aplicação. Para Tasks de Shell, o script decodifica ou exporta diretamente para `GOOGLE_CREDENTIALS`.
 
 ### Método 3: Credentials do Host / ADC (Runner no GCP)
 
@@ -148,102 +158,89 @@ Os recursos `hpe_morpheus_app_blueprint_terraform` exigem os IDs numéricos inte
 
 - **`integration_id`**: Abra a integração em **Administration > Integrations** e observe o ID numérico na URL do navegador.
   - *Exemplo*: Na URL `https://morpheus.cec.dev.br/admin/integrations/15/code`, o ID é **`15`**.
-- **`repository_id`**: Acesse **Provisioning > Code > Repositories** (ou navegue pelos repositórios da integração) e observe o ID na URL ao abrir o repositório.
+- **`repository_id`**: Acesse **Provisioning > Code > Repositories** e observe o ID na URL ao abrir o repositório.
   - *Exemplo*: Na URL `https://morpheus.cec.dev.br/provisioning/code/repos/63`, o ID é **`63`**.
 
 ---
 
 ## 5. Estrutura e Configuração do Morpheus Cypher
 
-Nesta PoC nativa, o Morpheus Cypher desempenha dois papéis fundamentais:
+Nesta PoC nativa, o Morpheus Cypher armazena o payload das variáveis Terraform:
 
 ```
 Estrutura de Chaves Cypher:
-├── tfvars/vm-nginx-poc          <-- Armazena o payload das tfvars injetado no terraform plan/apply
-└── secret/ansible-private-key   <-- Criptografa a chave privada SSH do Ansible para injeção segura
+└── tfvars/<cypher_secret_key>   <-- Armazena o payload das tfvars injetado no terraform plan/apply
 ```
 
-1. **`tfvars/vm-nginx-poc` (`cypher_secret_key`)**:
-   - Criado automaticamente pela automação Terraform ([`cypher.tf`](./cypher.tf)).
-   - Guarda o bloco HCL com os valores dos Option Types preenchidos no formulário do Self-Service.
-   - O Morpheus lê esse segredo durante o provisionamento através da propriedade `tfvar_secret`.
-
-2. **`secret/ansible-private-key`**:
-   - Armazena a chave privada SSH fornecida na variável `ansible_private_key` no `terraform.tfvars`.
-   - Quando `run_ansible = true`, o Terraform recupera este valor via `<%=cypher.read('secret/ansible-private-key')%>` nos metadados, evitando expor chaves privadas em texto puro.
+- **`tfvars/<cypher_secret_key>`**:
+  - Criado automaticamente pela automação Terraform ([`cypher.tf`](./cypher.tf)).
+  - Guarda o bloco JSON com os valores dos parâmetros da VM e projeto GCP.
+  - O Morpheus lê esse segredo durante o provisionamento através da propriedade `tfvar_secret` do Blueprint.
 
 ---
 
 ## 6. Detalhamento dos Parâmetros do `terraform.tfvars-SAMPLE`
 
-O arquivo [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE) é o modelo para a configuração da automação que cria o Blueprint no Morpheus Data. Abaixo está a explicação detalhada de cada seção:
+O arquivo [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE) é o modelo para a configuração da automação. Abaixo está a explicação detalhada de cada seção:
 
 ### A. Conexão com o Morpheus Data
 
-- **`morpheus_url`**: URL completa da console do Morpheus Data (ex.: `https://morpheus.seu-dominio.com`).
-- **`morpheus_username` / `morpheus_password`**: Credenciais de usuário/senha com privilégios administrativos no Morpheus.
-- **`morpheus_access_token`**: Token de acesso para autenticação (se utilizado, deixe username/password em branco).
-- **`morpheus_insecure`**: Defina como `true` para ignorar a validação de certificados SSL autoassinados em ambientes de laboratório. Em produção com SSL confiável, defina como `false`.
+| Parâmetro | Descrição |
+|---|---|
+| `morpheus_url` | URL completa da console do Morpheus Data (ex.: `https://morpheus.seu-dominio.com`) |
+| `morpheus_username` / `morpheus_password` | Credenciais de usuário/senha com privilégios administrativos. **Use `\\` duplo para domínios** (ex.: `"POC\\administrator"`) |
+| `morpheus_access_token` | Token de acesso para autenticação (se utilizado, deixe username/password em branco) |
+| `morpheus_insecure` | `true` para ignorar validação SSL em ambientes de lab. `false` em produção |
 
-### B. Integração Git no Morpheus Data
+### B. Cloud, Group e Integração Git
 
-- **`integration_id`**: ID numérico da integração SCM/Git configurada no Morpheus Data (*Administration > Integrations*). Exemplo: na URL `https://morpheus.cec.dev.br/admin/integrations/15/code`, o ID é `15`.
-- **`repository_id`**: ID numérico do repositório Git sincronizado no Morpheus Data (*Provisioning > Code > Repositories*). Exemplo: na URL `https://morpheus.cec.dev.br/provisioning/code/repos/63`, o ID é `63`.
-- **`version_ref`**: Branch ou Tag do Git que contém o código da aplicação (ex.: `main`).
-- **`working_path`**: Caminho relativo do manifesto Terraform dentro do repositório (`PoCs/vm-nginx-terraform-ansible`).
-- **`terraform_version`**: Versão do Terraform executada pelo runner nativo do Morpheus (ex.: `1.6.0`).
+| Parâmetro | Descrição |
+|---|---|
+| `morpheus_cloud_id` | ID da Cloud GCP no Morpheus (Infrastructure > Clouds) |
+| `morpheus_group_id` | ID do Group associado à Cloud (Infrastructure > Groups) |
+| `integration_id` | ID da integração Git/SCM (Administration > Integrations) |
+| `repository_id` | ID do repositório Git sincronizado (Provisioning > Code > Repositories) |
+| `version_ref` | Branch ou Tag do Git (ex.: `main`) |
+| `working_path` | Caminho do manifesto Terraform (`PoCs/gcp-create-vm`) |
+| `terraform_version` | Versão do Terraform executada pelo runner nativo (ex.: `1.6.0`) |
 
 ### C. Metadados do App Blueprint e Cypher
 
-- **`blueprint_name`**: Nome exibido para a aplicação no catálogo do Morpheus (ex.: `vm-nginx-terraform-ansible-native`).
-- **`blueprint_description`**: Descrição curta da aplicação exibida no catálogo.
-- **`blueprint_category`**: Categoria de organização no catálogo (ex.: `terraform-ansible-samples`).
-- **`blueprint_visibility`**: Visibilidade do Blueprint (`private` ou `public`).
-- **`cypher_secret_key`**: Caminho do segredo no Cypher onde as `tfvars` serão armazenadas (ex.: `tfvars/vm-nginx-poc`). **Criado automaticamente pelo `terraform apply`**.
+| Parâmetro | Descrição |
+|---|---|
+| `blueprint_name` | Nome **único** exibido no catálogo (ex.: `gcp-create-vm-native`) |
+| `blueprint_description` | Descrição curta da aplicação |
+| `blueprint_category` | Categoria de organização (ex.: `gcp-compute`) |
+| `blueprint_visibility` | Visibilidade: `private` ou `public` |
+| `cypher_secret_key` | Caminho do segredo no Cypher (ex.: `tfvars/gcp-create-vm-poc`). **Criado automaticamente** |
 
-### D. Customização Opcional dos Rótulos (Labels) dos Campos
+### D. Customização Opcional dos Rótulos (Labels)
 
-Permite personalizar os títulos/rótulos exibidos acima de cada campo no formulário do Morpheus Data (`label_*`):
-- `label_vm_name`: Rótulo do campo Nome da VM.
-- `label_machine_series` / `label_machine_type_override`: Rótulos da série e tipo de máquina.
-- `label_disk_size_gb`: Rótulo do tamanho do disco.
-- `label_subnetwork_name`: Rótulo do campo de subnet VPC (ex.: `Subnet VPC (Opcional)`).
-- *(Consulte a lista completa em [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE))*.
+Permite personalizar os títulos dos campos no formulário do Morpheus Data (`label_*`):
+- `label_vm_name`, `label_machine_series`, `label_machine_type_override`, `label_disk_size_gb`, etc.
+- Consulte a lista completa em [`terraform.tfvars-SAMPLE`](./terraform.tfvars-SAMPLE).
 
-### E. Parâmetros Padrão da VM GCP (Formulário do Self-Service)
+### E. Parâmetros da VM GCP (Formulário do Self-Service)
 
-Se descomentados (`#`), os campos abrirão pré-preenchidos no formulário com estes valores como padrão. Se mantidos comentados, abrirão em branco exigindo preenchimento:
+Se descomentados, os campos abrirão pré-preenchidos; se mantidos comentados, abrirão em branco:
 
-- `poc_name`: Nome lógico da solução para tagging e identificação interna.
-- `project_id`: ID do projeto GCP onde os recursos serão criados.
-- `region` / `zone`: Região e zona GCP padrão (ex.: `us-central1`, `us-central1-a`).
-- `vm_name`: Nome padrão da instância Compute Engine.
-- `machine_series` / `machine_type_override`: Identificadores nativos GCP (ex.: `e2`, `e2-micro`).
-- `vcpu_count` / `memory_gb`: Quantidade de vCPUs e memória RAM em GB.
-- `disk_type` / `disk_size_gb`: Tipo (`pd-standard`) e tamanho do disco em GB.
-- `boot_image_project` / `boot_image_family`: Imagem nativa GCP (ex.: `debian-cloud`, `debian-12`).
-- `assign_external_ip`: Define se a VM receberá um IP público externo (`true`/`false`).
-- `manage_vm_external_ip_org_policy`: Gerencia a restrição `compute.vmExternalIpAccess` na Org Policy (`true`/`false`).
-- `ssh_username` / `ssh_public_key`: Usuário Linux e chave pública SSH em formato OpenSSH.
-- `network_name` / `subnetwork_name`: Nome da VPC e Subnet GCP.
-- `allowed_http_cidr` / `allowed_ssh_cidr`: Firewall GCP para liberar portas 80 e 22.
-- `use_metadata_ssh_keys`: Injeta chave SSH via metadado `ssh-keys` da instância (`true`/`false`).
-- `run_ansible` / `ansible_ssh_user`: Habilitação e usuário SSH do provisionador Ansible.
-- `ansible_wait_seconds` / `ansible_max_retries`: Configurações de retentativa e tempo de espera da conexão Ansible.
-
-### F. Chave Privada SSH do Ansible (`ansible_private_key`)
-
-Fornecida no `terraform.tfvars` da automação via bloco multilinha `<<-EOT`:
-
-```hcl
-ansible_private_key = <<-EOT
------BEGIN OPENSSH PRIVATE KEY-----
-b3BlbnNzaC1rZXktdjEAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW...
------END OPENSSH PRIVATE KEY-----
-EOT
-```
-
-- **Segurança**: O `terraform apply` salva essa chave no segredo criptografado `secret/ansible-private-key` no Cypher do Morpheus. O solicitante final no Catálogo **nunca visualiza ou precisa fornecer a chave privada no formulário**.
+| Parâmetro | Descrição |
+|---|---|
+| `poc_name` | Nome lógico da PoC para tagging |
+| `project_id` | ID do projeto GCP |
+| `gcp_credentials` | Conteúdo JSON da chave da Service Account |
+| `region` / `zone` | Região e zona GCP |
+| `vm_name` | Nome da instância Compute Engine |
+| `machine_series` / `machine_type_override` | Identificadores nativos GCP (ex.: `e2`, `e2-micro`) |
+| `vcpu_count` / `memory_gb` | vCPUs e RAM |
+| `disk_type` / `disk_size_gb` | Tipo e tamanho do disco |
+| `boot_image_project` / `boot_image_family` | Imagem nativa GCP |
+| `assign_external_ip` | IP público externo (`true`/`false`) |
+| `ssh_username` / `ssh_public_key` | Usuário Linux e chave pública SSH |
+| `network_name` / `subnetwork_name` | VPC e Subnet |
+| `allowed_http_cidr` / `allowed_ssh_cidr` | CIDRs para firewall (portas 80 e 22) |
+| `use_metadata_ssh_keys` | Injetar chave SSH via metadado da instância |
+| `user_groups` | Grupos Linux adicionais (ex.: `sudo`) |
 
 ---
 
@@ -265,32 +262,48 @@ EOT
   gcloud org-policies set-policy override_key_policy.yaml
   rm -f override_key_policy.yaml
   ```
-  Aguarde cerca de 60 segundos e tente criar a chave novamente com `gcloud iam service-accounts keys create ...`.
+  Aguarde ~60 segundos e tente criar a chave novamente.
 
-### 2. `Error: Integration / Repository ID invalid` no Morpheus
+### 2. `Error 412: Constraint constraints/compute.vmExternalIpAccess violated`
 
-- **Sintoma**: O `terraform apply` falha informando que a integração ou repositório não foi encontrado.
-- **Causa**: Os valores de `integration_id` ou `repository_id` informados no `terraform.tfvars` não existem ou a integração GitHub não está sincronizada.
-- **Solução**: Acesse **Administration > Integrations** (para `integration_id`) e **Provisioning > Code > Repositories** (para `repository_id`), abra o recurso desejado e copie o ID numérico da URL do navegador (ex.: `15` em `/admin/integrations/15/code` e `63` em `/provisioning/code/repos/63`). Em seguida, clique no botão **Sync Repository**.
+- **Sintoma**: Falha ao criar VM com IP externo (`conditionNotMet`).
+- **Causa**: Org Policy bloqueando IP público.
+- **Solução**: Execute `./scripts/setup-gcp-project.sh --project-id SEU_PROJECT_ID` para configurar `allowAll: true`.
 
-### 3. Erros `401 Unauthorized` ou `403 Forbidden` no GCP
+### 3. `Error 403: Permission 'orgpolicy.policies.create' denied`
 
-- **Sintoma**: O runner do Morpheus falha durante a execução da App Instance com erro de autorização nas APIs GCP.
-- **Causa**: As APIs necessárias do GCP não estão ativadas ou a Service Account não possui as roles requeridas.
+- **Sintoma**: Terraform ou Morpheus tenta criar uma Org Policy mas não tem permissão.
+- **Causa**: A role `roles/orgpolicy.policyAdmin` não é suportada em nível de projeto.
+- **Solução**: Configure a Org Policy previamente via `scripts/setup-gcp-project.sh` com uma conta administrativa. O código em `PoCs/gcp-create-vm` **não manipula Org Policies**.
+
+### 4. `Integration / Repository ID invalid`
+
+- **Sintoma**: `terraform apply` falha informando que a integração ou repositório não foi encontrado.
+- **Causa**: IDs incorretos ou integração não sincronizada.
+- **Solução**: Acesse **Administration > Integrations** e **Provisioning > Code > Repositories**, copie o ID da URL. Execute **Sync** no repositório.
+
+### 5. Erros `401 Unauthorized` ou `403 Forbidden` no GCP
+
+- **Sintoma**: Runner do Morpheus falha com erro de autorização.
 - **Solução**:
-  1. Habilite as APIs: `gcloud services enable compute.googleapis.com orgpolicy.googleapis.com`.
-  2. Garanta que a Service Account possui as roles `roles/compute.admin` e `roles/orgpolicy.policyAdmin`.
+  1. Habilite as APIs: `gcloud services enable compute.googleapis.com`.
+  2. Garanta que a Service Account possui `roles/compute.admin` e `roles/iam.serviceAccountUser`.
 
-### 4. Bloqueio de Org Policy ao Atribuir IP Público (`constraints/compute.vmExternalIpAccess`)
+### 6. `Cypher key already exists`
 
-- **Sintoma**: Falha ao criar a instância Compute Engine devido a bloqueio de IP público pela Org Policy.
-- **Solução**: Garanta que a Service Account possui a role `roles/orgpolicy.policyAdmin` e que o parâmetro `manage_vm_external_ip_org_policy = true` está ativado no formulário.
+- **Sintoma**: Erro durante o `terraform apply`.
+- **Solução**: Altere `cypher_secret_key` no `terraform.tfvars` ou remova a chave antiga em **Tools > Cypher**.
 
-### 5. `Error: Cypher key already exists` ou Falha ao Ler o Segredo
+### 7. `Blueprint is in use by an app`
 
-- **Sintoma**: Erro durante o `terraform apply` da automação ou falha na leitura de `tfvars` durante o provisionamento da App Instance.
-- **Causa**: O caminho `cypher_secret_key` informado já está em uso ou o usuário do Morpheus não possui permissão no Cypher.
-- **Solução**: Altere o caminho da chave em `cypher_secret_key` no `terraform.tfvars` (ex.: `tfvars/vm-nginx-poc-v2`) ou remova a chave antiga em **Tools > Cypher**.
+- **Sintoma**: `terraform destroy` falha ao tentar excluir o Blueprint.
+- **Causa**: O Morpheus mantém registros de auditoria (soft-delete) de Apps anteriores.
+- **Solução**: Desacople do Blueprint antigo:
+  ```sh
+  terraform state rm hpe_morpheus_app_blueprint_terraform.vm_nginx
+  terraform state rm hpe_morpheus_catalog_item_app_blueprint.vm_nginx
+  terraform apply -auto-approve  # Cria novo Blueprint com nome diferente
+  ```
 
 ---
 
