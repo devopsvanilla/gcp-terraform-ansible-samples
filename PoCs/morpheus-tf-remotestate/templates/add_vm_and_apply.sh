@@ -91,6 +91,29 @@ fi
 [ -f "$ADD_VM_SCRIPT" ] || { log_error "Script não encontrado em $ADD_VM_SCRIPT"; exit 1; }
 chmod +x "$ADD_VM_SCRIPT" 2>/dev/null || true
 
+# Inicializa o terraform.tfvars no clone do Morpheus se ainda não existir
+if [ ! -f "$TFVARS_FILE" ]; then
+  if [ -f "$POC_DIR/terraform.tfvars-SAMPLE" ]; then
+    log_info "terraform.tfvars não encontrado no clone; inicializando a partir de terraform.tfvars-SAMPLE..."
+    cp "$POC_DIR/terraform.tfvars-SAMPLE" "$TFVARS_FILE"
+  else
+    log_info "Criando terraform.tfvars base em $TFVARS_FILE..."
+    cat <<'EOF' > "$TFVARS_FILE"
+poc_name                         = "vm-nginx-terraform-ansible"
+project_id                       = "poc-terraform-ansible"
+region                           = "us-central1"
+zone                             = "us-central1-a"
+manage_vm_external_ip_org_policy = true
+network_name                     = "default"
+allowed_http_cidr                = "0.0.0.0/0"
+allowed_ssh_cidr                 = "0.0.0.0/0"
+run_ansible                      = false
+
+vms = {}
+EOF
+  fi
+fi
+
 ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME")
 [ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
 [ -z "$MACHINE_SERIES" ] || ARGS+=(--machine-series "$MACHINE_SERIES")

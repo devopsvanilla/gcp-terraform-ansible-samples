@@ -294,7 +294,16 @@ parse_args() {
 validate_args() {
   [[ -n "$VM_KEY" ]] || die "Informe o parâmetro obrigatório --vm-key."
   [[ -n "$VM_NAME" ]] || die "Informe o parâmetro obrigatório --vm-name."
-  [[ -f "$TFVARS_FILE" ]] || die "Arquivo terraform.tfvars não encontrado: ${TFVARS_FILE}"
+  if [[ ! -f "$TFVARS_FILE" ]]; then
+    local sample_candidate
+    sample_candidate="$(dirname "$TFVARS_FILE")/terraform.tfvars-SAMPLE"
+    if [[ -f "$sample_candidate" ]]; then
+      log_info "Arquivo ${TFVARS_FILE} não existia; criando a partir de ${sample_candidate}..."
+      cp "$sample_candidate" "$TFVARS_FILE"
+    else
+      die "Arquivo terraform.tfvars não encontrado: ${TFVARS_FILE}"
+    fi
+  fi
 
   validate_vm_key "$VM_KEY" || die "--vm-key inválido. Use apenas letras, números e underscore, começando por letra."
   validate_vm_name "$VM_NAME" || die "--vm-name inválido. Use o padrão de nome de VM da GCE (minúsculas, números e hífen, máx. 63 caracteres)."
