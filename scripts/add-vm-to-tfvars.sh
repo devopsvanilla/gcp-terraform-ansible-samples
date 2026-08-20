@@ -136,7 +136,7 @@ PY
 
 validate_vm_key() {
   local value="$1"
-  [[ "$value" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]
+  [[ "$value" =~ ^[a-zA-Z0-9_-]+$ ]]
 }
 
 validate_vm_name() {
@@ -305,7 +305,7 @@ validate_args() {
     fi
   fi
 
-  validate_vm_key "$VM_KEY" || die "--vm-key inválido. Use apenas letras, números e underscore, começando por letra."
+  validate_vm_key "$VM_KEY" || die "--vm-key inválido. Use apenas letras, números, hífen e underscore."
   validate_vm_name "$VM_NAME" || die "--vm-name inválido. Use o padrão de nome de VM da GCE (minúsculas, números e hífen, máx. 63 caracteres)."
 
   [[ "$MACHINE_SERIES" == "$UNSET" ]] || [[ "$MACHINE_SERIES" =~ ^[a-z0-9-]+$ ]] || die "--machine-series inválido."
@@ -346,7 +346,7 @@ vm_key = sys.argv[2]
 vm_name = sys.argv[3]
 text = file_path.read_text(encoding='utf-8')
 
-if re.search(rf'^\s*{re.escape(vm_key)}\s*=\s*{{\s*$', text, flags=re.MULTILINE):
+if re.search(rf'^\s*["\']?{re.escape(vm_key)}["\']?\s*=\s*{{\s*$', text, flags=re.MULTILINE):
     print(f"[ERROR] A chave lógica '{vm_key}' já existe em {file_path}.", file=sys.stderr)
     raise SystemExit(1)
 
@@ -359,7 +359,11 @@ PY
 build_vm_block() {
   local vm_block_file="$1"
   {
-    printf '  %s = {\n' "$VM_KEY"
+    if [[ "$VM_KEY" =~ ^[a-zA-Z_][a-zA-Z0-9_]*$ ]]; then
+      printf '  %s = {\n' "$VM_KEY"
+    else
+      printf '  %s = {\n' "$(hcl_quote "$VM_KEY")"
+    fi
     printf '    vm_name = %s\n' "$(hcl_quote "$VM_NAME")"
 
     [[ "$MACHINE_TYPE_OVERRIDE" == "$UNSET" ]] || printf '    machine_type_override = %s\n' "$(hcl_quote "$MACHINE_TYPE_OVERRIDE")"
