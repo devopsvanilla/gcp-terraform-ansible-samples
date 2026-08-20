@@ -88,7 +88,8 @@ if [ -z "$VM_KEY" ] || [ -z "$VM_NAME" ]; then
 fi
 
 [ -d "$REPO_DIR" ] || { log_error "Repositório não encontrado em $REPO_DIR"; exit 1; }
-[ -x "$ADD_VM_SCRIPT" ] || { log_error "Script não encontrado ou não executável: $ADD_VM_SCRIPT"; exit 1; }
+[ -f "$ADD_VM_SCRIPT" ] || { log_error "Script não encontrado em $ADD_VM_SCRIPT"; exit 1; }
+chmod +x "$ADD_VM_SCRIPT" 2>/dev/null || true
 
 ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME")
 [ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
@@ -126,8 +127,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-log_info "Executando: $ADD_VM_SCRIPT ${ARGS[*]}"
-"$ADD_VM_SCRIPT" "${ARGS[@]}"
+log_info "Executando: bash $ADD_VM_SCRIPT ${ARGS[*]}"
+bash "$ADD_VM_SCRIPT" "${ARGS[@]}"
 
 log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"
