@@ -13,7 +13,7 @@ task_source_type   = "repository"
 task_repository_id = 1 # Substitua pelo ID numérico do repositório no Morpheus (ex.: 1, 2, 3...)
 # git_integration_name = "devopsvanilla-morpheus-dashboards"
 # git_repository_name  = "loonar-morpheus-sysint (all:all)"
-task_script_path   = "PoCs/morpheus/templates/add_vm_and_apply.sh"
+task_script_path   = "PoCs/morpheus-tf-remotestate/templates/add_vm_and_apply.sh"
 task_version_ref   = "main"
 
 task_execute_target       = "local"

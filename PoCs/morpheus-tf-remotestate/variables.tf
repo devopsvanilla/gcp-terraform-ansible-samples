@@ -70,8 +70,8 @@ variable "git_repository_name" {
 
 variable "task_script_path" {
   type        = string
-  description = "Caminho de execução do script wrapper dentro do repositório Git (ex.: PoCs/morpheus/templates/add_vm_and_apply.sh)."
-  default     = "PoCs/morpheus/templates/add_vm_and_apply.sh"
+  description = "Caminho de execução do script wrapper dentro do repositório Git (ex.: PoCs/morpheus-tf-remotestate/templates/add_vm_and_apply.sh)."
+  default     = "PoCs/morpheus-tf-remotestate/templates/add_vm_and_apply.sh"
 }
 
 variable "task_version_ref" {
