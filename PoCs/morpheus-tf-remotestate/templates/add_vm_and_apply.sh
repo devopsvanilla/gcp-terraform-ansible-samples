@@ -4,8 +4,20 @@
 # em tempo de execução, com base no formulário preenchido pelo solicitante.
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_DIR="${REPO_DIR:-$(cd "$SCRIPT_DIR/../../.." && pwd)}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" && pwd)"
+if [[ -z "${REPO_DIR:-}" ]]; then
+  if [[ -d "$SCRIPT_DIR/PoCs/vm-nginx-terraform-ansible" ]]; then
+    REPO_DIR="$SCRIPT_DIR"
+  elif [[ -d "$SCRIPT_DIR/../../PoCs/vm-nginx-terraform-ansible" ]]; then
+    REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+  elif [[ -d "$SCRIPT_DIR/../../../PoCs/vm-nginx-terraform-ansible" ]]; then
+    REPO_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+  elif [[ -d "$PWD/PoCs/vm-nginx-terraform-ansible" ]]; then
+    REPO_DIR="$PWD"
+  else
+    REPO_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+  fi
+fi
 POC_DIR="${POC_DIR:-$REPO_DIR/PoCs/vm-nginx-terraform-ansible}"
 ADD_VM_SCRIPT="${ADD_VM_SCRIPT:-$REPO_DIR/scripts/add-vm-to-tfvars.sh}"
 TFVARS_FILE="$POC_DIR/terraform.tfvars"
@@ -16,25 +28,34 @@ TFSTATE_PREFIX="${TFSTATE_PREFIX:-vm-nginx-terraform-ansible}"
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 
-VM_KEY='<%=customOptions["vmKey"]%>'
-VM_NAME='<%=customOptions["vmName"]%>'
-MACHINE_TYPE_OVERRIDE='<%=customOptions["machineTypeOverride"]%>'
-MACHINE_SERIES='<%=customOptions["machineSeries"]%>'
-VCPU_COUNT='<%=customOptions["vcpuCount"]%>'
-MEMORY_GB='<%=customOptions["memoryGb"]%>'
-DISK_TYPE='<%=customOptions["diskType"]%>'
-DISK_SIZE_GB='<%=customOptions["diskSizeGb"]%>'
-BOOT_IMAGE_PROJECT='<%=customOptions["bootImageProject"]%>'
-BOOT_IMAGE_FAMILY='<%=customOptions["bootImageFamily"]%>'
-ASSIGN_EXTERNAL_IP='<%=customOptions["assignExternalIp"]%>'
-SSH_USERNAME='<%=customOptions["sshUsername"]%>'
-SSH_PUBLIC_KEY='<%=customOptions["sshPublicKey"]%>'
-NETWORK_NAME='<%=customOptions["networkName"]%>'
-SUBNETWORK_NAME='<%=customOptions["subnetworkName"]%>'
-ALLOWED_HTTP_CIDR='<%=customOptions["allowedHttpCidr"]%>'
-ALLOWED_SSH_CIDR='<%=customOptions["allowedSshCidr"]%>'
-MANAGE_ORG_POLICY='<%=customOptions["manageVmExternalIpOrgPolicy"]%>'
-USER_GROUPS='<%=customOptions["userGroups"]%>'
+clean_opt() {
+  local val="$1"
+  if [[ "$val" == "null" || "$val" =~ ^<%.*%>$ ]]; then
+    echo ""
+  else
+    echo "$val"
+  fi
+}
+
+VM_KEY="$(clean_opt '<%=customOptions["vmKey"]%>')"
+VM_NAME="$(clean_opt '<%=customOptions["vmName"]%>')"
+MACHINE_TYPE_OVERRIDE="$(clean_opt '<%=customOptions["machineTypeOverride"]%>')"
+MACHINE_SERIES="$(clean_opt '<%=customOptions["machineSeries"]%>')"
+VCPU_COUNT="$(clean_opt '<%=customOptions["vcpuCount"]%>')"
+MEMORY_GB="$(clean_opt '<%=customOptions["memoryGb"]%>')"
+DISK_TYPE="$(clean_opt '<%=customOptions["diskType"]%>')"
+DISK_SIZE_GB="$(clean_opt '<%=customOptions["diskSizeGb"]%>')"
+BOOT_IMAGE_PROJECT="$(clean_opt '<%=customOptions["bootImageProject"]%>')"
+BOOT_IMAGE_FAMILY="$(clean_opt '<%=customOptions["bootImageFamily"]%>')"
+ASSIGN_EXTERNAL_IP="$(clean_opt '<%=customOptions["assignExternalIp"]%>')"
+SSH_USERNAME="$(clean_opt '<%=customOptions["sshUsername"]%>')"
+SSH_PUBLIC_KEY="$(clean_opt '<%=customOptions["sshPublicKey"]%>')"
+NETWORK_NAME="$(clean_opt '<%=customOptions["networkName"]%>')"
+SUBNETWORK_NAME="$(clean_opt '<%=customOptions["subnetworkName"]%>')"
+ALLOWED_HTTP_CIDR="$(clean_opt '<%=customOptions["allowedHttpCidr"]%>')"
+ALLOWED_SSH_CIDR="$(clean_opt '<%=customOptions["allowedSshCidr"]%>')"
+MANAGE_ORG_POLICY="$(clean_opt '<%=customOptions["manageVmExternalIpOrgPolicy"]%>')"
+USER_GROUPS="$(clean_opt '<%=customOptions["userGroups"]%>')"
 
 [[ -n "$VM_KEY" ]] || { log_error "vmKey é obrigatório"; exit 1; }
 [[ -n "$VM_NAME" ]] || { log_error "vmName é obrigatório"; exit 1; }

@@ -132,6 +132,12 @@ variable "remote_target_password" {
 
 # ===== Nomenclatura dos objetos criados no Morpheus =====
 
+variable "workflow_name" {
+  type        = string
+  description = "Nome exibido para o Workflow Operacional no Morpheus Data."
+  default     = "vm-nginx-add-vm-and-apply"
+}
+
 variable "blueprint_name" {
   type        = string
   description = "Nome exibido para o App Blueprint (catálogo de self-service) no Morpheus Data."

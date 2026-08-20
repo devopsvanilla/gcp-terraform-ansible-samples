@@ -23,7 +23,7 @@ locals {
 }
 
 resource "hpe_morpheus_workflow_operational" "vm_nginx_add_and_apply" {
-  name        = "vm-nginx-add-vm-and-apply"
+  name        = var.workflow_name
   description = var.blueprint_description
   visibility  = var.blueprint_visibility
 
