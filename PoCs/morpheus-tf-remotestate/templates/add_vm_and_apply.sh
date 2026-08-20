@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 # Shell Script executado pelo Morpheus Data a partir do repositório Git.
-# Os valores entre <%= customOptions.campo %> e <%= cypher.read(...) %>
-# são substituídos pelo Morpheus Data em tempo de execução.
 set -euo pipefail
 
 # Variáveis substituídas pelo Morpheus
