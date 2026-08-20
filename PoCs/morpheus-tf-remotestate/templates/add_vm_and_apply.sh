@@ -1,13 +1,10 @@
 #!/usr/bin/env bash
 # Shell Script executado pelo Morpheus Data a partir do repositório Git.
-# Os valores entre <%= customOptions[...] %> são substituídos pelo Morpheus Data
-# em tempo de execução, com base no formulário preenchido pelo solicitante.
+# As opções customizadas preenchidas no formulário do Morpheus são passadas
+# automaticamente como variáveis de ambiente pelo Morpheus Data.
 set -euo pipefail
 
-SCRIPT_SOURCE="${BASH_SOURCE[0]}"
-if [[ -z "$SCRIPT_SOURCE" ]]; then
-  SCRIPT_SOURCE="$0"
-fi
+SCRIPT_SOURCE="${BASH_SOURCE[0]:-$0}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_SOURCE")" && pwd)"
 
 if [[ -z "${REPO_DIR:-}" ]]; then
@@ -34,34 +31,33 @@ TFSTATE_PREFIX="${TFSTATE_PREFIX:-vm-nginx-terraform-ansible}"
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 
-clean_val() {
-  local val="$1"
-  if [[ "$val" == "null" || "$val" == *"customOptions["* || "$val" == *"customOptions."* ]]; then
-    echo ""
-  else
-    echo "$val"
-  fi
-}
+# Lê as opções injetadas pelo Morpheus via variáveis de ambiente
+VM_KEY="${vmKey:-${VM_KEY:-${MORPHEUS_CUSTOM_OPTIONS_VMKEY:-${vm_key:-}}}}"
+VM_NAME="${vmName:-${VM_NAME:-${MORPHEUS_CUSTOM_OPTIONS_VMNAME:-${vm_name:-}}}}"
+MACHINE_TYPE_OVERRIDE="${machineTypeOverride:-${MACHINE_TYPE_OVERRIDE:-${machine_type_override:-}}}"
+MACHINE_SERIES="${machineSeries:-${MACHINE_SERIES:-${machine_series:-}}}"
+VCPU_COUNT="${vcpuCount:-${VCPU_COUNT:-${vcpu_count:-}}}"
+MEMORY_GB="${memoryGb:-${MEMORY_GB:-${memory_gb:-}}}"
+DISK_TYPE="${diskType:-${DISK_TYPE:-${disk_type:-}}}"
+DISK_SIZE_GB="${diskSizeGb:-${DISK_SIZE_GB:-${disk_size_gb:-}}}"
+BOOT_IMAGE_PROJECT="${bootImageProject:-${BOOT_IMAGE_PROJECT:-${boot_image_project:-}}}"
+BOOT_IMAGE_FAMILY="${bootImageFamily:-${BOOT_IMAGE_FAMILY:-${boot_image_family:-}}}"
+ASSIGN_EXTERNAL_IP="${assignExternalIp:-${ASSIGN_EXTERNAL_IP:-${assign_external_ip:-}}}"
+SSH_USERNAME="${sshUsername:-${SSH_USERNAME:-${ssh_username:-}}}"
+SSH_PUBLIC_KEY="${sshPublicKey:-${SSH_PUBLIC_KEY:-${ssh_public_key:-}}}"
+NETWORK_NAME="${networkName:-${NETWORK_NAME:-${network_name:-}}}"
+SUBNETWORK_NAME="${subnetworkName:-${SUBNETWORK_NAME:-${subnetwork_name:-}}}"
+ALLOWED_HTTP_CIDR="${allowedHttpCidr:-${ALLOWED_HTTP_CIDR:-${allowed_http_cidr:-}}}"
+ALLOWED_SSH_CIDR="${allowedSshCidr:-${ALLOWED_SSH_CIDR:-${allowed_ssh_cidr:-}}}"
+MANAGE_ORG_POLICY="${manageVmExternalIpOrgPolicy:-${MANAGE_VM_EXTERNAL_IP_ORG_POLICY:-${manage_vm_external_ip_org_policy:-}}}"
+USER_GROUPS="${userGroups:-${USER_GROUPS:-${user_groups:-}}}"
 
-VM_KEY="$(clean_val '<%=customOptions["vmKey"]%>')"
-VM_NAME="$(clean_val '<%=customOptions["vmName"]%>')"
-MACHINE_TYPE_OVERRIDE="$(clean_val '<%=customOptions["machineTypeOverride"]%>')"
-MACHINE_SERIES="$(clean_val '<%=customOptions["machineSeries"]%>')"
-VCPU_COUNT="$(clean_val '<%=customOptions["vcpuCount"]%>')"
-MEMORY_GB="$(clean_val '<%=customOptions["memoryGb"]%>')"
-DISK_TYPE="$(clean_val '<%=customOptions["diskType"]%>')"
-DISK_SIZE_GB="$(clean_val '<%=customOptions["diskSizeGb"]%>')"
-BOOT_IMAGE_PROJECT="$(clean_val '<%=customOptions["bootImageProject"]%>')"
-BOOT_IMAGE_FAMILY="$(clean_val '<%=customOptions["bootImageFamily"]%>')"
-ASSIGN_EXTERNAL_IP="$(clean_val '<%=customOptions["assignExternalIp"]%>')"
-SSH_USERNAME="$(clean_val '<%=customOptions["sshUsername"]%>')"
-SSH_PUBLIC_KEY="$(clean_val '<%=customOptions["sshPublicKey"]%>')"
-NETWORK_NAME="$(clean_val '<%=customOptions["networkName"]%>')"
-SUBNETWORK_NAME="$(clean_val '<%=customOptions["subnetworkName"]%>')"
-ALLOWED_HTTP_CIDR="$(clean_val '<%=customOptions["allowedHttpCidr"]%>')"
-ALLOWED_SSH_CIDR="$(clean_val '<%=customOptions["allowedSshCidr"]%>')"
-MANAGE_ORG_POLICY="$(clean_val '<%=customOptions["manageVmExternalIpOrgPolicy"]%>')"
-USER_GROUPS="$(clean_val '<%=customOptions["userGroups"]%>')"
+# Limpa valores literais "null"
+for var_name in VM_KEY VM_NAME MACHINE_TYPE_OVERRIDE MACHINE_SERIES VCPU_COUNT MEMORY_GB DISK_TYPE DISK_SIZE_GB BOOT_IMAGE_PROJECT BOOT_IMAGE_FAMILY ASSIGN_EXTERNAL_IP SSH_USERNAME SSH_PUBLIC_KEY NETWORK_NAME SUBNETWORK_NAME ALLOWED_HTTP_CIDR ALLOWED_SSH_CIDR MANAGE_ORG_POLICY USER_GROUPS; do
+  if [[ "${!var_name}" == "null" ]]; then
+    eval "$var_name=''"
+  fi
+done
 
 # Fallbacks automáticos para vmKey / vmName
 if [[ -z "$VM_KEY" && -n "$VM_NAME" ]]; then
@@ -126,10 +122,9 @@ log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"
 
 if [[ -z "${GOOGLE_CREDENTIALS:-}" ]]; then
-  GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
-  if [[ -n "$GCP_CREDS_SECRET" && "$GCP_CREDS_SECRET" != *"cypher.read"* ]]; then
-    log_info "Injetando GOOGLE_CREDENTIALS a partir do Cypher secret/gcp-terraform-ansible-samples..."
-    export GOOGLE_CREDENTIALS="$GCP_CREDS_SECRET"
+  if [[ -f "$REPO_DIR/scripts/gcp-key.json" ]]; then
+    log_info "Carregando GOOGLE_CREDENTIALS a partir de $REPO_DIR/scripts/gcp-key.json..."
+    export GOOGLE_CREDENTIALS="$(cat "$REPO_DIR/scripts/gcp-key.json")"
   fi
 fi
 
