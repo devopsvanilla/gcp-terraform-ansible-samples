@@ -113,7 +113,16 @@ require_command() {
 
 is_true_or_false() {
   local value="$1"
-  [[ "$value" == "true" || "$value" == "false" ]]
+  [[ "$value" == "true" || "$value" == "false" || "$value" == "on" || "$value" == "off" || "$value" == "1" || "$value" == "0" ]]
+}
+
+normalize_bool() {
+  local val="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
+  case "$val" in
+    true|on|yes|1) echo "true" ;;
+    false|off|no|0|"") echo "false" ;;
+    *) echo "$1" ;;
+  esac
 }
 
 is_positive_integer() {
@@ -231,7 +240,7 @@ parse_args() {
         shift 2
         ;;
       --assign-external-ip)
-        ASSIGN_EXTERNAL_IP="$2"
+        ASSIGN_EXTERNAL_IP="$(normalize_bool "$2")"
         shift 2
         ;;
       --ssh-username)
@@ -259,7 +268,7 @@ parse_args() {
         shift 2
         ;;
       --manage-vm-external-ip-org-policy)
-        MANAGE_VM_EXTERNAL_IP_ORG_POLICY="$2"
+        MANAGE_VM_EXTERNAL_IP_ORG_POLICY="$(normalize_bool "$2")"
         shift 2
         ;;
       --user-group)

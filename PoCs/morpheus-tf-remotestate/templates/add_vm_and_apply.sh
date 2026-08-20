@@ -70,6 +70,17 @@ log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 [ "$MANAGE_ORG_POLICY" != "null" ] || MANAGE_ORG_POLICY=""
 [ "$USER_GROUPS" != "null" ] || USER_GROUPS=""
 
+# Normaliza booleanos do Morpheus (checkboxes retornam 'on', 'off', 'true', 'false', '1', '0')
+case "$(echo "$ASSIGN_EXTERNAL_IP" | tr '[:upper:]' '[:lower:]')" in
+  true|on|yes|1) ASSIGN_EXTERNAL_IP="true" ;;
+  false|off|no|0|"") ASSIGN_EXTERNAL_IP="false" ;;
+esac
+
+case "$(echo "$MANAGE_ORG_POLICY" | tr '[:upper:]' '[:lower:]')" in
+  true|on|yes|1) MANAGE_ORG_POLICY="true" ;;
+  false|off|no|0|"") MANAGE_ORG_POLICY="false" ;;
+esac
+
 # Fallback automático: deriva vmKey de vmName se apenas um foi informado
 if [ -z "$VM_KEY" ] && [ -n "$VM_NAME" ]; then
   VM_KEY="$(echo "$VM_NAME" | tr '-' '_' | tr -cd 'a-zA-Z0-9_')"
