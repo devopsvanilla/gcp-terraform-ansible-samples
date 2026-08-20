@@ -161,7 +161,7 @@ validate_ssh_public_key() {
 
 validate_linux_name() {
   local value="$1"
-  [[ "$value" =~ ^[a-z_][a-z0-9_-]*[$]?$ ]]
+  [[ "$value" =~ ^[a-zA-Z0-9_.][a-zA-Z0-9_.-]*[$]?$ ]]
 }
 
 trim_csv_item() {
@@ -325,8 +325,12 @@ validate_args() {
   [[ "$BOOT_IMAGE_PROJECT" == "$UNSET" ]] || [[ -n "$BOOT_IMAGE_PROJECT" ]] || die "--boot-image-project não pode ser vazio."
   [[ "$BOOT_IMAGE_FAMILY" == "$UNSET" ]] || [[ -n "$BOOT_IMAGE_FAMILY" ]] || die "--boot-image-family não pode ser vazio."
   [[ "$ASSIGN_EXTERNAL_IP" == "$UNSET" ]] || is_true_or_false "$ASSIGN_EXTERNAL_IP" || die "--assign-external-ip deve ser true ou false."
-  [[ "$SSH_USERNAME" == "$UNSET" ]] || { [[ -n "$SSH_USERNAME" ]] && validate_linux_name "$SSH_USERNAME"; } || die "--ssh-username inválido para um usuário Linux."
-  [[ "$SSH_PUBLIC_KEY" == "$UNSET" ]] || { [[ -n "$SSH_PUBLIC_KEY" ]] && validate_ssh_public_key "$SSH_PUBLIC_KEY"; } || die "--ssh-public-key não parece ser uma chave pública OpenSSH válida."
+  if [[ "$SSH_USERNAME" != "$UNSET" && -n "$SSH_USERNAME" ]]; then
+    validate_linux_name "$SSH_USERNAME" || die "--ssh-username inválido para um usuário Linux."
+  fi
+  if [[ "$SSH_PUBLIC_KEY" != "$UNSET" && -n "$SSH_PUBLIC_KEY" ]]; then
+    validate_ssh_public_key "$SSH_PUBLIC_KEY" || die "--ssh-public-key não parece ser uma chave pública OpenSSH válida."
+  fi
   [[ "$NETWORK_NAME" == "$UNSET" ]] || [[ -n "$NETWORK_NAME" ]] || die "--network-name não pode ser vazio."
   [[ "$ALLOWED_HTTP_CIDR" == "$UNSET" ]] || validate_cidr "$ALLOWED_HTTP_CIDR" || die "--allowed-http-cidr deve ser um CIDR válido."
   [[ "$ALLOWED_SSH_CIDR" == "$UNSET" ]] || validate_cidr "$ALLOWED_SSH_CIDR" || die "--allowed-ssh-cidr deve ser um CIDR válido."
@@ -375,22 +379,22 @@ build_vm_block() {
     fi
     printf '    vm_name = %s\n' "$(hcl_quote "$VM_NAME")"
 
-    [[ "$MACHINE_TYPE_OVERRIDE" == "$UNSET" ]] || printf '    machine_type_override = %s\n' "$(hcl_quote "$MACHINE_TYPE_OVERRIDE")"
-    [[ "$MACHINE_SERIES" == "$UNSET" ]] || printf '    machine_series        = %s\n' "$(hcl_quote "$MACHINE_SERIES")"
-    [[ "$VCPU_COUNT" == "$UNSET" ]] || printf '    vcpu_count            = %s\n' "$VCPU_COUNT"
-    [[ "$MEMORY_GB" == "$UNSET" ]] || printf '    memory_gb             = %s\n' "$MEMORY_GB"
-    [[ "$DISK_TYPE" == "$UNSET" ]] || printf '    disk_type             = %s\n' "$(hcl_quote "$DISK_TYPE")"
-    [[ "$DISK_SIZE_GB" == "$UNSET" ]] || printf '    disk_size_gb          = %s\n' "$DISK_SIZE_GB"
-    [[ "$BOOT_IMAGE_PROJECT" == "$UNSET" ]] || printf '    boot_image_project    = %s\n' "$(hcl_quote "$BOOT_IMAGE_PROJECT")"
-    [[ "$BOOT_IMAGE_FAMILY" == "$UNSET" ]] || printf '    boot_image_family     = %s\n' "$(hcl_quote "$BOOT_IMAGE_FAMILY")"
-    [[ "$ASSIGN_EXTERNAL_IP" == "$UNSET" ]] || printf '    assign_external_ip    = %s\n' "$ASSIGN_EXTERNAL_IP"
-    [[ "$SSH_USERNAME" == "$UNSET" ]] || printf '    ssh_username          = %s\n' "$(hcl_quote "$SSH_USERNAME")"
-    [[ "$SSH_PUBLIC_KEY" == "$UNSET" ]] || printf '    ssh_public_key        = %s\n' "$(hcl_quote "$SSH_PUBLIC_KEY")"
-    [[ "$NETWORK_NAME" == "$UNSET" ]] || printf '    network_name          = %s\n' "$(hcl_quote "$NETWORK_NAME")"
-    [[ "$SUBNETWORK_NAME" == "$UNSET" ]] || printf '    subnetwork_name       = %s\n' "$(hcl_quote "$SUBNETWORK_NAME")"
-    [[ "$ALLOWED_HTTP_CIDR" == "$UNSET" ]] || printf '    allowed_http_cidr     = %s\n' "$(hcl_quote "$ALLOWED_HTTP_CIDR")"
-    [[ "$ALLOWED_SSH_CIDR" == "$UNSET" ]] || printf '    allowed_ssh_cidr      = %s\n' "$(hcl_quote "$ALLOWED_SSH_CIDR")"
-    [[ "$MANAGE_VM_EXTERNAL_IP_ORG_POLICY" == "$UNSET" ]] || printf '    manage_vm_external_ip_org_policy = %s\n' "$MANAGE_VM_EXTERNAL_IP_ORG_POLICY"
+    [[ "$MACHINE_TYPE_OVERRIDE" == "$UNSET" || -z "$MACHINE_TYPE_OVERRIDE" ]] || printf '    machine_type_override = %s\n' "$(hcl_quote "$MACHINE_TYPE_OVERRIDE")"
+    [[ "$MACHINE_SERIES" == "$UNSET" || -z "$MACHINE_SERIES" ]] || printf '    machine_series        = %s\n' "$(hcl_quote "$MACHINE_SERIES")"
+    [[ "$VCPU_COUNT" == "$UNSET" || -z "$VCPU_COUNT" ]] || printf '    vcpu_count            = %s\n' "$VCPU_COUNT"
+    [[ "$MEMORY_GB" == "$UNSET" || -z "$MEMORY_GB" ]] || printf '    memory_gb             = %s\n' "$MEMORY_GB"
+    [[ "$DISK_TYPE" == "$UNSET" || -z "$DISK_TYPE" ]] || printf '    disk_type             = %s\n' "$(hcl_quote "$DISK_TYPE")"
+    [[ "$DISK_SIZE_GB" == "$UNSET" || -z "$DISK_SIZE_GB" ]] || printf '    disk_size_gb          = %s\n' "$DISK_SIZE_GB"
+    [[ "$BOOT_IMAGE_PROJECT" == "$UNSET" || -z "$BOOT_IMAGE_PROJECT" ]] || printf '    boot_image_project    = %s\n' "$(hcl_quote "$BOOT_IMAGE_PROJECT")"
+    [[ "$BOOT_IMAGE_FAMILY" == "$UNSET" || -z "$BOOT_IMAGE_FAMILY" ]] || printf '    boot_image_family     = %s\n' "$(hcl_quote "$BOOT_IMAGE_FAMILY")"
+    [[ "$ASSIGN_EXTERNAL_IP" == "$UNSET" || -z "$ASSIGN_EXTERNAL_IP" ]] || printf '    assign_external_ip    = %s\n' "$ASSIGN_EXTERNAL_IP"
+    [[ "$SSH_USERNAME" == "$UNSET" || -z "$SSH_USERNAME" ]] || printf '    ssh_username          = %s\n' "$(hcl_quote "$SSH_USERNAME")"
+    [[ "$SSH_PUBLIC_KEY" == "$UNSET" || -z "$SSH_PUBLIC_KEY" ]] || printf '    ssh_public_key        = %s\n' "$(hcl_quote "$SSH_PUBLIC_KEY")"
+    [[ "$NETWORK_NAME" == "$UNSET" || -z "$NETWORK_NAME" ]] || printf '    network_name          = %s\n' "$(hcl_quote "$NETWORK_NAME")"
+    [[ "$SUBNETWORK_NAME" == "$UNSET" || -z "$SUBNETWORK_NAME" ]] || printf '    subnetwork_name       = %s\n' "$(hcl_quote "$SUBNETWORK_NAME")"
+    [[ "$ALLOWED_HTTP_CIDR" == "$UNSET" || -z "$ALLOWED_HTTP_CIDR" ]] || printf '    allowed_http_cidr     = %s\n' "$(hcl_quote "$ALLOWED_HTTP_CIDR")"
+    [[ "$ALLOWED_SSH_CIDR" == "$UNSET" || -z "$ALLOWED_SSH_CIDR" ]] || printf '    allowed_ssh_cidr      = %s\n' "$(hcl_quote "$ALLOWED_SSH_CIDR")"
+    [[ "$MANAGE_VM_EXTERNAL_IP_ORG_POLICY" == "$UNSET" || -z "$MANAGE_VM_EXTERNAL_IP_ORG_POLICY" ]] || printf '    manage_vm_external_ip_org_policy = %s\n' "$MANAGE_VM_EXTERNAL_IP_ORG_POLICY"
     [[ -z "$USER_GROUPS_CSV" ]] || printf '    user_groups           = %s\n' "$(join_user_groups_hcl "$USER_GROUPS_CSV")"
     printf '  }\n'
   } > "$vm_block_file"
