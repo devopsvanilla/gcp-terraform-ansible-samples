@@ -31,33 +31,112 @@ TFSTATE_PREFIX="${TFSTATE_PREFIX:-vm-nginx-terraform-ansible}"
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 
-# Lê as opções injetadas pelo Morpheus via variáveis de ambiente
-VM_KEY="${vmKey:-${VM_KEY:-${MORPHEUS_CUSTOM_OPTIONS_VMKEY:-${vm_key:-}}}}"
-VM_NAME="${vmName:-${VM_NAME:-${MORPHEUS_CUSTOM_OPTIONS_VMNAME:-${vm_name:-}}}}"
-MACHINE_TYPE_OVERRIDE="${machineTypeOverride:-${MACHINE_TYPE_OVERRIDE:-${machine_type_override:-}}}"
-MACHINE_SERIES="${machineSeries:-${MACHINE_SERIES:-${machine_series:-}}}"
-VCPU_COUNT="${vcpuCount:-${VCPU_COUNT:-${vcpu_count:-}}}"
-MEMORY_GB="${memoryGb:-${MEMORY_GB:-${memory_gb:-}}}"
-DISK_TYPE="${diskType:-${DISK_TYPE:-${disk_type:-}}}"
-DISK_SIZE_GB="${diskSizeGb:-${DISK_SIZE_GB:-${disk_size_gb:-}}}"
-BOOT_IMAGE_PROJECT="${bootImageProject:-${BOOT_IMAGE_PROJECT:-${boot_image_project:-}}}"
-BOOT_IMAGE_FAMILY="${bootImageFamily:-${BOOT_IMAGE_FAMILY:-${boot_image_family:-}}}"
-ASSIGN_EXTERNAL_IP="${assignExternalIp:-${ASSIGN_EXTERNAL_IP:-${assign_external_ip:-}}}"
-SSH_USERNAME="${sshUsername:-${SSH_USERNAME:-${ssh_username:-}}}"
-SSH_PUBLIC_KEY="${sshPublicKey:-${SSH_PUBLIC_KEY:-${ssh_public_key:-}}}"
-NETWORK_NAME="${networkName:-${NETWORK_NAME:-${network_name:-}}}"
-SUBNETWORK_NAME="${subnetworkName:-${SUBNETWORK_NAME:-${subnetwork_name:-}}}"
-ALLOWED_HTTP_CIDR="${allowedHttpCidr:-${ALLOWED_HTTP_CIDR:-${allowed_http_cidr:-}}}"
-ALLOWED_SSH_CIDR="${allowedSshCidr:-${ALLOWED_SSH_CIDR:-${allowed_ssh_cidr:-}}}"
-MANAGE_ORG_POLICY="${manageVmExternalIpOrgPolicy:-${MANAGE_VM_EXTERNAL_IP_ORG_POLICY:-${manage_vm_external_ip_org_policy:-}}}"
-USER_GROUPS="${userGroups:-${USER_GROUPS:-${user_groups:-}}}"
+# Lê as opções injetadas pelo Morpheus via variáveis de ambiente e/ou JSON payload
+if command -v python3 >/dev/null 2>&1; then
+  eval "$(python3 - << 'PY'
+import json, os, re, sys
 
-# Limpa valores literais "null"
-for var_name in VM_KEY VM_NAME MACHINE_TYPE_OVERRIDE MACHINE_SERIES VCPU_COUNT MEMORY_GB DISK_TYPE DISK_SIZE_GB BOOT_IMAGE_PROJECT BOOT_IMAGE_FAMILY ASSIGN_EXTERNAL_IP SSH_USERNAME SSH_PUBLIC_KEY NETWORK_NAME SUBNETWORK_NAME ALLOWED_HTTP_CIDR ALLOWED_SSH_CIDR MANAGE_ORG_POLICY USER_GROUPS; do
-  if [[ "${!var_name}" == "null" ]]; then
-    eval "$var_name=''"
-  fi
-done
+env = dict(os.environ)
+custom_opts = {}
+
+# Parse JSON strings em qualquer variável de ambiente (ex.: MORPHEUS_CUSTOM_OPTIONS, customOptions, morpheus, etc.)
+for k, v in env.items():
+    v_str = str(v).strip()
+    if (v_str.startswith('{') and v_str.endswith('}')) or (v_str.startswith('[') and v_str.endswith(']')):
+        try:
+            parsed = json.loads(v_str)
+            if isinstance(parsed, dict):
+                if 'customOptions' in parsed and isinstance(parsed['customOptions'], dict):
+                    custom_opts.update(parsed['customOptions'])
+                elif 'custom_options' in parsed and isinstance(parsed['custom_options'], dict):
+                    custom_opts.update(parsed['custom_options'])
+                else:
+                    custom_opts.update(parsed)
+        except Exception:
+            pass
+
+# Procura também arquivos de payload JSON no diretório atual ou /tmp
+for path in ['.', '/tmp']:
+    if os.path.isdir(path):
+        try:
+            for f in os.listdir(path):
+                if f.endswith('.json') and any(tag in f.lower() for tag in ['morpheus', 'payload', 'task', 'custom', 'spec']):
+                    try:
+                        with open(os.path.join(path, f), 'r', encoding='utf-8') as jf:
+                            parsed = json.load(jf)
+                            if isinstance(parsed, dict):
+                                if 'customOptions' in parsed and isinstance(parsed['customOptions'], dict):
+                                    custom_opts.update(parsed['customOptions'])
+                                elif 'custom_options' in parsed and isinstance(parsed['custom_options'], dict):
+                                    custom_opts.update(parsed['custom_options'])
+                                else:
+                                    custom_opts.update(parsed)
+                    except Exception:
+                        pass
+        except Exception:
+            pass
+
+def get_val(*names):
+    target_cleaned = [re.sub(r'[^a-z0-9]', '', n.lower()) for n in names if n]
+    for k, v in custom_opts.items():
+        k_clean = re.sub(r'[^a-z0-9]', '', str(k).lower())
+        for t in target_cleaned:
+            if k_clean == t or k_clean.endswith(t) or k_clean == f"morpheuscustomoptions{t}":
+                if v is not None and str(v).strip() != '' and str(v).lower() != 'null':
+                    return str(v).strip()
+    for k, v in env.items():
+        k_clean = re.sub(r'[^a-z0-9]', '', str(k).lower())
+        for t in target_cleaned:
+            if k_clean == t or k_clean == f"customoptions{t}" or k_clean == f"morpheuscustomoptions{t}" or k_clean == f"morpheus{t}" or k_clean.endswith(t):
+                if v is not None and str(v).strip() != '' and str(v).lower() != 'null':
+                    return str(v).strip()
+    return ""
+
+def q(s):
+    return json.dumps(s)
+
+print(f"VM_KEY={q(get_val('vmKey', 'vm_key', 'vm-nginx-vm-key', 'key'))}")
+print(f"VM_NAME={q(get_val('vmName', 'vm_name', 'vm-nginx-vm-name', 'name'))}")
+print(f"MACHINE_TYPE_OVERRIDE={q(get_val('machineTypeOverride', 'machine_type_override', 'vm-nginx-machine-type-override'))}")
+print(f"MACHINE_SERIES={q(get_val('machineSeries', 'machine_series', 'vm-nginx-machine-series'))}")
+print(f"VCPU_COUNT={q(get_val('vcpuCount', 'vcpu_count', 'vm-nginx-vcpu-count'))}")
+print(f"MEMORY_GB={q(get_val('memoryGb', 'memory_gb', 'vm-nginx-memory-gb'))}")
+print(f"DISK_TYPE={q(get_val('diskType', 'disk_type', 'vm-nginx-disk-type'))}")
+print(f"DISK_SIZE_GB={q(get_val('diskSizeGb', 'disk_size_gb', 'vm-nginx-disk-size-gb'))}")
+print(f"BOOT_IMAGE_PROJECT={q(get_val('bootImageProject', 'boot_image_project', 'vm-nginx-boot-image-project'))}")
+print(f"BOOT_IMAGE_FAMILY={q(get_val('bootImageFamily', 'boot_image_family', 'vm-nginx-boot-image-family'))}")
+print(f"ASSIGN_EXTERNAL_IP={q(get_val('assignExternalIp', 'assign_external_ip', 'vm-nginx-assign-external-ip'))}")
+print(f"SSH_USERNAME={q(get_val('sshUsername', 'ssh_username', 'vm-nginx-ssh-username'))}")
+print(f"SSH_PUBLIC_KEY={q(get_val('sshPublicKey', 'ssh_public_key', 'vm-nginx-ssh-public-key'))}")
+print(f"NETWORK_NAME={q(get_val('networkName', 'network_name', 'vm-nginx-network-name'))}")
+print(f"SUBNETWORK_NAME={q(get_val('subnetworkName', 'subnetwork_name', 'vm-nginx-subnetwork-name'))}")
+print(f"ALLOWED_HTTP_CIDR={q(get_val('allowedHttpCidr', 'allowed_http_cidr', 'vm-nginx-allowed-http-cidr'))}")
+print(f"ALLOWED_SSH_CIDR={q(get_val('allowedSshCidr', 'allowed_ssh_cidr', 'vm-nginx-allowed-ssh-cidr'))}")
+print(f"MANAGE_ORG_POLICY={q(get_val('manageVmExternalIpOrgPolicy', 'manage_vm_external_ip_org_policy', 'manageOrgPolicy', 'vm-nginx-manage-org-policy'))}")
+print(f"USER_GROUPS={q(get_val('userGroups', 'user_groups', 'vm-nginx-user-groups'))}")
+PY
+)"
+else
+  VM_KEY="${vmKey:-${VM_KEY:-${MORPHEUS_CUSTOM_OPTIONS_VMKEY:-${vm_key:-}}}}"
+  VM_NAME="${vmName:-${VM_NAME:-${MORPHEUS_CUSTOM_OPTIONS_VMNAME:-${vm_name:-}}}}"
+  MACHINE_TYPE_OVERRIDE="${machineTypeOverride:-${MACHINE_TYPE_OVERRIDE:-${machine_type_override:-}}}"
+  MACHINE_SERIES="${machineSeries:-${MACHINE_SERIES:-${machine_series:-}}}"
+  VCPU_COUNT="${vcpuCount:-${VCPU_COUNT:-${vcpu_count:-}}}"
+  MEMORY_GB="${memoryGb:-${MEMORY_GB:-${memory_gb:-}}}"
+  DISK_TYPE="${diskType:-${DISK_TYPE:-${disk_type:-}}}"
+  DISK_SIZE_GB="${diskSizeGb:-${DISK_SIZE_GB:-${disk_size_gb:-}}}"
+  BOOT_IMAGE_PROJECT="${bootImageProject:-${BOOT_IMAGE_PROJECT:-${boot_image_project:-}}}"
+  BOOT_IMAGE_FAMILY="${bootImageFamily:-${BOOT_IMAGE_FAMILY:-${boot_image_family:-}}}"
+  ASSIGN_EXTERNAL_IP="${assignExternalIp:-${ASSIGN_EXTERNAL_IP:-${assign_external_ip:-}}}"
+  SSH_USERNAME="${sshUsername:-${SSH_USERNAME:-${ssh_username:-}}}"
+  SSH_PUBLIC_KEY="${sshPublicKey:-${SSH_PUBLIC_KEY:-${ssh_public_key:-}}}"
+  NETWORK_NAME="${networkName:-${NETWORK_NAME:-${network_name:-}}}"
+  SUBNETWORK_NAME="${subnetworkName:-${SUBNETWORK_NAME:-${subnetwork_name:-}}}"
+  ALLOWED_HTTP_CIDR="${allowedHttpCidr:-${ALLOWED_HTTP_CIDR:-${allowed_http_cidr:-}}}"
+  ALLOWED_SSH_CIDR="${allowedSshCidr:-${ALLOWED_SSH_CIDR:-${allowed_ssh_cidr:-}}}"
+  MANAGE_ORG_POLICY="${manageVmExternalIpOrgPolicy:-${MANAGE_VM_EXTERNAL_IP_ORG_POLICY:-${manage_vm_external_ip_org_policy:-}}}"
+  USER_GROUPS="${userGroups:-${USER_GROUPS:-${user_groups:-}}}"
+fi
 
 # Fallbacks automáticos para vmKey / vmName
 if [[ -z "$VM_KEY" && -n "$VM_NAME" ]]; then
@@ -72,7 +151,8 @@ fi
 
 if [[ -z "$VM_KEY" || -z "$VM_NAME" ]]; then
   log_error "Parâmetros obrigatórios ausentes. VM_KEY='$VM_KEY', VM_NAME='$VM_NAME'."
-  log_error "Certifique-se de preencher o formulário no Catálogo de Serviços do Morpheus antes de executar."
+  log_info "Variáveis de ambiente disponíveis no processo:"
+  env | grep -v -i -E 'pass|secret|token|key' | sort || true
   exit 1
 fi
 
