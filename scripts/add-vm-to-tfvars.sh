@@ -27,7 +27,7 @@ SUBNETWORK_NAME="${UNSET}"
 ALLOWED_HTTP_CIDR="${UNSET}"
 ALLOWED_SSH_CIDR="${UNSET}"
 MANAGE_VM_EXTERNAL_IP_ORG_POLICY="${UNSET}"
-USER_GROUPS_CSV=""
+USER_GROUPS_                                                                                                                                                    CSV=""
 
 log_info() {
   printf '[INFO] %s\n' "$*"
