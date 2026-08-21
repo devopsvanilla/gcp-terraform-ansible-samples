@@ -161,10 +161,6 @@ cleanup() {
 }
 trap cleanup EXIT
 
-log_info "Executando: bash $ADD_VM_SCRIPT ${ARGS[*]}"
-bash "$ADD_VM_SCRIPT" "${ARGS[@]}"
-
-log_info "Aplicando o manifesto Terraform em $POC_DIR"
 cd "$POC_DIR"
 
 if [ -z "${GOOGLE_CREDENTIALS:-}" ]; then
@@ -187,8 +183,13 @@ terraform {
 EOF
 fi
 
-log_info "Inicializando Terraform..."
+log_info "Inicializando Terraform em $POC_DIR..."
 "$TERRAFORM_BIN" init -input=false -reconfigure
+
+log_info "Executando: bash $ADD_VM_SCRIPT ${ARGS[*]}"
+bash "$ADD_VM_SCRIPT" "${ARGS[@]}"
+
+log_info "Validando e aplicando o manifesto Terraform em $POC_DIR..."
 "$TERRAFORM_BIN" validate
 "$TERRAFORM_BIN" apply -auto-approve -input=false
 

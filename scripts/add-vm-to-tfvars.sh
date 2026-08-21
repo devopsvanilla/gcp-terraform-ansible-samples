@@ -26,6 +26,7 @@ ALLOWED_HTTP_CIDR="${UNSET}"
 ALLOWED_SSH_CIDR="${UNSET}"
 MANAGE_VM_EXTERNAL_IP_ORG_POLICY="${UNSET}"
 USER_GROUPS_CSV=""
+SKIP_VALIDATE="false"
 
 log_info() {
   printf '[INFO] %s\n' "$*"
@@ -289,6 +290,10 @@ parse_args() {
         fi
         shift 2
         ;;
+      --skip-validate|--no-validate)
+        SKIP_VALIDATE="true"
+        shift 1
+        ;;
       -h|--help)
         usage
         exit 0
@@ -449,8 +454,17 @@ run_terraform_checks() {
   log_info "Executando terraform fmt em ${tfvars_basename}"
   terraform -chdir="$module_dir" fmt "$tfvars_basename" >/dev/null
 
+  if [[ "${SKIP_VALIDATE}" == "true" ]]; then
+    log_info "Validação do Terraform ignorada (--skip-validate)."
+    return 0
+  fi
+
   log_info "Executando terraform validate em ${module_dir}"
-  terraform -chdir="$module_dir" validate >/dev/null
+  if ! terraform -chdir="$module_dir" validate >/dev/null 2>&1; then
+    log_info "Providers ausentes ou validação pendente; executando terraform init -backend=false..."
+    terraform -chdir="$module_dir" init -backend=false -input=false >/dev/null 2>&1 || true
+    terraform -chdir="$module_dir" validate >/dev/null
+  fi
 }
 
 main() {
