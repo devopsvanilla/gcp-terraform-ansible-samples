@@ -161,7 +161,7 @@ poc_name                         = "vm-nginx-terraform-ansible"
 project_id                       = "$FINAL_PROJECT_ID"
 region                           = "us-central1"
 zone                             = "us-central1-a"
-manage_vm_external_ip_org_policy = true
+manage_vm_external_ip_org_policy = ${MANAGE_ORG_POLICY:-false}
 network_name                     = "default"
 allowed_http_cidr                = "0.0.0.0/0"
 allowed_ssh_cidr                 = "0.0.0.0/0"
@@ -173,6 +173,9 @@ else
   if grep -q "<gcp_project_id>" "$TFVARS_FILE" 2>/dev/null; then
     log_info "Substituindo <gcp_project_id> por '$FINAL_PROJECT_ID' em $TFVARS_FILE..."
     sed -i "s|<gcp_project_id>|$FINAL_PROJECT_ID|g" "$TFVARS_FILE"
+  fi
+  if [ "$MANAGE_ORG_POLICY" = "false" ]; then
+    sed -i 's/manage_vm_external_ip_org_policy\s*=\s*true/manage_vm_external_ip_org_policy = false/g' "$TFVARS_FILE" 2>/dev/null || true
   fi
 fi
 
