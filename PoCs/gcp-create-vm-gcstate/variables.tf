@@ -1,7 +1,7 @@
 variable "poc_name" {
   type        = string
   description = "Nome lógico da PoC."
-  default     = "vm-nginx-terraform-ansible"
+  default     = "gcp-create-vm-gcstate"
 }
 
 variable "project_id" {
@@ -118,46 +118,6 @@ variable "allowed_ssh_cidr" {
   }
 }
 
-variable "run_ansible" {
-  type        = bool
-  description = "Quando true, o Terraform executa o playbook do Ansible após a criação das VMs."
-  default     = true
-}
-
-variable "ansible_wait_seconds" {
-  type        = number
-  description = "Tempo em segundos entre tentativas de execução do playbook do Ansible."
-  default     = 15
-
-  validation {
-    condition     = var.ansible_wait_seconds > 0
-    error_message = "ansible_wait_seconds deve ser maior que zero."
-  }
-}
-
-variable "ansible_max_retries" {
-  type        = number
-  description = "Número máximo de tentativas para executar o playbook do Ansible."
-  default     = 10
-
-  validation {
-    condition     = var.ansible_max_retries >= 1
-    error_message = "ansible_max_retries deve ser maior ou igual a 1."
-  }
-}
-
-variable "ansible_private_key_file" {
-  type        = string
-  description = "Caminho da chave privada SSH usada pelo Ansible. Aceita caminho absoluto ou o padrão ~/.ssh/id_ed25519."
-  default     = "~/.ssh/id_ed25519"
-}
-
-variable "ansible_ssh_user" {
-  type        = string
-  description = "Usuário SSH/OS Login usado pelo Ansible para conectar na VM."
-  default     = "devopsvanillaofficial_gmail_com"
-}
-
 # ===== Variáveis Flat enviadas pelos formulários de Catálogo do Morpheus =====
 variable "name" {
   type        = string
@@ -228,5 +188,5 @@ variable "assign_external_ip" {
 variable "user_groups" {
   type        = list(string)
   description = "Grupos adicionais de usuário Linux."
-  default     = ["sudo", "www-data"]
+  default     = ["sudo"]
 }

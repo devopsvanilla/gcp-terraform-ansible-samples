@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_TFVARS_FILE="${REPO_ROOT}/PoCs/vm-nginx-terraform-ansible/terraform.tfvars"
+DEFAULT_TFVARS_FILE="${REPO_ROOT}/PoCs/gcp-create-vm-gcstate/terraform.tfvars"
 UNSET="__COPILOT_UNSET__"
 
 TFVARS_FILE="${DEFAULT_TFVARS_FILE}"
@@ -72,8 +72,8 @@ parse_args() {
         VM_KEY="$2"
         shift 2
         ;;
-      --vm-name)
-        [[ $# -ge 2 ]] || die "O argumento --vm-name exige um valor."
+      --vm-name|--name)
+        [[ $# -ge 2 ]] || die "O argumento $1 exige um valor."
         VM_NAME="$2"
         shift 2
         ;;

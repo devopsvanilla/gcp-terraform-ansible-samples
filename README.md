@@ -14,7 +14,7 @@ gcp-terraform-ansible-samples/
 │   ├── gcp-create-vm/                 # 1. Provisionamento básico de VM no GCP com Terraform puro
 │   ├── morpheus-tf-nativestate/       # 2. App Blueprint Morpheus com estado nativo no Cypher
 │   ├── morpheus-tf-remotestate/       # 3. Morpheus Data com Remote State no Google Cloud Storage (GCS)
-│   ├── vm-nginx-terraform-ansible/    # 4. Provisionamento Terraform + Configuração Nginx via Ansible
+│   ├── gcp-create-vm-gcstate/         # 4. Provisionamento avançado de VMs no GCP com Terraform (GCS State)
 │   └── ansible/                       # 5. Gerenciamento Morpheus & VMs GCP via coleção Ansible morpheus.core
 ├── scripts/                           # Utilitários de apoio (setup GCP, codificação de chaves, hooks)
 └── .github/                           # Convenções e instruções do repositório
@@ -28,8 +28,8 @@ gcp-terraform-ansible-samples/
 |---|---|---|
 | 🚀 [`PoCs/gcp-create-vm`](PoCs/gcp-create-vm/README.md) | **Terraform Puro + GCP** | Provisionamento enxuto de instância Compute Engine (Debian/Ubuntu) no GCP com regras de firewall e IP público. |
 | 🎛️ [`PoCs/morpheus-tf-nativestate`](PoCs/morpheus-tf-nativestate/README.md) | **Morpheus Data + Terraform + Cypher** | App Blueprint nativo do Morpheus consumindo código Terraform com estado (`tfstate`) e variáveis mantidos no cofre Cypher. |
-| 🗄️ [`PoCs/morpheus-tf-remotestate`](PoCs/morpheus-tf-remotestate/README.md) | **Morpheus Data + GCS Backend** | Automação Morpheus utilizando backend remoto no Google Cloud Storage (GCS) com script wrapper Shell Task. |
-| 🌐 [`PoCs/vm-nginx-terraform-ansible`](PoCs/vm-nginx-terraform-ansible/README.md) | **Terraform + Ansible Local** | PoC de provisionamento de VM seguido de execução local do Ansible para instalação e configuração do servidor Web Nginx. |
+| 🗄️ [`PoCs/morpheus-tf-remotestate`](PoCs/morpheus-tf-remotestate/README.md) | **Morpheus Data + GCS Backend** | Automação Morpheus utilizando backend remoto no Google Cloud Storage (GCS) com variáveis gerenciadas no Cypher. |
+| 🌐 [`PoCs/gcp-create-vm-gcstate`](PoCs/gcp-create-vm-gcstate/README.md) | **Terraform Multi-VM + GCP** | PoC de provisionamento de instâncias Compute Engine com suporte a múltiplas VMs, startup script, SSH customizado e Org Policy. |
 | ⚡ [`PoCs/ansible`](PoCs/ansible/README.md) | **Ansible Collection `morpheus.core`** | Orquestração da API do Morpheus para gerenciar VMs GCP (Start/Stop, Snapshots, Cypher, Inventário Dinâmico e Day-2 Ops). |
 
 ---

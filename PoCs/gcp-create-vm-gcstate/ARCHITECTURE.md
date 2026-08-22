@@ -68,7 +68,7 @@ graph TB
 | Componente | Localização | Responsabilidade |
 |---|---|---|
 | **Terraform CLI (Admin)** | Estação local do administrador | Aplica `morpheus-tf-nativestate` para criar o Blueprint, Option Types e secrets no Morpheus |
-| **Repositório Git** | GitHub | Armazena o código Terraform (`vm-nginx-terraform-ansible`) e é sincronizado pelo Morpheus |
+| **Repositório Git** | GitHub | Armazena o código Terraform (`gcp-create-vm-gcstate`) e é sincronizado pelo Morpheus |
 | **App Blueprint** | Morpheus Data | Define qual repositório, branch e diretório (`working_path`) o runner Terraform deve executar |
 | **Catálogo Self-Service** | Morpheus Data | Interface amigável onde o usuário solicita a criação de VMs |
 | **Option Types (Formulário)** | Morpheus Data | Campos de entrada (`vm_name`, `machine_type`, `ssh_public_key`, etc.) preenchidos pelo solicitante |
@@ -149,7 +149,7 @@ sequenceDiagram
     Runner->>GCP: Cria VM Compute Engine
     Runner->>GCP: Cria regras de Firewall VPC
     Runner->>GCP: Atualiza Org Policy
-    Runner->>GCP: Executa Ansible (Nginx)
+    Runner->>GCP: Configura usuário e SSH via startup script
     Runner->>Cypher: Armazena .tfstate
 
     Morph->>User: Notifica conclusão<br/>(App Instance criada)

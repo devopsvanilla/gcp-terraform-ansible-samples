@@ -1,21 +1,48 @@
-# PoC: App Blueprint no Morpheus Data para a PoC vm-nginx-terraform-ansible
+# PoC: App Blueprint no Morpheus Data com Remote State no GCS e Variáveis no Cypher
 
 ## O que será implantado
 
 Esta PoC usa o provider Terraform [`HPE/hpe`](https://registry.terraform.io/providers/HPE/hpe/latest)
 para criar, no Morpheus Data, um item de catálogo de self-service (publicado
-como **App Blueprint** para o solicitante final) que:
+como **App Blueprint** para o solicitante final) para provisionar instâncias Compute Engine no GCP com backend remoto no Google Cloud Storage (GCS) e gerenciamento de variáveis centralizado e seguro no **Morpheus Cypher**:
 
-- exibe um **formulário** com os mesmos parâmetros aceitos por
+- exibe um **formulário** com os parâmetros aceitos por
   `scripts/add-vm-to-tfvars.sh` (chave e nome da VM, tipo de máquina, disco,
   imagem de boot, IP externo, usuário/chave SSH, rede, CIDRs de firewall,
   Org Policy e grupos do usuário remoto);
 - ao ser executado, dispara uma **task de shell script** que:
-  1. executa `scripts/add-vm-to-tfvars.sh` com os valores informados no
-     formulário, adicionando a nova VM ao `terraform.tfvars` da PoC
-     [`vm-nginx-terraform-ansible`](../vm-nginx-terraform-ansible/README.md);
-  2. em seguida executa `terraform init`, `terraform validate` e
-     `terraform apply -auto-approve` nesse mesmo manifesto.
+  1. recupera o manifesto `terraform.tfvars` a partir do **Morpheus Cypher** (`secret/tfvars-gcp-create-vm-gcstate`);
+  2. executa `scripts/add-vm-to-tfvars.sh` com os valores informados no formulário, adicionando a nova VM ao manifesto local efêmero;
+  3. sincroniza o manifesto `terraform.tfvars` atualizado de volta no **Morpheus Cypher** via API REST do Morpheus;
+  4. executa `terraform init`, `terraform validate` e `terraform apply -auto-approve` com backend GCS dinâmico;
+  5. remove todos os arquivos de configuração e overrides do disco local via `trap cleanup EXIT`.
+
+---
+
+## Fluxo da Arquitetura (Cypher + GCS State)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Solicitante as Usuário / Catálogo
+    participant Morph as Morpheus Workflow Task
+    participant Cypher as Morpheus Cypher<br/>(secret/tfvars-gcp-create-vm-gcstate)
+    participant Script as Scripts Auxiliares<br/>(add/remove-vm-to-tfvars.sh)
+    participant TF as Terraform CLI
+    participant GCS as Bucket GCS<br/>(gs://tfstate-.../gcp-create-vm-gcstate)
+
+    Solicitante->>Morph: Solicita criação (ou exclusão) da VM
+    Morph->>Cypher: 1. Lê o conteúdo atual do terraform.tfvars
+    Morph->>Morph: 2. Cria arquivo temporário efêmero terraform.tfvars
+    Morph->>Script: 3. Executa script para adicionar/remover VM no tfvars local
+    Morph->>Cypher: 4. Atualiza a chave no Cypher com o novo tfvars via Morpheus API
+    Morph->>Morph: 5. Gera backend_override.tf temporário (GCS)
+    Morph->>TF: 6. terraform init -reconfigure && terraform apply -auto-approve
+    TF->>GCS: Atualiza o tfstate remoto no bucket
+    Morph->>Morph: 7. TRAP EXIT: Remove terraform.tfvars e backend_override.tf do disco
+```
+
+---
 
 ### Por que não usar `hpe_morpheus_app_blueprint_terraform` diretamente
 
@@ -31,9 +58,10 @@ comportamento pedido, e é o padrão recomendado pelo próprio provider para
 
 | Recurso Terraform                        | Papel no Morpheus Data                                             |
 |-------------------------------------------|---------------------------------------------------------------------|
+| `hpe_morpheus_cypher_secret`              | Armazena o manifesto de variáveis `terraform.tfvars` no Cypher      |
 | `hpe_morpheus_option_type_text/number/checkbox` | Cada campo do formulário exibido ao solicitante                |
-| `hpe_morpheus_task_shell_script` (add)    | Script que roda `add-vm-to-tfvars.sh` e o `terraform apply`        |
-| `hpe_morpheus_task_shell_script` (remove) | Script que roda `remove-vm-from-tfvars.sh` e o `terraform apply`   |
+| `hpe_morpheus_task_shell_script` (add)    | Script que roda `add-vm-to-tfvars.sh`, sync Cypher e `terraform apply` |
+| `hpe_morpheus_task_shell_script` (remove) | Script que roda `remove-vm-from-tfvars.sh`, sync Cypher e `apply`   |
 | `hpe_morpheus_workflow_operational` (add) | Agrupa os campos do formulário e a task de criação                 |
 | `hpe_morpheus_workflow_operational` (del) | Agrupa os campos de identificação e a task de exclusão sob demanda |
 | `hpe_morpheus_workflow_provisioning`      | Provisioning Workflow com fase **Teardown** para exclusão automática|
@@ -47,57 +75,55 @@ recurso; consulte-os para o detalhamento de cada bloco.
 Nesta PoC, a exclusão de VMs e a sincronização do `tfstate` no GCS acontecem de duas maneiras:
 
 1. **Exclusão Automática via Teardown (Lifecycle Hook)**:
-   - Ao vincular o Provisioning Workflow (`vm-nginx-provisioning-workflow`) à instância, quando qualquer usuário clica em **Delete** na interface do Morpheus, a fase **Teardown** é disparada automaticamente.
-   - O template [`remove_vm_and_apply.sh`](./templates/remove_vm_and_apply.sh) captura o nome da instância (`<%=instance.name%>`), remove a entrada de `terraform.tfvars` via [`scripts/remove-vm-from-tfvars.sh`](../../scripts/remove-vm-from-tfvars.sh) e executa `terraform apply -auto-approve` no GCS.
+   - Ao vincular o Provisioning Workflow (`vm-provisioning-workflow`) à instância, quando qualquer usuário clica em **Delete** na interface do Morpheus, a fase **Teardown** é disparada automaticamente.
+   - O template [`remove_vm_and_apply.sh`](./templates/remove_vm_and_apply.sh) captura o nome da instância, recupera o `terraform.tfvars` do Cypher, remove a entrada via [`scripts/remove-vm-from-tfvars.sh`](../../scripts/remove-vm-from-tfvars.sh), sincroniza a exclusão no Cypher e executa `terraform apply -auto-approve` no GCS.
    - A VM é destruída na GCP e removida do `tfstate` sem intervenção manual.
 
 2. **Exclusão sob demanda via Catálogo de Self-Service**:
-   - Disponível pelo item de catálogo **`vm-nginx-remover-vm`**.
-   - O solicitante informa a chave ou o nome da VM que deseja desativar. O workflow executa a remoção no `terraform.tfvars` e aplica o desprovisionamento no Terraform.
+   - Disponível pelo item de catálogo de remoção sob demanda.
+   - O solicitante informa a chave ou o nome da VM que deseja desativar. O workflow executa a remoção no `terraform.tfvars`, sincroniza o Cypher e aplica o desprovisionamento no Terraform.
 
-## Estratégia de Armazenamento de Estado (`tfstate`)
+## Estratégia de Armazenamento de Estado (`tfstate`) e Variáveis (`tfvars`)
 
-Nesta arquitetura, adota-se o padrão de **backend local por padrão** com **sobreposição dinâmica (override)** para execuções remotas:
+Nesta arquitetura, adota-se o padrão **100% Stateless no runner**:
 
 1. **Execuções Manuais / Locais (Desenvolvimento)**:
-   O arquivo [`versions.tf`](../vm-nginx-terraform-ansible/versions.tf) **não declara nenhum bloco `backend`**. Com isso, qualquer execução direta (`terraform init` / `apply`) no computador do desenvolvedor armazena o estado no backend **local** (`terraform.tfstate`), sem exigir conexão ou criação de buckets no Google Cloud ou qualquer outro compatível.
+   O arquivo de manifesto local **não declara nenhum bloco `backend`**. Com isso, qualquer execução direta (`terraform init` / `apply`) no computador do desenvolvedor armazena o estado no backend **local** (`terraform.tfstate`), sem exigir conexão ou criação de buckets no Google Cloud.
 
-2. **Execuções Automatizadas via Morpheus Data (Remoto / GCS)**:
-   Quando a Shell Task [`add_vm_and_apply.sh`](./templates/add_vm_and_apply.sh) é disparada pelo Morpheus, ela gera temporariamente um arquivo de sobreposição chamado `backend_override.tf` contendo a declaração do backend GCS:
+2. **Execuções Automatizadas via Morpheus Data (Remoto / GCS + Cypher)**:
+   - As variáveis ficam centralizadas no **Cypher** (`secret/tfvars-gcp-create-vm-gcstate`).
+   - Quando a Shell Task [`add_vm_and_apply.sh`](./templates/add_vm_and_apply.sh) é disparada pelo Morpheus, ela gera temporariamente um arquivo de sobreposição chamado `backend_override.tf` contendo a declaração do backend GCS:
 
    ```hcl
    terraform {
      backend "gcs" {
        bucket = "tfstate-devopsvanilla-samples"
-       prefix = "vm-nginx-terraform-ansible"
+       prefix = "gcp-create-vm-gcstate"
      }
    }
    ```
 
-   Em seguida, o script executa `terraform init -reconfigure` para conectar ao bucket GCS e, ao término da execução, um `trap` remove automaticamente o arquivo `backend_override.tf`, mantendo o repositório limpo.
+   Em seguida, o script executa `terraform init -reconfigure` para conectar ao bucket GCS e, ao término da execução, um `trap` remove automaticamente o arquivo `backend_override.tf` e o `terraform.tfvars`, mantendo o repositório limpo e seguro.
 
 ### Suporte a Outros Backends Remotos
 
 Embora o script da PoC gere a configuração para o **Google Cloud Storage (`gcs`)**, a mesma estratégia de `override` permite alternar para **qualquer backend remoto oficial do Terraform** (AWS S3, Azure Blob, HashiCorp Consul, HTTP, etc.) apenas ajustando o bloco gerado no script.
 
 ### Comparativo com o Native State (Cypher)
-Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` diretamente no cofre nativo do Morpheus Data (Cypher), consulte a PoC [`morpheus-tf-nativestate`](../morpheus-tf-nativestate/README.md) e o guia detalhado de recuperação de state e correção de drift em [`HOWTO-tfstate-drift.md`](../morpheus-tf-nativestate/HOWTO-tfstate-drift.md).
 
+Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` diretamente no cofre nativo do Morpheus Data (Cypher), consulte a PoC [`morpheus-tf-nativestate`](../morpheus-tf-nativestate/README.md) e o guia detalhado de recuperação de state e correção de drift em [`HOWTO-tfstate-drift.md`](../morpheus-tf-nativestate/HOWTO-tfstate-drift.md).
 
 ## Pré-requisitos
 
 - Terraform `>= 1.6` e acesso à internet para baixar o provider `HPE/hpe >= 1.6.0`.
 - Uma instância do Morpheus Data acessível, com um usuário/senha ou access
-  token com permissão para criar option types, tasks, workflows e itens de
-  catálogo.
+  token com permissão para criar option types, tasks, workflows, secrets no Cypher e itens de catálogo.
 - O host onde a **task** será executada (`task_execute_target`, padrão `local`
   = o próprio Morpheus; também suporta `remote` e `resource`) precisa ter:
   - O repositório Git sincronizado no Morpheus Data com o seu respectivo **ID de repositório** (informado em `task_repository_id` no `terraform.tfvars` ou via integração Git em `git_integration_name` / `git_repository_name`);
-  - `bash`, `python3` (usado por `add-vm-to-tfvars.sh`), `terraform` e
+  - `bash`, `python3` (usado por `add-vm-to-tfvars.sh` e pela sincronização do Cypher), `terraform` e
     `gcloud`/ADC configurado com permissão para o projeto GCP alvo;
-  - o bucket de state remoto da PoC `vm-nginx-terraform-ansible` já criado
-    (`./scripts/create-tfstate-bucket.sh`), pois a task executa `terraform init`
-    sem a flag `-migrate-state`.
+  - o bucket de state remoto já criado (`./scripts/create-tfstate-bucket.sh`), pois a task executa `terraform init` sem a flag `-migrate-state`.
 - Se `task_execute_target = "remote"`, defina também `remote_target_host`,
   `remote_target_port`, `remote_target_username` e `remote_target_password`.
 - Copie `terraform.tfvars-SAMPLE` para `terraform.tfvars` e preencha os
@@ -105,7 +131,7 @@ Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` d
 
 ## Como implantar
 
-1. Acesse o diretório `PoCs/morpheus`.
+1. Acesse o diretório `PoCs/morpheus-tf-remotestate`.
 2. Copie o arquivo de exemplo e ajuste os valores:
    - `cp terraform.tfvars-SAMPLE terraform.tfvars`
 3. Execute o fluxo padrão do Terraform:
@@ -116,7 +142,7 @@ Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` d
 4. Aplique os objetos no Morpheus Data:
    - `terraform apply`
 5. No Morpheus Data, acesse **Self-Service > Catalog** e localize o item com
-   o nome definido em `blueprint_name` (padrão `vm-nginx-terraform-ansible`).
+   o nome definido em `blueprint_name`.
 6. Clique em **Order**, preencha o formulário com os mesmos dados que você
    passaria para `scripts/add-vm-to-tfvars.sh` (chave/nome da VM, tipo de
    máquina, disco, imagem, IP externo, SSH, rede, CIDRs, Org Policy e grupos)
@@ -132,27 +158,23 @@ Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` d
   - `terraform output remove_task_id`
   - `terraform output provisioning_workflow_id`
   - `terraform output remove_catalog_item_id`
-- No Morpheus Data, em **Library > Workflows > Operational**, confirmar que
-  os workflows de criação (`vm-nginx-add-vm-and-apply`) e remoção (`vm-nginx-remove-and-apply`) aparecem associados às suas tasks.
-- Em **Library > Workflows > Provisioning**, confirmar que o workflow `vm-nginx-provisioning-workflow` aparece com a task de remoção configurada na fase **Teardown**.
+- No Morpheus Data, em **Tools > Cypher**, confirmar que a chave `secret/tfvars-gcp-create-vm-gcstate` foi criada.
+- Em **Library > Workflows > Operational**, confirmar que os workflows de criação e remoção aparecem associados às suas tasks.
+- Em **Library > Workflows > Provisioning**, confirmar que o provisioning workflow aparece com a task de remoção configurada na fase **Teardown**.
 - **Testando a Criação**:
-  - No Morpheus Data, acesse **Self-Service > Catalog**, lance o item `vm-nginx-terraform-ansible`, preencha o formulário e confirme o pedido.
-  - Acompanhe em **Provisioning > Executions** a criação da VM e a atualização do `terraform.tfvars`.
+  - No Morpheus Data, acesse **Self-Service > Catalog**, lance o item de catálogo, preencha o formulário e confirme o pedido.
+  - Acompanhe em **Provisioning > Executions** a criação da VM e a atualização do Cypher.
 - **Testando a Exclusão Automática (Teardown)**:
-  - Ao excluir a instância pelo Morpheus (ou via item de catálogo `vm-nginx-remover-vm`), acompanhe a execução da task `remove-vm-from-tfvars-and-apply`.
-  - Verifique se a entrada foi removida do `terraform.tfvars` e se a VM foi destruída no GCP e desregistrada do `tfstate` no GCS.
+  - Ao excluir a instância pelo Morpheus (ou via item de catálogo de remoção), acompanhe a execução da task `remove-vm-from-tfvars-and-apply`.
+  - Verifique se a entrada foi removida do Cypher e se a VM foi destruída no GCP e desregistrada do `tfstate` no GCS.
 
 ## Como descomissionar
 
 - Para remover **apenas os objetos criados no Morpheus Data** por esta PoC
-  (option types, task, workflow e item de catálogo):
+  (cypher secret, option types, task, workflow e item de catálogo):
   - `terraform destroy`
 - Isso **não** destrói nenhuma VM provisionada na GCP através das execuções
-  do App Blueprint. Para descomissionar as VMs criadas, siga a seção "Como
-  descomissionar" do [README da PoC vm-nginx-terraform-ansible](../vm-nginx-terraform-ansible/README.md).
-- Se preferir manter o App Blueprint mas impedir novos lançamentos, defina
-  `enabled = false` em `catalog_item.tf` e aplique novamente, em vez de
-  destruir os recursos.
+  do App Blueprint. Para descomissionar as VMs criadas, remova-as via interface do Morpheus ou via script de remoção.
 
 ## Guia de erros comuns
 

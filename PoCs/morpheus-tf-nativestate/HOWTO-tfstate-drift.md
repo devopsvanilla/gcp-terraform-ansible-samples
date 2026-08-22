@@ -50,12 +50,12 @@ curl -k -s -H "Authorization: Bearer $MORPHEUS_TOKEN" \
 
 ### Passo 2: Preparar o Ambiente Local
 
-1. Navegue até o diretório do manifesto Terraform ([`PoCs/vm-nginx-terraform-ansible`](../vm-nginx-terraform-ansible/README.md)):
+1. Navegue até o diretório do manifesto Terraform ([`PoCs/gcp-create-vm-gcstate`](../gcp-create-vm-gcstate/README.md)):
    ```bash
-   cd PoCs/vm-nginx-terraform-ansible
+   cd PoCs/gcp-create-vm-gcstate
    ```
 
-2. Mova ou salve os arquivos `terraform.tfstate` e `terraform.tfvars` recuperados no **Passo 1** para dentro desta pasta (`PoCs/vm-nginx-terraform-ansible`).
+2. Mova ou salve os arquivos `terraform.tfstate` e `terraform.tfvars` recuperados no **Passo 1** para dentro desta pasta (`PoCs/gcp-create-vm-gcstate`).
 
 3. Garanta que o terminal esteja autenticado no projeto GCP correto com o Application Default Credentials (`ADC`):
    ```bash

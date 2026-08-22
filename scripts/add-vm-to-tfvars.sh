@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" && pwd)"
 REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
-DEFAULT_TFVARS_FILE="${REPO_ROOT}/PoCs/vm-nginx-terraform-ansible/terraform.tfvars"
+DEFAULT_TFVARS_FILE="${REPO_ROOT}/PoCs/gcp-create-vm-gcstate/terraform.tfvars"
 UNSET="__COPILOT_UNSET__"
 
 TFVARS_FILE="${DEFAULT_TFVARS_FILE}"
@@ -317,7 +317,7 @@ validate_args() {
   if [[ ! -f "$TFVARS_FILE" ]]; then
     log_info "Arquivo ${TFVARS_FILE} não existia; criando estrutura base..."
     cat <<'EOF' > "$TFVARS_FILE"
-poc_name                         = "vm-nginx-terraform-ansible"
+poc_name                         = "gcp-create-vm-gcstate"
 project_id                       = "poc-terraform-ansible"
 region                           = "us-central1"
 zone                             = "us-central1-a"
@@ -468,6 +468,11 @@ for index, line in enumerate(lines):
     if start_index is None and line.strip().startswith('vms = {'):
         start_index = index
         depth = line.count('{') - line.count('}')
+        if depth == 0:
+            lines[index] = 'vms = {\n'
+            lines.insert(index + 1, '}\n')
+            end_index = index + 1
+            break
         continue
 
     if start_index is not None:

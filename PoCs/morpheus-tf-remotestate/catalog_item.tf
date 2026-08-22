@@ -16,8 +16,8 @@ resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_add_and_apply" {
   content = <<-EOT
     ### ${var.blueprint_name}
 
-    Adiciona uma nova VM ao `terraform.tfvars` da PoC `vm-nginx-terraform-ansible`
-    e executa `terraform apply` no manifesto correspondente.
+    Adiciona uma nova VM ao `terraform.tfvars` no Cypher da PoC `gcp-create-vm-gcstate`
+    e executa `terraform apply` com remote state no GCS.
 
     Preencha os campos do formulário com os mesmos valores que seriam passados
     para `scripts/add-vm-to-tfvars.sh`.
@@ -26,8 +26,8 @@ resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_add_and_apply" {
 
 # Publica o item de catálogo para remoção de VM sob demanda
 resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_remove_and_apply" {
-  name         = "vm-nginx-remover-vm"
-  description  = "Remove uma VM existente do terraform.tfvars e desprovisiona os recursos via Terraform"
+  name         = "gcp-create-vm-remover-vm"
+  description  = "Remove uma VM existente do terraform.tfvars no Cypher e desprovisiona os recursos via Terraform"
   category     = var.blueprint_category
   visibility   = var.blueprint_visibility
   context_type = "appliance"
@@ -40,9 +40,9 @@ resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_remove_and_apply" {
   ]
 
   content = <<-EOT
-    ### Remover VM da PoC vm-nginx-terraform-ansible
+    ### Remover VM da PoC gcp-create-vm-gcstate
 
-    Remove a entrada da VM do `terraform.tfvars` e executa `terraform apply`
+    Remove a entrada da VM do `terraform.tfvars` no Cypher e executa `terraform apply`
     para destruir os recursos no GCP e atualizar o `tfstate` no GCS.
 
     Informe o **Nome da VM** ou a **Chave da VM** que deseja excluir.

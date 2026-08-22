@@ -141,19 +141,19 @@ variable "remote_target_password" {
 variable "workflow_name" {
   type        = string
   description = "Nome exibido para o Workflow Operacional no Morpheus Data."
-  default     = "vm-nginx-add-vm-and-apply"
+  default     = "gcp-create-vm-add-and-apply"
 }
 
 variable "blueprint_name" {
   type        = string
   description = "Nome exibido para o App Blueprint (catálogo de self-service) no Morpheus Data."
-  default     = "vm-nginx-terraform-ansible"
+  default     = "gcp-create-vm-gcstate"
 }
 
 variable "blueprint_description" {
   type        = string
   description = "Descrição do App Blueprint exibida no catálogo do Morpheus Data."
-  default     = "Adiciona uma VM ao terraform.tfvars da PoC vm-nginx-terraform-ansible e aplica o manifesto Terraform correspondente."
+  default     = "Adiciona uma VM ao terraform.tfvars no Cypher da PoC gcp-create-vm-gcstate e aplica o manifesto Terraform com remote state no GCS."
 }
 
 variable "blueprint_category" {
@@ -172,3 +172,24 @@ variable "blueprint_visibility" {
     error_message = "blueprint_visibility deve ser \"public\" ou \"private\"."
   }
 }
+
+# ===== Gerenciamento de Variáveis no Cypher e GCP =====
+
+variable "project_id" {
+  type        = string
+  description = "ID do projeto GCP padrão para a infraestrutura."
+  default     = "poc-terraform-ansible"
+}
+
+variable "cypher_tfvars_key" {
+  type        = string
+  description = "Chave no Morpheus Cypher onde o conteúdo de terraform.tfvars será armazenado."
+  default     = "secret/tfvars-gcp-create-vm-gcstate"
+}
+
+variable "cypher_tfvars_ttl" {
+  type        = number
+  description = "Tempo de vida (TTL) em segundos para o segredo de tfvars no Cypher (0 = sem expiração)."
+  default     = 0
+}
+

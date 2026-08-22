@@ -70,12 +70,9 @@ locals {
 
   manage_vm_external_ip_org_policy_effective = var.manage_vm_external_ip_org_policy && length(local.vm_external_ip_allowed_values) > 0
 
-  ansible_public_key_path    = pathexpand("${var.ansible_private_key_file}.pub")
-  ansible_public_key_content = trimspace(fileexists(local.ansible_public_key_path) ? file(local.ansible_public_key_path) : "")
   vm_metadata_ssh_keys = {
     for vm_key, vm in local.vm_configs : vm_key => compact([
       trimspace(vm.ssh_public_key),
-      var.run_ansible && trimspace(local.ansible_public_key_content) != "" ? trimspace(local.ansible_public_key_content) : "",
     ])
   }
 
@@ -83,10 +80,6 @@ locals {
     for vm_key, vm in local.vm_configs : vm_key => compact([
       for key_value in local.vm_metadata_ssh_keys[vm_key] : (trimspace(key_value) != "" ? format("%s:%s", vm.ssh_username, key_value) : "")
     ])
-  }
-
-  vm_ansible_target_hosts = {
-    for vm_key, vm in google_compute_instance.vm : vm_key => try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? try(vm.network_interface[0].access_config[0].nat_ip, null) : vm.network_interface[0].network_ip
   }
 }
 
@@ -214,21 +207,14 @@ resource "google_compute_instance" "vm" {
     chmod 600 "/home/$login_user/.ssh/authorized_keys"
     chown -R "$login_user:$login_user" "/home/$login_user"
 
-      if command -v sudo >/dev/null 2>&1; then
-        install -d -m 750 /etc/sudoers.d
-        echo "$login_user ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/99-$login_user-nopasswd"
-        chmod 440 "/etc/sudoers.d/99-$login_user-nopasswd"
-        if command -v visudo >/dev/null 2>&1; then
-          visudo -cf "/etc/sudoers.d/99-$login_user-nopasswd"
-        fi
+    if command -v sudo >/dev/null 2>&1; then
+      install -d -m 750 /etc/sudoers.d
+      echo "$login_user ALL=(ALL) NOPASSWD:ALL" > "/etc/sudoers.d/99-$login_user-nopasswd"
+      chmod 440 "/etc/sudoers.d/99-$login_user-nopasswd"
+      if command -v visudo >/dev/null 2>&1; then
+        visudo -cf "/etc/sudoers.d/99-$login_user-nopasswd"
       fi
-
-      # Instalação e ativação do Nginx
-      if ! command -v nginx >/dev/null 2>&1; then
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get update -y && apt-get install -y nginx
-        systemctl enable --now nginx
-      fi
+    fi
   EOT
 }
 
@@ -266,157 +252,3 @@ resource "google_compute_firewall" "allow_ssh" {
   target_tags   = ["${var.poc_name}-${lower(replace(each.key, "_", "-"))}-ssh"]
 }
 
-resource "null_resource" "configure_os_login_ssh_key" {
-  for_each = var.run_ansible && !var.use_metadata_ssh_keys ? local.vm_configs : {}
-
-  depends_on = [google_compute_instance.vm]
-
-  triggers = {
-    vm_id          = google_compute_instance.vm[each.key].id
-    project_id     = var.project_id
-    ssh_username   = each.value.ssh_username
-    ssh_public_key = each.value.ssh_public_key
-    playbook_hash  = filesha256("${path.module}/ansible/site.yml")
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      set -eu
-
-      if ! command -v gcloud >/dev/null 2>&1; then
-        echo "gcloud CLI não encontrado no PATH do runner; pulando registro de chave no OS Login." >&2
-        exit 0
-      fi
-
-      ansible_private_key_file="${var.ansible_private_key_file}"
-      if [ "$${ansible_private_key_file#\~}" != "$ansible_private_key_file" ]; then
-        ansible_private_key_file="$HOME$${ansible_private_key_file#\~}"
-      fi
-
-      mkdir -p "$(dirname "$ansible_private_key_file")"
-      echo "Usando chave privada SSH do Ansible em $ansible_private_key_file"
-      if [ ! -f "$ansible_private_key_file" ]; then
-        echo "Chave privada ausente; gerando nova chave ed25519 em $ansible_private_key_file"
-        ssh-keygen -t ed25519 -N '' -f "$ansible_private_key_file" -C "${each.value.ssh_username}-gcp-poc" >/dev/null 2>&1
-      fi
-
-      ansible_public_key=""
-      if [ -f "$${ansible_private_key_file}.pub" ]; then
-        ansible_public_key="$(cat "$${ansible_private_key_file}.pub")"
-      elif [ -f "$ansible_private_key_file" ]; then
-        ansible_public_key="$(ssh-keygen -y -f "$ansible_private_key_file" 2>/dev/null || true)"
-      fi
-
-      tmp_key_file="$(mktemp)"
-      trap 'rm -f "$tmp_key_file"' EXIT
-      {
-        if [ -n "${each.value.ssh_public_key}" ]; then
-          printf '%s\n' "${each.value.ssh_public_key}"
-        fi
-        if [ -n "$ansible_public_key" ]; then
-          printf '%s\n' "$ansible_public_key"
-        fi
-      } | awk 'NF && !seen[$0]++' > "$tmp_key_file"
-
-      if ! gcloud config list --format='value(core.account)' >/dev/null 2>&1; then
-        echo "Falha de autenticação do gcloud. Execute 'gcloud auth login' e 'gcloud auth application-default login'." >&2
-        exit 1
-      fi
-
-      if ! gcloud compute os-login ssh-keys add \
-        --project="${var.project_id}" \
-        --key-file="$tmp_key_file" \
-        --ttl=0; then
-        echo "Não foi possível registrar a chave SSH no OS Login. Verifique permissões e se o projeto aceita esse fluxo." >&2
-        exit 1
-      fi
-    EOT
-  }
-}
-
-resource "null_resource" "run_ansible" {
-  for_each = var.run_ansible ? local.vm_configs : {}
-
-  depends_on = [google_compute_instance.vm, google_compute_firewall.allow_http, google_compute_firewall.allow_ssh, null_resource.configure_os_login_ssh_key]
-
-  triggers = {
-    vm_id            = google_compute_instance.vm[each.key].id
-    target_host      = local.vm_ansible_target_hosts[each.key]
-    ssh_user         = each.value.ssh_username
-    private_key_file = var.ansible_private_key_file
-    wait_seconds     = var.ansible_wait_seconds
-    max_retries      = var.ansible_max_retries
-    playbook_hash    = filesha256("${path.module}/ansible/site.yml")
-  }
-
-  provisioner "local-exec" {
-    working_dir = path.module
-    command     = <<-EOT
-      set -eu
-
-      if ! command -v ansible-playbook >/dev/null 2>&1; then
-        echo "ansible-playbook não encontrado no PATH do runner; Nginx instalado e configurado via metadata startup script." >&2
-        exit 0
-      fi
-
-      target_host="${local.vm_ansible_target_hosts[each.key]}"
-      ssh_user="${each.value.ssh_username}"
-      private_key_file="${var.ansible_private_key_file}"
-
-      if [ "$${private_key_file#\~}" != "$private_key_file" ]; then
-        private_key_file="$${HOME}$${private_key_file#\~}"
-      fi
-
-      if [ ! -f "$private_key_file" ]; then
-        echo "Chave privada não encontrada em $private_key_file; gerando uma nova chave ed25519" >&2
-        mkdir -p "$(dirname "$private_key_file")"
-        ssh-keygen -t ed25519 -N '' -f "$private_key_file" -C "${var.ansible_ssh_user}-gcp-poc" >/dev/null 2>&1
-      fi
-
-      if [ ! -f "$private_key_file" ]; then
-        echo "Falha ao gerar a chave privada em $private_key_file" >&2
-        exit 1
-      fi
-
-      echo "Conectando com usuário $ssh_user e chave $private_key_file"
-
-      wait_seconds="${var.ansible_wait_seconds}"
-      max_retries="${var.ansible_max_retries}"
-
-      ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$target_host" >/dev/null 2>&1 || true
-      if [ "$target_host" != "localhost" ]; then
-        ssh-keygen -f "$HOME/.ssh/known_hosts" -R "$target_host" >/dev/null 2>&1 || true
-      fi
-
-      export TARGET_HOST="$target_host"
-      export ANSIBLE_SSH_USER="$ssh_user"
-      export ANSIBLE_PRIVATE_KEY_FILE="$private_key_file"
-
-      attempt=1
-      while [ "$attempt" -le "$max_retries" ]; do
-        echo "Tentativa $attempt/$max_retries para $target_host"
-
-        if ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -i "$private_key_file" "$$ssh_user@$$target_host" 'true' >/dev/null 2>&1; then
-          echo "SSH respondeu para $target_host"
-        else
-          echo "SSH ainda não respondeu para $target_host" >&2
-        fi
-
-        if ansible-playbook -i ansible/inventories/dev/hosts.yml ansible/site.yml -e "target_host=$target_host"; then
-          echo "Ansible concluído com sucesso para $target_host"
-          exit 0
-        fi
-
-        if [ "$attempt" -lt "$max_retries" ]; then
-          echo "Falha na tentativa $attempt/$max_retries para $target_host. Aguardando $${wait_seconds}s..." >&2
-          sleep "$wait_seconds"
-        fi
-
-        attempt=$((attempt + 1))
-      done
-
-      echo "Ansible falhou após $max_retries tentativas para $target_host" >&2
-      exit 1
-    EOT
-  }
-}

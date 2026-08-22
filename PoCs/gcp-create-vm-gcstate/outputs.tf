@@ -12,11 +12,6 @@ locals {
     subnetwork_name                  = var.subnetwork_name
     allowed_http_cidr                = var.allowed_http_cidr
     allowed_ssh_cidr                 = var.allowed_ssh_cidr
-    run_ansible                      = var.run_ansible
-    ansible_wait_seconds             = var.ansible_wait_seconds
-    ansible_max_retries              = var.ansible_max_retries
-    ansible_private_key_file         = var.ansible_private_key_file
-    ansible_ssh_user                 = var.ansible_ssh_user
   }
 
   vm_details = {
@@ -46,7 +41,6 @@ locals {
       metadata_ssh_key_entries         = local.vm_metadata_ssh_key_entries[vm_key]
       vm_internal_ip                   = vm.network_interface[0].network_ip
       vm_external_ip                   = try(vm.network_interface[0].access_config[0].nat_ip, null)
-      ansible_target_host              = try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? try(vm.network_interface[0].access_config[0].nat_ip, null) : vm.network_interface[0].network_ip
       ssh_access_hint                  = try(vm.network_interface[0].access_config[0].nat_ip, null) != null ? format("ssh -i <caminho-da-chave-privada> %s@%s", local.vm_configs[vm_key].ssh_username, try(vm.network_interface[0].access_config[0].nat_ip, "")) : format("VM sem IP externo. Use VPN, bastion ou IAP para alcançar %s.", vm.network_interface[0].network_ip)
       tags                             = vm.tags
     }
@@ -92,11 +86,6 @@ output "vm_external_ips" {
   value       = { for vm_key, vm in local.vm_details : vm_key => vm.vm_external_ip }
 }
 
-output "ansible_target_hosts" {
-  description = "Mapa com o host recomendado para Ansible por chave lógica (IP externo se existir; senão IP interno)."
-  value       = { for vm_key, vm in local.vm_details : vm_key => vm.ansible_target_host }
-}
-
 output "ssh_access_hints" {
   description = "Mapa com comandos de SSH de referência por chave lógica."
   value       = { for vm_key, vm in local.vm_details : vm_key => vm.ssh_access_hint }
@@ -120,11 +109,6 @@ output "vm_internal_ip" {
 output "vm_external_ip" {
   description = "IP externo da VM quando houver apenas uma VM; nulo no modo multi-VM ou quando assign_external_ip = false."
   value       = local.single_vm_details != null ? local.single_vm_details.vm_external_ip : null
-}
-
-output "ansible_target_host" {
-  description = "Host recomendado para Ansible quando houver apenas uma VM; nulo no modo multi-VM."
-  value       = local.single_vm_details != null ? local.single_vm_details.ansible_target_host : null
 }
 
 output "ssh_access_hint" {

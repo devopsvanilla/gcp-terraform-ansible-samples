@@ -33,3 +33,9 @@ output "remove_catalog_item_id" {
   value       = hpe_morpheus_catalog_item_workflow.vm_nginx_remove_and_apply.id
 }
 
+output "cypher_tfvars_secret_id" {
+  description = "ID do segredo Cypher onde o manifesto terraform.tfvars é armazenado."
+  value       = hpe_morpheus_cypher_secret.tfvars_manifest.id
+}
+
+
