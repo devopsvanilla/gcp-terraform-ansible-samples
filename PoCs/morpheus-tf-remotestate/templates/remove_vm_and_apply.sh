@@ -10,8 +10,10 @@ FORM_VM_KEY='<%= binding.hasVariable("customOptions") && customOptions?.vmKey ? 
 # Injeção de credenciais GCP, chaves do Cypher e contexto de API Morpheus
 GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 CYPHER_TFVARS_VALUE='<%=cypher.read("secret/tfvars-gcp-create-vm-gcstate")%>'
-MORPHEUS_API_URL='<%=morpheus.apiUrl%>'
-MORPHEUS_TOKEN='<%=morpheus.apiAccessToken%>'
+ERB_MORPHEUS_API_URL='<%= binding.hasVariable("morpheus") ? (morpheus?.getAt("apiUrl") ?: morpheus?.getAt("api_url") ?: morpheus?.getAt("applianceUrl") ?: "") : "" %>'
+ERB_MORPHEUS_TOKEN='<%= binding.hasVariable("morpheus") ? (morpheus?.getAt("apiAccessToken") ?: morpheus?.getAt("apiToken") ?: morpheus?.getAt("token") ?: "") : "" %>'
+CYPHER_MORPHEUS_URL='<%=cypher.read("secret/morpheus-api-url")%>'
+CYPHER_MORPHEUS_TOKEN='<%=cypher.read("secret/morpheus-api-token")%>'
 CYPHER_TFVARS_KEY="secret/tfvars-gcp-create-vm-gcstate"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
@@ -22,6 +24,13 @@ log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 [ "$INSTANCE_NAME" != "null" ] || INSTANCE_NAME=""
 [ "$FORM_VM_NAME" != "null" ] || FORM_VM_NAME=""
 [ "$FORM_VM_KEY" != "null" ] || FORM_VM_KEY=""
+[ "$ERB_MORPHEUS_API_URL" != "null" ] || ERB_MORPHEUS_API_URL=""
+[ "$ERB_MORPHEUS_TOKEN" != "null" ] || ERB_MORPHEUS_TOKEN=""
+[ "$CYPHER_MORPHEUS_URL" != "null" ] || CYPHER_MORPHEUS_URL=""
+[ "$CYPHER_MORPHEUS_TOKEN" != "null" ] || CYPHER_MORPHEUS_TOKEN=""
+
+MORPHEUS_API_URL="${MORPHEUS_API_URL:-${MORPHEUS_APPLIANCE_URL:-${MORPHEUS_URL:-${ERB_MORPHEUS_API_URL:-${CYPHER_MORPHEUS_URL:-}}}}}"
+MORPHEUS_TOKEN="${MORPHEUS_TOKEN:-${MORPHEUS_API_TOKEN:-${MORPHEUS_ACCESS_TOKEN:-${ERB_MORPHEUS_TOKEN:-${CYPHER_MORPHEUS_TOKEN:-}}}}}"
 
 VM_NAME="${INSTANCE_NAME:-$FORM_VM_NAME}"
 VM_KEY="${FORM_VM_KEY}"

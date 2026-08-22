@@ -89,6 +89,8 @@ Esta PoC implanta **uma ou várias VMs Linux na Google Cloud Platform (GCP)** us
 - Se quiser remover apenas uma VM do manifesto antes de rodar `terraform plan`/`terraform apply`, use a partir da raiz do repositório:
   - `./scripts/remove-vm-from-tfvars.sh --file "./PoCs/gcp-create-vm-gcstate/terraform.tfvars" --name <NOME DA VM>`
 - O script de remoção localiza o bloco com `vm_name` igual ao valor informado, remove o bloco completo, executa `terraform fmt` e `terraform validate` e restaura o arquivo original se a remoção deixar o manifesto inválido.
+- Para limpar o state remoto no GCS ou excluir o bucket após o destroy:
+  - `./scripts/cleanup-tfstate-bucket.sh --project-id poc-terraform-ansible`
 - Confirmar no Console GCP que VM, regras de firewall e políticas da PoC foram removidas.
 
 ## Guia de erros comuns
