@@ -23,11 +23,9 @@ ALLOWED_SSH_CIDR='<%=customOptions.allowedSshCidr%>'
 MANAGE_ORG_POLICY='<%=customOptions.manageVmExternalIpOrgPolicy%>'
 USER_GROUPS='<%=customOptions.userGroups%>'
 
-# Injeção de credenciais GCP, chaves do Cypher e contexto de API Morpheus
+# Injeção de credenciais GCP e chaves do Cypher
 GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 CYPHER_TFVARS_VALUE='<%=cypher.read("secret/tfvars-gcp-create-vm-gcstate")%>'
-ERB_MORPHEUS_API_URL='<%= binding.hasVariable("morpheus") ? (morpheus?.getAt("apiUrl") ?: morpheus?.getAt("api_url") ?: morpheus?.getAt("applianceUrl") ?: "") : "" %>'
-ERB_MORPHEUS_TOKEN='<%= binding.hasVariable("morpheus") ? (morpheus?.getAt("apiAccessToken") ?: morpheus?.getAt("apiToken") ?: morpheus?.getAt("token") ?: "") : "" %>'
 CYPHER_MORPHEUS_URL='<%=cypher.read("secret/morpheus-api-url")%>'
 CYPHER_MORPHEUS_TOKEN='<%=cypher.read("secret/morpheus-api-token")%>'
 CYPHER_TFVARS_KEY="secret/tfvars-gcp-create-vm-gcstate"
@@ -80,13 +78,11 @@ log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 [ "$ALLOWED_SSH_CIDR" != "null" ] || ALLOWED_SSH_CIDR=""
 [ "$MANAGE_ORG_POLICY" != "null" ] || MANAGE_ORG_POLICY=""
 [ "$USER_GROUPS" != "null" ] || USER_GROUPS=""
-[ "$ERB_MORPHEUS_API_URL" != "null" ] || ERB_MORPHEUS_API_URL=""
-[ "$ERB_MORPHEUS_TOKEN" != "null" ] || ERB_MORPHEUS_TOKEN=""
 [ "$CYPHER_MORPHEUS_URL" != "null" ] || CYPHER_MORPHEUS_URL=""
 [ "$CYPHER_MORPHEUS_TOKEN" != "null" ] || CYPHER_MORPHEUS_TOKEN=""
 
-MORPHEUS_API_URL="${MORPHEUS_API_URL:-${MORPHEUS_APPLIANCE_URL:-${MORPHEUS_URL:-${ERB_MORPHEUS_API_URL:-${CYPHER_MORPHEUS_URL:-}}}}}"
-MORPHEUS_TOKEN="${MORPHEUS_TOKEN:-${MORPHEUS_API_TOKEN:-${MORPHEUS_ACCESS_TOKEN:-${ERB_MORPHEUS_TOKEN:-${CYPHER_MORPHEUS_TOKEN:-}}}}}"
+MORPHEUS_API_URL="${MORPHEUS_API_URL:-${MORPHEUS_APPLIANCE_URL:-${MORPHEUS_URL:-${CYPHER_MORPHEUS_URL:-}}}}"
+MORPHEUS_TOKEN="${MORPHEUS_TOKEN:-${MORPHEUS_API_TOKEN:-${MORPHEUS_ACCESS_TOKEN:-${CYPHER_MORPHEUS_TOKEN:-}}}}"
 
 # Normaliza booleanos do Morpheus
 case "$(echo "$ASSIGN_EXTERNAL_IP" | tr '[:upper:]' '[:lower:]')" in
