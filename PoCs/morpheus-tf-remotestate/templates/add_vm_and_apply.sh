@@ -102,55 +102,6 @@ fi
 [ -f "$ADD_VM_SCRIPT" ] || { log_error "Script não encontrado em $ADD_VM_SCRIPT"; exit 1; }
 chmod +x "$ADD_VM_SCRIPT" 2>/dev/null || true
 
-# Inicializa o terraform.tfvars no clone do Morpheus se ainda não existir
-if [ ! -f "$TFVARS_FILE" ]; then
-  if [ -f "$POC_DIR/terraform.tfvars-SAMPLE" ]; then
-    log_info "terraform.tfvars não encontrado no clone; inicializando a partir de terraform.tfvars-SAMPLE..."
-    cp "$POC_DIR/terraform.tfvars-SAMPLE" "$TFVARS_FILE"
-  else
-    log_info "Criando terraform.tfvars base em $TFVARS_FILE..."
-    cat <<'EOF' > "$TFVARS_FILE"
-poc_name                         = "vm-nginx-terraform-ansible"
-project_id                       = "poc-terraform-ansible"
-region                           = "us-central1"
-zone                             = "us-central1-a"
-manage_vm_external_ip_org_policy = true
-network_name                     = "default"
-allowed_http_cidr                = "0.0.0.0/0"
-allowed_ssh_cidr                 = "0.0.0.0/0"
-run_ansible                      = false
-
-vms = {}
-EOF
-  fi
-fi
-
-ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME")
-[ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
-[ -z "$MACHINE_SERIES" ] || ARGS+=(--machine-series "$MACHINE_SERIES")
-[ -z "$VCPU_COUNT" ] || ARGS+=(--vcpu-count "$VCPU_COUNT")
-[ -z "$MEMORY_GB" ] || ARGS+=(--memory-gb "$MEMORY_GB")
-[ -z "$DISK_TYPE" ] || ARGS+=(--disk-type "$DISK_TYPE")
-[ -z "$DISK_SIZE_GB" ] || ARGS+=(--disk-size-gb "$DISK_SIZE_GB")
-[ -z "$BOOT_IMAGE_PROJECT" ] || ARGS+=(--boot-image-project "$BOOT_IMAGE_PROJECT")
-[ -z "$BOOT_IMAGE_FAMILY" ] || ARGS+=(--boot-image-family "$BOOT_IMAGE_FAMILY")
-[ -z "$ASSIGN_EXTERNAL_IP" ] || ARGS+=(--assign-external-ip "$ASSIGN_EXTERNAL_IP")
-[ -z "$SSH_USERNAME" ] || ARGS+=(--ssh-username "$SSH_USERNAME")
-[ -z "$SSH_PUBLIC_KEY" ] || ARGS+=(--ssh-public-key "$SSH_PUBLIC_KEY")
-[ -z "$NETWORK_NAME" ] || ARGS+=(--network-name "$NETWORK_NAME")
-[ -z "$SUBNETWORK_NAME" ] || ARGS+=(--subnetwork-name "$SUBNETWORK_NAME")
-[ -z "$ALLOWED_HTTP_CIDR" ] || ARGS+=(--allowed-http-cidr "$ALLOWED_HTTP_CIDR")
-[ -z "$ALLOWED_SSH_CIDR" ] || ARGS+=(--allowed-ssh-cidr "$ALLOWED_SSH_CIDR")
-[ -z "$MANAGE_ORG_POLICY" ] || ARGS+=(--manage-vm-external-ip-org-policy "$MANAGE_ORG_POLICY")
-
-if [ -n "$USER_GROUPS" ]; then
-  IFS=',' read -ra RAW_GROUPS <<< "$USER_GROUPS"
-  for raw_group in "${RAW_GROUPS[@]}"; do
-    group_name="$(echo "$raw_group" | xargs)"
-    [ -z "$group_name" ] || ARGS+=(--user-group "$group_name")
-  done
-fi
-
 OVERRIDE_FILE="$POC_DIR/backend_override.tf"
 CREDS_FILE=""
 
@@ -190,6 +141,65 @@ elif [ -n "${GOOGLE_CREDENTIALS:-}" ] && [ -z "${GOOGLE_APPLICATION_CREDENTIALS:
     printf '%s' "$GOOGLE_CREDENTIALS" > "$CREDS_FILE"
     export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_FILE"
   fi
+fi
+
+# Detecta project_id a partir do arquivo de credenciais
+DETECTED_PROJECT_ID=""
+if [ -n "${CREDS_FILE:-}" ] && [ -f "$CREDS_FILE" ]; then
+  DETECTED_PROJECT_ID="$(python3 -c "import json; data=json.load(open('$CREDS_FILE')); print(data.get('project_id', ''))" 2>/dev/null || true)"
+elif [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  DETECTED_PROJECT_ID="$(python3 -c "import json; data=json.load(open('$GOOGLE_APPLICATION_CREDENTIALS')); print(data.get('project_id', ''))" 2>/dev/null || true)"
+fi
+
+FINAL_PROJECT_ID="${DETECTED_PROJECT_ID:-poc-terraform-ansible}"
+
+# Inicializa o terraform.tfvars no clone do Morpheus se ainda não existir
+if [ ! -f "$TFVARS_FILE" ]; then
+  log_info "Criando terraform.tfvars base em $TFVARS_FILE (project_id: $FINAL_PROJECT_ID)..."
+  cat <<EOF > "$TFVARS_FILE"
+poc_name                         = "vm-nginx-terraform-ansible"
+project_id                       = "$FINAL_PROJECT_ID"
+region                           = "us-central1"
+zone                             = "us-central1-a"
+manage_vm_external_ip_org_policy = true
+network_name                     = "default"
+allowed_http_cidr                = "0.0.0.0/0"
+allowed_ssh_cidr                 = "0.0.0.0/0"
+run_ansible                      = false
+
+vms = {}
+EOF
+else
+  if grep -q "<gcp_project_id>" "$TFVARS_FILE" 2>/dev/null; then
+    log_info "Substituindo <gcp_project_id> por '$FINAL_PROJECT_ID' em $TFVARS_FILE..."
+    sed -i "s|<gcp_project_id>|$FINAL_PROJECT_ID|g" "$TFVARS_FILE"
+  fi
+fi
+
+ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME")
+[ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
+[ -z "$MACHINE_SERIES" ] || ARGS+=(--machine-series "$MACHINE_SERIES")
+[ -z "$VCPU_COUNT" ] || ARGS+=(--vcpu-count "$VCPU_COUNT")
+[ -z "$MEMORY_GB" ] || ARGS+=(--memory-gb "$MEMORY_GB")
+[ -z "$DISK_TYPE" ] || ARGS+=(--disk-type "$DISK_TYPE")
+[ -z "$DISK_SIZE_GB" ] || ARGS+=(--disk-size-gb "$DISK_SIZE_GB")
+[ -z "$BOOT_IMAGE_PROJECT" ] || ARGS+=(--boot-image-project "$BOOT_IMAGE_PROJECT")
+[ -z "$BOOT_IMAGE_FAMILY" ] || ARGS+=(--boot-image-family "$BOOT_IMAGE_FAMILY")
+[ -z "$ASSIGN_EXTERNAL_IP" ] || ARGS+=(--assign-external-ip "$ASSIGN_EXTERNAL_IP")
+[ -z "$SSH_USERNAME" ] || ARGS+=(--ssh-username "$SSH_USERNAME")
+[ -z "$SSH_PUBLIC_KEY" ] || ARGS+=(--ssh-public-key "$SSH_PUBLIC_KEY")
+[ -z "$NETWORK_NAME" ] || ARGS+=(--network-name "$NETWORK_NAME")
+[ -z "$SUBNETWORK_NAME" ] || ARGS+=(--subnetwork-name "$SUBNETWORK_NAME")
+[ -z "$ALLOWED_HTTP_CIDR" ] || ARGS+=(--allowed-http-cidr "$ALLOWED_HTTP_CIDR")
+[ -z "$ALLOWED_SSH_CIDR" ] || ARGS+=(--allowed-ssh-cidr "$ALLOWED_SSH_CIDR")
+[ -z "$MANAGE_ORG_POLICY" ] || ARGS+=(--manage-vm-external-ip-org-policy "$MANAGE_ORG_POLICY")
+
+if [ -n "$USER_GROUPS" ]; then
+  IFS=',' read -ra RAW_GROUPS <<< "$USER_GROUPS"
+  for raw_group in "${RAW_GROUPS[@]}"; do
+    group_name="$(echo "$raw_group" | xargs)"
+    [ -z "$group_name" ] || ARGS+=(--user-group "$group_name")
+  done
 fi
 
 if [ -n "$TFSTATE_BUCKET" ]; then

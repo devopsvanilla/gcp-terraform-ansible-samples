@@ -309,14 +309,29 @@ validate_args() {
   [[ -n "$VM_KEY" ]] || die "Informe o parâmetro obrigatório --vm-key."
   [[ -n "$VM_NAME" ]] || die "Informe o parâmetro obrigatório --vm-name."
   if [[ ! -f "$TFVARS_FILE" ]]; then
-    local sample_candidate
-    sample_candidate="$(dirname "$TFVARS_FILE")/terraform.tfvars-SAMPLE"
-    if [[ -f "$sample_candidate" ]]; then
-      log_info "Arquivo ${TFVARS_FILE} não existia; criando a partir de ${sample_candidate}..."
-      cp "$sample_candidate" "$TFVARS_FILE"
-    else
-      die "Arquivo terraform.tfvars não encontrado: ${TFVARS_FILE}"
+    log_info "Arquivo ${TFVARS_FILE} não existia; criando estrutura base..."
+    cat <<'EOF' > "$TFVARS_FILE"
+poc_name                         = "vm-nginx-terraform-ansible"
+project_id                       = "poc-terraform-ansible"
+region                           = "us-central1"
+zone                             = "us-central1-a"
+manage_vm_external_ip_org_policy = true
+network_name                     = "default"
+allowed_http_cidr                = "0.0.0.0/0"
+allowed_ssh_cidr                 = "0.0.0.0/0"
+run_ansible                      = false
+
+vms = {}
+EOF
+  fi
+
+  if grep -q "<gcp_project_id>" "$TFVARS_FILE" 2>/dev/null; then
+    local detected_proj="poc-terraform-ansible"
+    if [[ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" && -f "${GOOGLE_APPLICATION_CREDENTIALS}" ]]; then
+      detected_proj="$(python3 -c "import json; data=json.load(open('${GOOGLE_APPLICATION_CREDENTIALS}')); print(data.get('project_id', 'poc-terraform-ansible'))" 2>/dev/null || echo "poc-terraform-ansible")"
     fi
+    log_info "Substituindo <gcp_project_id> por '${detected_proj}' em ${TFVARS_FILE}..."
+    sed -i "s|<gcp_project_id>|${detected_proj}|g" "$TFVARS_FILE"
   fi
 
   validate_vm_key "$VM_KEY" || die "--vm-key inválido. Use apenas letras, números, hífen e underscore."
