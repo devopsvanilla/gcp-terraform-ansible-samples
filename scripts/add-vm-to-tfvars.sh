@@ -28,6 +28,8 @@ MANAGE_VM_EXTERNAL_IP_ORG_POLICY="${UNSET}"
 USER_GROUPS_CSV=""
 SKIP_VALIDATE="false"
 
+OVERWRITE="false"
+
 log_info() {
   printf '[INFO] %s\n' "$*"
 }
@@ -294,6 +296,10 @@ parse_args() {
         SKIP_VALIDATE="true"
         shift 1
         ;;
+      --overwrite|--update)
+        OVERWRITE="true"
+        shift 1
+        ;;
       -h|--help)
         usage
         exit 0
@@ -369,7 +375,7 @@ EOF
 }
 
 ensure_unique_vm_identifiers() {
-  python3 - "$TFVARS_FILE" "$VM_KEY" "$VM_NAME" <<'PY'
+  python3 - "$TFVARS_FILE" "$VM_KEY" "$VM_NAME" "$OVERWRITE" <<'PY'
 import pathlib
 import re
 import sys
@@ -377,15 +383,38 @@ import sys
 file_path = pathlib.Path(sys.argv[1])
 vm_key = sys.argv[2]
 vm_name = sys.argv[3]
+overwrite = (sys.argv[4].lower() == 'true')
 text = file_path.read_text(encoding='utf-8')
 
-if re.search(rf'^\s*["\']?{re.escape(vm_key)}["\']?\s*=\s*{{\s*$', text, flags=re.MULTILINE):
-    print(f"[ERROR] A chave lógica '{vm_key}' já existe em {file_path}.", file=sys.stderr)
-    raise SystemExit(1)
+has_key = bool(re.search(rf'^\s*["\']?{re.escape(vm_key)}["\']?\s*=\s*\{{', text, flags=re.MULTILINE))
+has_name = bool(re.search(rf'^\s*vm_name\s*=\s*"{re.escape(vm_name)}"\s*$', text, flags=re.MULTILINE))
 
-if re.search(rf'^\s*vm_name\s*=\s*"{re.escape(vm_name)}"\s*$', text, flags=re.MULTILINE):
-    print(f"[ERROR] Já existe uma VM com vm_name = '{vm_name}' em {file_path}.", file=sys.stderr)
-    raise SystemExit(1)
+if has_key or has_name:
+    if not overwrite:
+        if has_key:
+            print(f"[ERROR] A chave lógica '{vm_key}' já existe em {file_path}.", file=sys.stderr)
+        else:
+            print(f"[ERROR] Já existe uma VM com vm_name = '{vm_name}' em {file_path}.", file=sys.stderr)
+        raise SystemExit(1)
+    else:
+        # Sobrescreve: remove o bloco antigo de vm_key se existir
+        lines = text.splitlines(keepends=True)
+        new_lines = []
+        skip = False
+        depth = 0
+        for line in lines:
+            if not skip and re.match(rf'^\s*["\']?{re.escape(vm_key)}["\']?\s*=\s*\{{', line):
+                skip = True
+                depth = line.count('{') - line.count('}')
+                continue
+            if skip:
+                depth += line.count('{') - line.count('}')
+                if depth <= 0:
+                    skip = False
+                continue
+            new_lines.append(line)
+        text = ''.join(new_lines)
+        file_path.write_text(text, encoding='utf-8')
 PY
 }
 
