@@ -152,28 +152,60 @@ if [ -n "$USER_GROUPS" ]; then
 fi
 
 OVERRIDE_FILE="$POC_DIR/backend_override.tf"
+CREDS_FILE=""
 
 cleanup() {
   if [ -f "$OVERRIDE_FILE" ]; then
     log_info "Limpando arquivo temporário de override do backend ($OVERRIDE_FILE)..."
     rm -f "$OVERRIDE_FILE"
   fi
+  if [ -n "$CREDS_FILE" ] && [ -f "$CREDS_FILE" ]; then
+    log_info "Limpando arquivo temporário de credenciais GCP ($CREDS_FILE)..."
+    rm -f "$CREDS_FILE"
+  fi
 }
 trap cleanup EXIT
 
 cd "$POC_DIR"
 
-if [ -z "${GOOGLE_CREDENTIALS:-}" ]; then
+if [ -z "${GOOGLE_CREDENTIALS:-}" ] && [ -z "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
   GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
   if [ -n "$GCP_CREDS_SECRET" ] && [ "$GCP_CREDS_SECRET" != "null" ]; then
-    log_info "Injetando GOOGLE_CREDENTIALS a partir do Cypher secret/gcp-terraform-ansible-samples..."
+    log_info "Injetando credenciais GCP a partir do Cypher secret/gcp-terraform-ansible-samples..."
+    CREDS_FILE="$(mktemp /tmp/gcp_creds_XXXXXX.json)"
+    chmod 600 "$CREDS_FILE"
+    printf '%s' "$GCP_CREDS_SECRET" > "$CREDS_FILE"
+    export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_FILE"
     export GOOGLE_CREDENTIALS="$GCP_CREDS_SECRET"
+  else
+    log_info "Aviso: Cypher secret/gcp-terraform-ansible-samples retornou vazio/null ou não configurado."
+  fi
+elif [ -n "${GOOGLE_CREDENTIALS:-}" ] && [ -z "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
+  if [ -f "$GOOGLE_CREDENTIALS" ]; then
+    export GOOGLE_APPLICATION_CREDENTIALS="$GOOGLE_CREDENTIALS"
+  else
+    log_info "Gravando GOOGLE_CREDENTIALS em arquivo temporário para o backend GCS..."
+    CREDS_FILE="$(mktemp /tmp/gcp_creds_XXXXXX.json)"
+    chmod 600 "$CREDS_FILE"
+    printf '%s' "$GOOGLE_CREDENTIALS" > "$CREDS_FILE"
+    export GOOGLE_APPLICATION_CREDENTIALS="$CREDS_FILE"
   fi
 fi
 
 if [ -n "$TFSTATE_BUCKET" ]; then
   log_info "Gerando backend_override.tf temporário para GCS (bucket: $TFSTATE_BUCKET, prefix: $TFSTATE_PREFIX)..."
-  cat <<EOF > "$OVERRIDE_FILE"
+  if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
+    cat <<EOF > "$OVERRIDE_FILE"
+terraform {
+  backend "gcs" {
+    bucket      = "$TFSTATE_BUCKET"
+    prefix      = "$TFSTATE_PREFIX"
+    credentials = "$GOOGLE_APPLICATION_CREDENTIALS"
+  }
+}
+EOF
+  else
+    cat <<EOF > "$OVERRIDE_FILE"
 terraform {
   backend "gcs" {
     bucket = "$TFSTATE_BUCKET"
@@ -181,6 +213,7 @@ terraform {
   }
 }
 EOF
+  fi
 fi
 
 log_info "Inicializando Terraform em $POC_DIR..."
