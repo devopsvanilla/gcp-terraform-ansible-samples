@@ -27,17 +27,33 @@ manifesto Terraform separado" descrito nesta PoC.
 
 A combinação de recursos abaixo é o equivalente funcional mais próximo do
 comportamento pedido, e é o padrão recomendado pelo próprio provider para
-"formulário de self-service que dispara uma automação":
+"formulário de self-service que dispara uma automação e gerencia o ciclo de vida":
 
 | Recurso Terraform                        | Papel no Morpheus Data                                             |
 |-------------------------------------------|---------------------------------------------------------------------|
 | `hpe_morpheus_option_type_text/number/checkbox` | Cada campo do formulário exibido ao solicitante                |
-| `hpe_morpheus_task_shell_script`          | O script que roda `add-vm-to-tfvars.sh` e o `terraform apply`        |
-| `hpe_morpheus_workflow_operational`       | Agrupa os campos do formulário e a task, em ordem de execução       |
-| `hpe_morpheus_catalog_item_workflow`      | Pública o workflow no catálogo de self-service (o "App Blueprint")   |
+| `hpe_morpheus_task_shell_script` (add)    | Script que roda `add-vm-to-tfvars.sh` e o `terraform apply`        |
+| `hpe_morpheus_task_shell_script` (remove) | Script que roda `remove-vm-from-tfvars.sh` e o `terraform apply`   |
+| `hpe_morpheus_workflow_operational` (add) | Agrupa os campos do formulário e a task de criação                 |
+| `hpe_morpheus_workflow_operational` (del) | Agrupa os campos de identificação e a task de exclusão sob demanda |
+| `hpe_morpheus_workflow_provisioning`      | Provisioning Workflow com fase **Teardown** para exclusão automática|
+| `hpe_morpheus_catalog_item_workflow`      | Publica os workflows no catálogo de self-service do Morpheus       |
 
 Todos os arquivos `.tf` desta PoC estão documentados com o objetivo de cada
 recurso; consulte-os para o detalhamento de cada bloco.
+
+## Ciclo de Vida e Desprovisionamento Automático (Teardown)
+
+Nesta PoC, a exclusão de VMs e a sincronização do `tfstate` no GCS acontecem de duas maneiras:
+
+1. **Exclusão Automática via Teardown (Lifecycle Hook)**:
+   - Ao vincular o Provisioning Workflow (`vm-nginx-provisioning-workflow`) à instância, quando qualquer usuário clica em **Delete** na interface do Morpheus, a fase **Teardown** é disparada automaticamente.
+   - O template [`remove_vm_and_apply.sh`](./templates/remove_vm_and_apply.sh) captura o nome da instância (`<%=instance.name%>`), remove a entrada de `terraform.tfvars` via [`scripts/remove-vm-from-tfvars.sh`](../../scripts/remove-vm-from-tfvars.sh) e executa `terraform apply -auto-approve` no GCS.
+   - A VM é destruída na GCP e removida do `tfstate` sem intervenção manual.
+
+2. **Exclusão sob demanda via Catálogo de Self-Service**:
+   - Disponível pelo item de catálogo **`vm-nginx-remover-vm`**.
+   - O solicitante informa a chave ou o nome da VM que deseja desativar. O workflow executa a remoção no `terraform.tfvars` e aplica o desprovisionamento no Terraform.
 
 ## Estratégia de Armazenamento de Estado (`tfstate`)
 
@@ -113,21 +129,18 @@ Caso prefira não utilizar um bucket remoto (como GCS) e gerenciar o `tfstate` d
   - `terraform output workflow_id`
   - `terraform output catalog_item_id`
   - `terraform output catalog_item_name`
+  - `terraform output remove_task_id`
+  - `terraform output provisioning_workflow_id`
+  - `terraform output remove_catalog_item_id`
 - No Morpheus Data, em **Library > Workflows > Operational**, confirmar que
-  o workflow aparece com a task e os option types associados.
-- Após lançar o item de catálogo, acompanhar a execução em **Provisioning >
-  History** (ou **Executions**) e revisar o log da task — ele deve mostrar
-  a chamada a `add-vm-to-tfvars.sh` seguida de `terraform init`, `validate`
-  e `apply`.
-- Confirmar que a nova VM foi adicionada ao mapa `vms` do
-  `PoCs/vm-nginx-terraform-ansible/terraform.tfvars` no host de execução.
-- Confirmar que o `terraform apply` da PoC `vm-nginx-terraform-ansible` foi
-  concluído com sucesso, usando os passos de "Como conferir a implantação"
-  do [README dessa PoC](../vm-nginx-terraform-ansible/README.md#como-conferir-a-implantação).
-- **Critério de sucesso**: o item de catálogo aparece no Morpheus Data, o
-  formulário é exibido corretamente ao solicitante, e uma execução de teste
-  do App Blueprint resulta em uma nova entrada em `vms` no `terraform.tfvars`
-  e em uma VM provisionada com sucesso na GCP.
+  os workflows de criação (`vm-nginx-add-vm-and-apply`) e remoção (`vm-nginx-remove-and-apply`) aparecem associados às suas tasks.
+- Em **Library > Workflows > Provisioning**, confirmar que o workflow `vm-nginx-provisioning-workflow` aparece com a task de remoção configurada na fase **Teardown**.
+- **Testando a Criação**:
+  - No Morpheus Data, acesse **Self-Service > Catalog**, lance o item `vm-nginx-terraform-ansible`, preencha o formulário e confirme o pedido.
+  - Acompanhe em **Provisioning > Executions** a criação da VM e a atualização do `terraform.tfvars`.
+- **Testando a Exclusão Automática (Teardown)**:
+  - Ao excluir a instância pelo Morpheus (ou via item de catálogo `vm-nginx-remover-vm`), acompanhe a execução da task `remove-vm-from-tfvars-and-apply`.
+  - Verifique se a entrada foi removida do `terraform.tfvars` e se a VM foi destruída no GCP e desregistrada do `tfstate` no GCS.
 
 ## Como descomissionar
 

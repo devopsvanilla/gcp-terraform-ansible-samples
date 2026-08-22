@@ -74,6 +74,12 @@ variable "task_script_path" {
   default     = "PoCs/morpheus-tf-remotestate/templates/add_vm_and_apply.sh"
 }
 
+variable "remove_task_script_path" {
+  type        = string
+  description = "Caminho de execução do script de remoção/teardown dentro do repositório Git (ex.: PoCs/morpheus-tf-remotestate/templates/remove_vm_and_apply.sh)."
+  default     = "PoCs/morpheus-tf-remotestate/templates/remove_vm_and_apply.sh"
+}
+
 variable "task_version_ref" {
   type        = string
   description = "Branch ou Tag do repositório Git para obtenção do script no Morpheus (ex.: main)."

@@ -17,3 +17,19 @@ output "catalog_item_name" {
   description = "Nome exibido do App Blueprint no catálogo de self-service do Morpheus Data."
   value       = hpe_morpheus_catalog_item_workflow.vm_nginx_add_and_apply.name
 }
+
+output "remove_task_id" {
+  description = "ID da task que executa remove-vm-from-tfvars.sh e terraform apply."
+  value       = hpe_morpheus_task_shell_script.remove_vm_and_apply.id
+}
+
+output "provisioning_workflow_id" {
+  description = "ID do provisioning workflow com fase Teardown configurada."
+  value       = hpe_morpheus_workflow_provisioning.vm_nginx_provisioning.id
+}
+
+output "remove_catalog_item_id" {
+  description = "ID do item de catálogo para remoção de VM sob demanda."
+  value       = hpe_morpheus_catalog_item_workflow.vm_nginx_remove_and_apply.id
+}
+

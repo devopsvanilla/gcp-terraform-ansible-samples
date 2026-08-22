@@ -38,3 +38,27 @@ resource "hpe_morpheus_task_shell_script" "add_vm_and_apply" {
   remote_target_username = var.task_execute_target == "remote" ? var.remote_target_username : null
   remote_target_password = var.task_execute_target == "remote" ? var.remote_target_password : null
 }
+
+resource "hpe_morpheus_task_shell_script" "remove_vm_and_apply" {
+  name = "remove-vm-from-tfvars-and-apply"
+  code = "remove-vm-from-tfvars-and-apply"
+
+  source_type   = var.task_source_type
+  repository_id = var.task_source_type == "repository" ? local.repository_id : null
+  script_path   = var.task_source_type == "repository" ? var.remove_task_script_path : null
+  version_ref   = var.task_source_type == "repository" ? var.task_version_ref : null
+
+  execute_target       = var.task_execute_target
+  local_repository_id  = var.task_execute_target == "local" ? local.local_repository_id : null
+  local_repository_ref = var.task_execute_target == "local" ? var.task_local_repository_ref : null
+
+  sudo        = false
+  retryable   = false
+  result_type = "value"
+
+  remote_target_host     = var.task_execute_target == "remote" ? var.remote_target_host : null
+  remote_target_port     = var.task_execute_target == "remote" ? var.remote_target_port : null
+  remote_target_username = var.task_execute_target == "remote" ? var.remote_target_username : null
+  remote_target_password = var.task_execute_target == "remote" ? var.remote_target_password : null
+}
+
