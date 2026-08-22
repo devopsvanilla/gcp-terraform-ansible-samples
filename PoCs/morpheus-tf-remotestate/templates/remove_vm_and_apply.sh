@@ -152,7 +152,19 @@ PYEOF
 fi
 
 if [ ! -f "$TFVARS_FILE" ] || [ ! -s "$TFVARS_FILE" ]; then
-  log_warn "Nenhum manifesto terraform.tfvars encontrado para exclusão."
+  log_warn "Nenhum manifesto terraform.tfvars recuperado do Cypher; inicializando estrutura base..."
+  cat <<EOF > "$TFVARS_FILE"
+poc_name                         = "gcp-create-vm-gcstate"
+project_id                       = "poc-terraform-ansible"
+region                           = "us-central1"
+zone                             = "us-central1-a"
+manage_vm_external_ip_org_policy = false
+network_name                     = "default"
+allowed_http_cidr                = "0.0.0.0/0"
+allowed_ssh_cidr                 = "0.0.0.0/0"
+
+vms = {}
+EOF
 fi
 
 # 2. Executa a remoção no arquivo temporário

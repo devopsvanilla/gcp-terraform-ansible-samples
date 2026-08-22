@@ -101,7 +101,21 @@ validate_args() {
     die "Informe ao menos um parâmetro de identificação: --vm-key ou --vm-name."
   fi
 
-  [[ -f "$TFVARS_FILE" ]] || die "Arquivo terraform.tfvars não encontrado: ${TFVARS_FILE}"
+  if [[ ! -f "$TFVARS_FILE" ]]; then
+    log_warn "Arquivo ${TFVARS_FILE} não existia; criando estrutura base..."
+    cat <<'EOF' > "$TFVARS_FILE"
+poc_name                         = "gcp-create-vm-gcstate"
+project_id                       = "poc-terraform-ansible"
+region                           = "us-central1"
+zone                             = "us-central1-a"
+manage_vm_external_ip_org_policy = false
+network_name                     = "default"
+allowed_http_cidr                = "0.0.0.0/0"
+allowed_ssh_cidr                 = "0.0.0.0/0"
+
+vms = {}
+EOF
+  fi
 }
 
 remove_vm_entry() {
@@ -132,6 +146,9 @@ for idx, line in enumerate(lines):
     if vms_start is None and re.match(r'^\s*vms\s*=\s*\{', line):
         vms_start = idx
         depth = line.count('{') - line.count('}')
+        if depth == 0:
+            vms_end = idx
+            break
         continue
     if vms_start is not None:
         depth += line.count('{') - line.count('}')
@@ -149,30 +166,31 @@ current_key = None
 current_start = None
 current_depth = 0
 
-for idx in range(vms_start + 1, vms_end):
-    line = lines[idx]
-    if current_start is None:
-        m = re.match(r'^\s*(?:["\']?([a-zA-Z0-9_-]+)["\']?)\s*=\s*\{', line)
-        if m:
-            current_key = m.group(1)
-            current_start = idx
-            current_depth = line.count('{') - line.count('}')
-            continue
-    else:
-        current_depth += line.count('{') - line.count('}')
-        if current_depth <= 0:
-            block_content = ''.join(lines[current_start:idx+1])
-            # Extrair vm_name do bloco se existir
-            nm_match = re.search(r'vm_name\s*=\s*["\']([^"\']+)["\']', block_content)
-            extracted_name = nm_match.group(1) if nm_match else ""
-            vm_blocks.append({
-                'key': current_key,
-                'name': extracted_name,
-                'start': current_start,
-                'end': idx + 1
-            })
-            current_start = None
-            current_key = None
+if vms_start != vms_end:
+    for idx in range(vms_start + 1, vms_end):
+        line = lines[idx]
+        if current_start is None:
+            m = re.match(r'^\s*(?:["\']?([a-zA-Z0-9_-]+)["\']?)\s*=\s*\{', line)
+            if m:
+                current_key = m.group(1)
+                current_start = idx
+                current_depth = line.count('{') - line.count('}')
+                continue
+        else:
+            current_depth += line.count('{') - line.count('}')
+            if current_depth <= 0:
+                block_content = ''.join(lines[current_start:idx+1])
+                # Extrair vm_name do bloco se existir
+                nm_match = re.search(r'vm_name\s*=\s*["\']([^"\']+)["\']', block_content)
+                extracted_name = nm_match.group(1) if nm_match else ""
+                vm_blocks.append({
+                    'key': current_key,
+                    'name': extracted_name,
+                    'start': current_start,
+                    'end': idx + 1
+                })
+                current_start = None
+                current_key = None
 
 # 3. Encontrar a VM alvo para remoção
 target_block = None
