@@ -177,6 +177,10 @@ else
   if [ "$MANAGE_ORG_POLICY" = "false" ]; then
     sed -i 's/manage_vm_external_ip_org_policy\s*=\s*true/manage_vm_external_ip_org_policy = false/g' "$TFVARS_FILE" 2>/dev/null || true
   fi
+  if grep -q "web_example\s*=" "$TFVARS_FILE" 2>/dev/null; then
+    log_info "Removendo entrada legada 'web_example' herdada de SAMPLE em $TFVARS_FILE..."
+    bash "$REMOVE_VM_SCRIPT" --file "$TFVARS_FILE" --vm-key "web_example" --skip-validate 2>/dev/null || true
+  fi
 fi
 
 ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME" --overwrite)

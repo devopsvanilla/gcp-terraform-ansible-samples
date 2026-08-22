@@ -23,25 +23,8 @@ ansible_max_retries  = 10 # Número máximo de tentativas do Ansible
 ansible_private_key_file = "~/.ssh/id_ed25519" # Caminho da chave privada usada pelo Ansible
 ansible_ssh_user     = "devopsvanillaofficial_gmail_com" # Usuário SSH/OS Login usado pelo Ansible
 
-vms = {
-  web_example = {
-    vm_name                   = "vm-nginx-example"
-    machine_type_override     = "e2-micro" # Tipo de máquina da VM
-    machine_series            = "e2" # Série da máquina
-    vcpu_count                = 1 # Quantidade de vCPUs
-    memory_gb                 = 1 # Memória RAM em GB
-    disk_type                 = "pd-standard" # Tipo de disco do boot disk
-    disk_size_gb              = 30 # Tamanho do disco em GB
-    boot_image_project        = "debian-cloud" # Projeto da imagem base
-    boot_image_family         = "debian-12" # Família da imagem base
-    assign_external_ip        = true # Define se a VM deve ter IP externo
-    ssh_username              = "devops" # Pode sobrescrever o valor global para esta VM
-    ssh_public_key            = "ssh-ed25519 AAAA... substitua-pela-sua-chave-publica" # Pode sobrescrever o valor global para esta VM
-    user_groups               = ["sudo", "www-data"] # Grupos Linux a serem adicionados ao usuário remoto
-    network_name              = "default" # Pode sobrescrever a rede global para esta VM
-    subnetwork_name           = "" # Pode sobrescrever a subnet global para esta VM
-    allowed_http_cidr         = "0.0.0.0/0" # Pode sobrescrever o CIDR global para esta VM
-    allowed_ssh_cidr          = "0.0.0.0/0" # Pode sobrescrever o CIDR global para esta VM
-    manage_vm_external_ip_org_policy = true # Pode sobrescrever a política global para esta VM
-  }
-}
+# ===== Mapa de VMs da PoC =====
+# O mapa vms inicia vazio. Novas VMs são adicionadas dinamicamente
+# via scripts/add-vm-to-tfvars.sh ou pelo Catálogo do Morpheus Data.
+vms = {}
+
