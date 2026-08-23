@@ -116,8 +116,8 @@ variable "blueprint_visibility" {
 
 variable "cypher_secret_key" {
   type        = string
-  description = "Chave/Caminho no Morpheus Cypher para armazenamento das tfvars (ex.: tfvars/vm-nginx-poc)."
-  default     = "tfvars/vm-nginx-poc"
+  description = "Chave/Caminho no Morpheus Cypher para armazenamento das tfvars (ex.: tfvars/gcp-vm-poc)."
+  default     = "tfvars/gcp-vm-poc"
 }
 
 variable "cypher_secret_ttl" {
