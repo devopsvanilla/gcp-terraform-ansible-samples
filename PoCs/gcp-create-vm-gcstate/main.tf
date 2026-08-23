@@ -11,15 +11,23 @@ locals {
 
   form_vm_config = {
     for k in [local.effective_form_vm_name] : k => {
-      vm_name                          = local.effective_form_vm_name
-      machine_type_override            = var.machine_type_override
-      machine_series                   = var.machine_series
-      vcpu_count                       = var.vcpu_count
-      memory_gb                        = var.memory_gb
-      memory_mb                        = var.memory_gb * 1024
-      machine_type                     = trimspace(var.machine_type_override) != "" ? var.machine_type_override : format("%s-custom-%d-%d", var.machine_series, var.vcpu_count, var.memory_gb * 1024)
+      vm_name               = local.effective_form_vm_name
+      machine_type_override = var.machine_type_override
+      machine_series        = var.machine_series
+      vcpu_count            = var.vcpu_count
+      memory_gb             = var.memory_gb
+      machine_type = (
+        trimspace(var.machine_type_override) == "" ||
+        trimspace(var.machine_type_override) == "custom" ||
+        (var.machine_type_override == "e2-micro" && (try(tonumber(var.memory_gb), 1) > 1 || try(tonumber(var.vcpu_count), 1) > 1))
+        ) ? format(
+        "%s-custom-%d-%d",
+        var.machine_series,
+        (var.machine_series == "e2" ? max(try(tonumber(var.vcpu_count), 2), 2) : try(tonumber(var.vcpu_count), 1)),
+        try(tonumber(var.memory_gb), 1) * 1024
+      ) : var.machine_type_override
       disk_type                        = var.disk_type
-      disk_size_gb                     = var.disk_size_gb
+      disk_size_gb                     = try(tonumber(var.disk_size_gb), 30)
       boot_image_project               = var.boot_image_project
       boot_image_family                = var.boot_image_family
       assign_external_ip               = var.assign_external_ip
@@ -36,15 +44,24 @@ locals {
 
   map_vm_configs = {
     for vm_key, vm in var.vms : vm_key => {
-      vm_name                          = vm.vm_name
-      machine_type_override            = vm.machine_type_override
-      machine_series                   = vm.machine_series
-      vcpu_count                       = vm.vcpu_count
-      memory_gb                        = vm.memory_gb
-      memory_mb                        = vm.memory_gb * 1024
-      machine_type                     = trimspace(vm.machine_type_override) != "" ? vm.machine_type_override : format("%s-custom-%d-%d", vm.machine_series, vm.vcpu_count, vm.memory_gb * 1024)
+      vm_name               = vm.vm_name
+      machine_type_override = vm.machine_type_override
+      machine_series        = vm.machine_series
+      vcpu_count            = vm.vcpu_count
+      memory_gb             = vm.memory_gb
+      memory_mb             = vm.memory_gb * 1024
+      machine_type = (
+        trimspace(vm.machine_type_override) == "" ||
+        trimspace(vm.machine_type_override) == "custom" ||
+        (vm.machine_type_override == "e2-micro" && (try(tonumber(vm.memory_gb), 1) > 1 || try(tonumber(vm.vcpu_count), 1) > 1))
+        ) ? format(
+        "%s-custom-%d-%d",
+        vm.machine_series,
+        (vm.machine_series == "e2" ? max(try(tonumber(vm.vcpu_count), 2), 2) : try(tonumber(vm.vcpu_count), 1)),
+        try(tonumber(vm.memory_gb), 1) * 1024
+      ) : vm.machine_type_override
       disk_type                        = vm.disk_type
-      disk_size_gb                     = vm.disk_size_gb
+      disk_size_gb                     = try(tonumber(vm.disk_size_gb), 30)
       boot_image_project               = vm.boot_image_project
       boot_image_family                = vm.boot_image_family
       assign_external_ip               = vm.assign_external_ip
