@@ -29,17 +29,13 @@ variable "zone" {
   default = "${var.zone}"
 }
 
-variable "gcp_credentials" {
-  type      = string
-  sensitive = true
-  default   = ""
-}
-
 provider "google" {
   project     = var.project_id
   region      = var.region
   zone        = var.zone
-  credentials = trimspace(var.gcp_credentials) != "" && trimspace(var.gcp_credentials) != "null" ? var.gcp_credentials : null
+  credentials = <<-EOF
+<%= cypher.read('secret/gcp-terraform-ansible-samples') %>
+EOF
 }
 
 locals {
