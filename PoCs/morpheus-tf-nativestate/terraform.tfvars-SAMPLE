@@ -28,7 +28,7 @@ blueprint_category    = "gcp-compute"
 blueprint_visibility  = "private"
 
 # Nome da chave do segredo no Cypher onde as tfvars serão armazenadas (criado automaticamente)
-cypher_secret_key = "tfvars/gcp-vm-poc"
+cypher_secret_key = "tfvars/gcp-tfvars-nativestate"
 
 # ===== Customização Opcional dos Rótulos (Labels) exibidos no Formulário =====
 # Descomente e altere os textos abaixo caso queira personalizar os rótulos dos campos no Morpheus:
