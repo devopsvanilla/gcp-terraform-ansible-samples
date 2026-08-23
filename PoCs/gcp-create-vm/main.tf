@@ -31,8 +31,8 @@ locals {
       user_groups           = compact([for g in(can(tolist(var.user_groups)) ? tolist(var.user_groups) : split(",", replace(replace(tostring(var.user_groups), "[", ""), "]", ""))) : trimspace(g)])
       network_name          = var.network_name
       subnetwork_name       = var.subnetwork_name
-      allowed_http_cidr     = var.allowed_http_cidr
-      allowed_ssh_cidr      = var.allowed_ssh_cidr
+      allowed_http_cidr     = can(cidrhost(var.allowed_http_cidr, 0)) ? var.allowed_http_cidr : "0.0.0.0/0"
+      allowed_ssh_cidr      = can(cidrhost(var.allowed_ssh_cidr, 0)) ? var.allowed_ssh_cidr : "0.0.0.0/0"
     }
   }
 
@@ -55,8 +55,8 @@ locals {
       user_groups           = compact([for g in(can(tolist(vm.user_groups)) ? tolist(vm.user_groups) : split(",", replace(replace(tostring(vm.user_groups), "[", ""), "]", ""))) : trimspace(g)])
       network_name          = try(trimspace(vm.network_name), "") != "" ? vm.network_name : var.network_name
       subnetwork_name       = try(trimspace(vm.subnetwork_name), "") != "" ? vm.subnetwork_name : var.subnetwork_name
-      allowed_http_cidr     = try(trimspace(vm.allowed_http_cidr), "") != "" ? vm.allowed_http_cidr : var.allowed_http_cidr
-      allowed_ssh_cidr      = try(trimspace(vm.allowed_ssh_cidr), "") != "" ? vm.allowed_ssh_cidr : var.allowed_ssh_cidr
+      allowed_http_cidr     = can(cidrhost(try(trimspace(vm.allowed_http_cidr), ""), 0)) ? vm.allowed_http_cidr : (can(cidrhost(var.allowed_http_cidr, 0)) ? var.allowed_http_cidr : "0.0.0.0/0")
+      allowed_ssh_cidr      = can(cidrhost(try(trimspace(vm.allowed_ssh_cidr), ""), 0)) ? vm.allowed_ssh_cidr : (can(cidrhost(var.allowed_ssh_cidr, 0)) ? var.allowed_ssh_cidr : "0.0.0.0/0")
     }
   }
 

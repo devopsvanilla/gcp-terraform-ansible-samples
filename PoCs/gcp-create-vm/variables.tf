@@ -89,7 +89,7 @@ variable "allowed_http_cidr" {
   default     = "0.0.0.0/0"
 
   validation {
-    condition     = can(cidrhost(var.allowed_http_cidr, 0))
+    condition     = can(cidrhost(var.allowed_http_cidr, 0)) || var.allowed_http_cidr == "" || can(regex("^<%", var.allowed_http_cidr))
     error_message = "allowed_http_cidr deve ser um CIDR válido (ex.: 0.0.0.0/0)."
   }
 }
@@ -100,7 +100,7 @@ variable "allowed_ssh_cidr" {
   default     = "0.0.0.0/0"
 
   validation {
-    condition     = can(cidrhost(var.allowed_ssh_cidr, 0))
+    condition     = can(cidrhost(var.allowed_ssh_cidr, 0)) || var.allowed_ssh_cidr == "" || can(regex("^<%", var.allowed_ssh_cidr))
     error_message = "allowed_ssh_cidr deve ser um CIDR válido (ex.: 203.0.113.10/32)."
   }
 }
