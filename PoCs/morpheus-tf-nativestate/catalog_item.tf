@@ -8,6 +8,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
 
   blueprint_id    = tonumber(hpe_morpheus_app_blueprint_terraform.vm_nginx.id)
   app_spec        = <<-EOT
+    name: <%= customOptions.vm_name %>
     group:
       id: ${var.morpheus_group_id}
     cloud:
