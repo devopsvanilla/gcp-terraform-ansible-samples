@@ -10,7 +10,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
   option_type_ids = local.vm_nginx_option_type_ids
 
   app_spec = jsonencode({
-    name = "<%= customOptions.name ?: customOptions.vm_name ?: 'vm-gcp-poc' %>"
+    name = var.blueprint_name
     config = {
       name = "<%= customOptions.name ?: customOptions.vm_name ?: 'vm-gcp-poc' %>"
       customOptions = {
