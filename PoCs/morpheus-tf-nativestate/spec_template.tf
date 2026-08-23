@@ -16,30 +16,30 @@ terraform {
 
 variable "project_id" {
   type    = string
-  default = "<%= cypher.read('secret/gcp-project-id') ?: '${var.project_id}' %>"
+  default = "${var.project_id}"
 }
 
 variable "region" {
   type    = string
-  default = "us-central1"
+  default = "${var.region}"
 }
 
 variable "zone" {
   type    = string
-  default = "us-central1-a"
+  default = "${var.zone}"
 }
 
 variable "gcp_credentials" {
   type      = string
   sensitive = true
-  default   = "<%= cypher.read('secret/gcp-terraform-ansible-samples') %>"
+  default   = ""
 }
 
 provider "google" {
   project     = var.project_id
   region      = var.region
   zone        = var.zone
-  credentials = var.gcp_credentials != "" && var.gcp_credentials != "null" ? var.gcp_credentials : null
+  credentials = trimspace(var.gcp_credentials) != "" && trimspace(var.gcp_credentials) != "null" ? var.gcp_credentials : null
 }
 
 locals {
