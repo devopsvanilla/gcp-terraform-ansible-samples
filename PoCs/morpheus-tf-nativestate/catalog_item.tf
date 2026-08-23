@@ -13,6 +13,27 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
       id: ${var.morpheus_group_id}
     cloud:
       id: ${var.morpheus_cloud_id}
+    config:
+      terraform:
+        commandOptions: >-
+          -var 'vm_name=<%= customOptions.vm_name %>'
+          -var 'name=<%= customOptions.vm_name %>'
+          -var 'machine_series=<%= customOptions.machine_series %>'
+          -var 'machine_type_override=<%= customOptions.machine_type_override %>'
+          -var 'vcpu_count=<%= customOptions.vcpu_count %>'
+          -var 'memory_gb=<%= customOptions.memory_gb %>'
+          -var 'disk_type=<%= customOptions.disk_type %>'
+          -var 'disk_size_gb=<%= customOptions.disk_size_gb %>'
+          -var 'boot_image_project=<%= customOptions.boot_image_project %>'
+          -var 'boot_image_family=<%= customOptions.boot_image_family %>'
+          -var 'assign_external_ip=<%= customOptions.assign_external_ip %>'
+          -var 'ssh_username=<%= customOptions.ssh_username %>'
+          -var 'ssh_public_key=<%= customOptions.ssh_public_key %>'
+          -var 'user_groups=<%= customOptions.user_groups %>'
+          -var 'network_name=<%= customOptions.network_name %>'
+          -var 'subnetwork_name=<%= customOptions.subnetwork_name %>'
+          -var 'allowed_http_cidr=<%= customOptions.allowed_http_cidr %>'
+          -var 'allowed_ssh_cidr=<%= customOptions.allowed_ssh_cidr %>'
   EOT
   option_type_ids = local.vm_nginx_option_type_ids
 
