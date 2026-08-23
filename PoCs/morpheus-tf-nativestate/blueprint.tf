@@ -14,4 +14,5 @@ resource "hpe_morpheus_app_blueprint_terraform" "vm_nginx" {
   working_path      = var.working_path
   terraform_version = var.terraform_version
   tfvar_secret      = hpe_morpheus_cypher_secret.vm_nginx_tfvars.key
+  spec_template_ids = [tonumber(hpe_morpheus_spec_template_terraform.vm_vars.id)]
 }
