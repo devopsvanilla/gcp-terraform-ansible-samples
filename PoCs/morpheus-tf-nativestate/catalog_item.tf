@@ -13,11 +13,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
       id: ${var.morpheus_group_id}
     cloud:
       id: ${var.morpheus_cloud_id}
-    terraform:
-      commandOptions: "-var 'disk_size_gb=<%= customOptions.disk_size_gb ?: 30 %>' -var 'memory_gb=<%= customOptions.memory_gb ?: 1 %>' -var 'vcpu_count=<%= customOptions.vcpu_count ?: 1 %>' -var 'machine_series=<%= customOptions.machine_series ?: \"e2\" %>' -var 'machine_type_override=<%= customOptions.machine_type_override ?: \"e2-micro\" %>' -var 'disk_type=<%= customOptions.disk_type ?: \"pd-standard\" %>' -var 'boot_image_project=<%= customOptions.boot_image_project ?: \"debian-cloud\" %>' -var 'boot_image_family=<%= customOptions.boot_image_family ?: \"debian-12\" %>' -var 'assign_external_ip=<%= customOptions.assign_external_ip ?: true %>' -var 'ssh_username=<%= customOptions.ssh_username ?: \"devopsvanilla\" %>' -var 'network_name=<%= customOptions.network_name ?: \"default\" %>' -var 'subnetwork_name=<%= customOptions.subnetwork_name ?: \"\" %>' -var 'allowed_http_cidr=<%= customOptions.allowed_http_cidr ?: \"0.0.0.0/0\" %>' -var 'allowed_ssh_cidr=<%= customOptions.allowed_ssh_cidr ?: \"0.0.0.0/0\" %>'"
     config:
-      terraform:
-        commandOptions: "-var 'disk_size_gb=<%= customOptions.disk_size_gb ?: 30 %>' -var 'memory_gb=<%= customOptions.memory_gb ?: 1 %>' -var 'vcpu_count=<%= customOptions.vcpu_count ?: 1 %>' -var 'machine_series=<%= customOptions.machine_series ?: \"e2\" %>' -var 'machine_type_override=<%= customOptions.machine_type_override ?: \"e2-micro\" %>' -var 'disk_type=<%= customOptions.disk_type ?: \"pd-standard\" %>' -var 'boot_image_project=<%= customOptions.boot_image_project ?: \"debian-cloud\" %>' -var 'boot_image_family=<%= customOptions.boot_image_family ?: \"debian-12\" %>' -var 'assign_external_ip=<%= customOptions.assign_external_ip ?: true %>' -var 'ssh_username=<%= customOptions.ssh_username ?: \"devopsvanilla\" %>' -var 'network_name=<%= customOptions.network_name ?: \"default\" %>' -var 'subnetwork_name=<%= customOptions.subnetwork_name ?: \"\" %>' -var 'allowed_http_cidr=<%= customOptions.allowed_http_cidr ?: \"0.0.0.0/0\" %>' -var 'allowed_ssh_cidr=<%= customOptions.allowed_ssh_cidr ?: \"0.0.0.0/0\" %>'"
       customOptions:
         vm_name: '<%= customOptions.vm_name %>'
         name: '<%= customOptions.vm_name %>'
