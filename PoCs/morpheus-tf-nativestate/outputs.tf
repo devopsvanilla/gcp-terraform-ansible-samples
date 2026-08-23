@@ -1,24 +1,24 @@
-output "blueprint_id" {
-  value       = hpe_morpheus_app_blueprint_terraform.vm_nginx.id
-  description = "ID do App Blueprint Terraform nativo criado no Morpheus Data."
-}
-
-output "blueprint_name" {
-  value       = hpe_morpheus_app_blueprint_terraform.vm_nginx.name
-  description = "Nome do App Blueprint no Morpheus Data."
-}
-
-output "cypher_secret_key" {
-  value       = hpe_morpheus_cypher_secret.vm_nginx_tfvars.key
-  description = "Caminho do segredo no Cypher onde os valores padrão do tfvars estão armazenados."
-}
-
 output "catalog_item_id" {
-  value       = hpe_morpheus_catalog_item_app_blueprint.vm_nginx.id
-  description = "ID do item de catálogo publicado para Self-Service no Morpheus Data."
+  description = "ID do item de catálogo publicado no Morpheus Data."
+  value       = hpe_morpheus_catalog_item_workflow.vm_nginx_add_and_apply.id
 }
 
-output "option_type_ids" {
-  value       = local.vm_nginx_option_type_ids
-  description = "Lista dos IDs dos Option Types associados ao formulário do App Blueprint."
+output "catalog_item_name" {
+  description = "Nome do item de catálogo publicado no Morpheus Data."
+  value       = hpe_morpheus_catalog_item_workflow.vm_nginx_add_and_apply.name
+}
+
+output "workflow_id" {
+  description = "ID do Workflow Operacional de adição de VM."
+  value       = hpe_morpheus_workflow_operational.vm_nginx_add_and_apply.id
+}
+
+output "cypher_tfvars_key" {
+  description = "Chave do manifesto de variáveis no Morpheus Cypher."
+  value       = hpe_morpheus_cypher_secret.tfvars_manifest.key
+}
+
+output "cypher_tfstate_key" {
+  description = "Chave do estado Terraform no Morpheus Cypher."
+  value       = hpe_morpheus_cypher_secret.tfstate_manifest.key
 }

@@ -1,67 +1,46 @@
-# Publica o App Blueprint Nativo Terraform como um item de catálogo de self-service no Morpheus Data
-resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
-  name        = var.blueprint_name
-  description = var.blueprint_description
-  category    = var.blueprint_category
-  visibility  = var.blueprint_visibility
-  enabled     = true
+# Publica o workflow operacional como um item de catálogo de self-service no Morpheus Data
+resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_add_and_apply" {
+  name         = var.blueprint_name
+  description  = var.blueprint_description
+  category     = var.blueprint_category
+  visibility   = var.blueprint_visibility
+  context_type = "appliance"
+  enabled      = true
 
-  blueprint_id    = tonumber(hpe_morpheus_app_blueprint_terraform.vm_nginx.id)
-  app_spec        = <<-EOT
-    name: '<%= customOptions.vm_name %>'
-    group:
-      id: ${var.morpheus_group_id}
-    cloud:
-      id: ${var.morpheus_cloud_id}
-    config:
-      customOptions:
-        vm_name: '<%= customOptions.vm_name %>'
-        name: '<%= customOptions.vm_name %>'
-        machine_series: '<%= customOptions.machine_series %>'
-        machine_type_override: '<%= customOptions.machine_type_override %>'
-        vcpu_count: '<%= customOptions.vcpu_count %>'
-        memory_gb: '<%= customOptions.memory_gb %>'
-        disk_type: '<%= customOptions.disk_type %>'
-        disk_size_gb: '<%= customOptions.disk_size_gb %>'
-        boot_image_project: '<%= customOptions.boot_image_project %>'
-        boot_image_family: '<%= customOptions.boot_image_family %>'
-        assign_external_ip: '<%= customOptions.assign_external_ip %>'
-        ssh_username: '<%= customOptions.ssh_username %>'
-        ssh_public_key: '<%= customOptions.ssh_public_key %>'
-        user_groups: '<%= customOptions.user_groups %>'
-        network_name: '<%= customOptions.network_name %>'
-        subnetwork_name: '<%= customOptions.subnetwork_name %>'
-        allowed_http_cidr: '<%= customOptions.allowed_http_cidr %>'
-        allowed_ssh_cidr: '<%= customOptions.allowed_ssh_cidr %>'
-    templateParameter:
-      vm_name: '<%= customOptions.vm_name %>'
-      name: '<%= customOptions.vm_name %>'
-      machine_series: '<%= customOptions.machine_series %>'
-      machine_type_override: '<%= customOptions.machine_type_override %>'
-      vcpu_count: '<%= customOptions.vcpu_count %>'
-      memory_gb: '<%= customOptions.memory_gb %>'
-      disk_type: '<%= customOptions.disk_type %>'
-      disk_size_gb: '<%= customOptions.disk_size_gb %>'
-      boot_image_project: '<%= customOptions.boot_image_project %>'
-      boot_image_family: '<%= customOptions.boot_image_family %>'
-      assign_external_ip: '<%= customOptions.assign_external_ip %>'
-      ssh_username: '<%= customOptions.ssh_username %>'
-      ssh_public_key: '<%= customOptions.ssh_public_key %>'
-      user_groups: '<%= customOptions.user_groups %>'
-      network_name: '<%= customOptions.network_name %>'
-      subnetwork_name: '<%= customOptions.subnetwork_name %>'
-      allowed_http_cidr: '<%= customOptions.allowed_http_cidr %>'
-      allowed_ssh_cidr: '<%= customOptions.allowed_ssh_cidr %>'
-  EOT
+  workflow_id     = tonumber(hpe_morpheus_workflow_operational.vm_nginx_add_and_apply.id)
   option_type_ids = local.vm_nginx_option_type_ids
 
   content = <<-EOT
     ### ${var.blueprint_name}
 
-    Provisiona uma instância Compute Engine no Google Cloud Platform (GCP)
-    através do engine **Terraform Nativo** do Morpheus Data.
+    Provisiona instâncias Compute Engine no Google Cloud Platform (GCP) com formulário
+    dinâmico (disco, vCPU, RAM, etc.) e **estado mantido nativamente no Morpheus Cypher**.
 
     - **Estado (.tfstate)**: Mantido automaticamente no Cypher do Morpheus.
-    - **Formulário**: Preencha os campos com os parâmetros da VM a ser criada.
+    - **Parâmetros**: Preencha o formulário com a quantidade desejada de vCPUs, RAM e tamanho de disco.
+  EOT
+}
+
+# Publica o item de catálogo para remoção de VM sob demanda
+resource "hpe_morpheus_catalog_item_workflow" "vm_nginx_remove_and_apply" {
+  name         = "${var.blueprint_name}-remover-vm"
+  description  = "Remove uma VM existente do terraform.tfvars no Cypher e desprovisiona os recursos via Terraform."
+  category     = var.blueprint_category
+  visibility   = var.blueprint_visibility
+  context_type = "appliance"
+  enabled      = true
+
+  workflow_id = tonumber(hpe_morpheus_workflow_operational.vm_nginx_remove_and_apply.id)
+  option_type_ids = [
+    tonumber(hpe_morpheus_option_type_text.vm_name.id),
+  ]
+
+  content = <<-EOT
+    ### Remover VM - ${var.blueprint_name}
+
+    Remove a entrada da VM do `terraform.tfvars` no Cypher e executa `terraform apply`
+    para destruir os recursos no GCP e atualizar o `tfstate` no Cypher do Morpheus.
+
+    Informe o **Nome da VM** que deseja excluir.
   EOT
 }
