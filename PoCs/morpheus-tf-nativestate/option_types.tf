@@ -3,12 +3,12 @@
 # na interface gráfica do Morpheus Data para o App Blueprint, com exceção da subnet VPC (opcional).
 
 resource "hpe_morpheus_option_type_text" "vm_name" {
-  name          = "vm-native-vm-name"
-  field_name    = "vm_name"
-  field_label   = var.label_vm_name
-  description   = "Nome da instância Compute Engine no GCP."
-  default_value = var.vm_name
-  required      = true
+  name        = "vm-native-vm-name"
+  field_name  = "vm_name"
+  field_label = var.label_vm_name
+  description = "Nome da instância Compute Engine no GCP (deve ser único no Morpheus)."
+  placeholder = "ex: vm-gcp-poc2"
+  required    = true
 }
 
 resource "hpe_morpheus_option_type_text" "machine_series" {
