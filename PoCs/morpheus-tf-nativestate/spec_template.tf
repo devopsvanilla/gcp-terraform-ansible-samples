@@ -43,7 +43,7 @@ provider "google" {
 }
 
 locals {
-  vm_name               = "<%= (customOptions.vm_name != null && customOptions.vm_name != '') ? customOptions.vm_name : 'vm-gcp-poc' %>"
+  vm_name               = "<%= (customOptions.name != null && customOptions.name != '') ? customOptions.name : ((customOptions.vm_name != null && customOptions.vm_name != '') ? customOptions.vm_name : 'vm-gcp-poc') %>"
   machine_series        = "<%= (customOptions.machine_series != null && customOptions.machine_series != '') ? customOptions.machine_series : 'e2' %>"
   machine_type_override = "<%= (customOptions.machine_type_override != null && customOptions.machine_type_override != '') ? customOptions.machine_type_override : 'e2-micro' %>"
   vcpu_count            = <%= (customOptions.vcpu_count != null && customOptions.vcpu_count != '') ? customOptions.vcpu_count : 1 %>

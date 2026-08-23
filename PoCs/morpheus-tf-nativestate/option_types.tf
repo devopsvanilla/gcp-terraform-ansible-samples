@@ -4,7 +4,7 @@
 
 resource "hpe_morpheus_option_type_text" "vm_name" {
   name        = "vm-native-vm-name"
-  field_name  = "vm_name"
+  field_name  = "name"
   field_label = var.label_vm_name
   description = "Nome da instância Compute Engine no GCP (deve ser único no Morpheus)."
   placeholder = "ex: vm-gcp-poc2"
@@ -174,6 +174,7 @@ locals {
   ]
 
   all_option_type_field_names = [
+    "name",
     "vm_name",
     "machine_series",
     "machine_type_override",
