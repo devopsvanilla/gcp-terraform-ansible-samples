@@ -17,8 +17,8 @@ resource "hpe_morpheus_cypher_secret" "vm_nginx_tfvars" {
     allowed_ssh_cidr      = var.allowed_ssh_cidr != null && var.allowed_ssh_cidr != "" ? var.allowed_ssh_cidr : "0.0.0.0/0"
     use_metadata_ssh_keys = var.use_metadata_ssh_keys != null ? var.use_metadata_ssh_keys : true
 
-    name                  = "<%= customOptions.name ?: 'vm-gcp-poc' %>"
-    vm_name               = "<%= customOptions.name ?: 'vm-gcp-poc' %>"
+    name                  = "<%= app?.name ?: 'vm-gcp-poc' %>"
+    vm_name               = "<%= app?.name ?: 'vm-gcp-poc' %>"
     machine_series        = "<%= customOptions.machine_series ?: 'e2' %>"
     machine_type_override = "<%= customOptions.machine_type_override ?: '' %>"
     vcpu_count            = "<%= customOptions.vcpu_count ?: 1 %>"
