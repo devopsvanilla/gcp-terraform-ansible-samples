@@ -2,6 +2,15 @@
 # Todas as opções abaixo criam campos de preenchimento OBRIGATÓRIO (required = true)
 # na interface gráfica do Morpheus Data para o App Blueprint, com exceção da subnet VPC (opcional).
 
+resource "hpe_morpheus_option_type_text" "vm_name" {
+  name          = "vm-native-vm-name"
+  field_name    = "vm_name"
+  field_label   = var.label_vm_name
+  description   = "Nome da instância Compute Engine no GCP."
+  default_value = var.vm_name
+  required      = true
+}
+
 resource "hpe_morpheus_option_type_text" "machine_series" {
   name          = "vm-native-machine-series"
   field_name    = "machine_series"
@@ -145,6 +154,7 @@ resource "hpe_morpheus_option_type_text" "allowed_ssh_cidr" {
 
 locals {
   vm_nginx_option_type_ids = [
+    tonumber(hpe_morpheus_option_type_text.vm_name.id),
     tonumber(hpe_morpheus_option_type_text.machine_series.id),
     tonumber(hpe_morpheus_option_type_text.machine_type_override.id),
     tonumber(hpe_morpheus_option_type_number.vcpu_count.id),
