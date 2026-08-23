@@ -6,6 +6,9 @@ locals {
   effective_form_vm_name = coalesce(
     trimspace(var.vm_name) != "" ? var.vm_name : null,
     trimspace(var.name) != "" ? var.name : null,
+    trimspace(var.app_name) != "" ? var.app_name : null,
+    trimspace(var.morpheus_app_name) != "" ? var.morpheus_app_name : null,
+    trimspace(var.morpheus_resource_name) != "" ? var.morpheus_resource_name : null,
     "gcp-instance"
   )
 

@@ -16,6 +16,7 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
     config:
       name: '<%= customOptions.vm_name %>'
       vm_name: '<%= customOptions.vm_name %>'
+      app_name: '<%= customOptions.vm_name %>'
       machine_series: '<%= customOptions.machine_series %>'
       machine_type_override: '<%= customOptions.machine_type_override %>'
       vcpu_count: '<%= customOptions.vcpu_count %>'
@@ -32,6 +33,22 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
       subnetwork_name: '<%= customOptions.subnetwork_name %>'
       allowed_http_cidr: '<%= customOptions.allowed_http_cidr %>'
       allowed_ssh_cidr: '<%= customOptions.allowed_ssh_cidr %>'
+      customOptions:
+        name: '<%= customOptions.vm_name %>'
+        vm_name: '<%= customOptions.vm_name %>'
+        app_name: '<%= customOptions.vm_name %>'
+      terraform:
+        name: '<%= customOptions.vm_name %>'
+        vm_name: '<%= customOptions.vm_name %>'
+        app_name: '<%= customOptions.vm_name %>'
+      templateParameter:
+        name: '<%= customOptions.vm_name %>'
+        vm_name: '<%= customOptions.vm_name %>'
+        app_name: '<%= customOptions.vm_name %>'
+      templateParameters:
+        name: '<%= customOptions.vm_name %>'
+        vm_name: '<%= customOptions.vm_name %>'
+        app_name: '<%= customOptions.vm_name %>'
   EOT
   option_type_ids = local.vm_nginx_option_type_ids
 

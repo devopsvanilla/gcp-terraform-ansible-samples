@@ -105,16 +105,33 @@ variable "allowed_ssh_cidr" {
   }
 }
 
-# ===== Variáveis Flat enviadas pelos formulários de Catálogo do Morpheus =====
 variable "name" {
   type        = string
-  description = "Nome da VM enviado pelo Morpheus Form."
+  description = "Nome da VM enviado pelo Morpheus Form / App."
   default     = ""
 }
 
 variable "vm_name" {
   type        = string
   description = "Nome da VM caso enviado como vm_name."
+  default     = ""
+}
+
+variable "app_name" {
+  type        = string
+  description = "Nome da Aplicação no Morpheus (injetado automaticamente pelo Morpheus como TF_VAR_app_name)."
+  default     = ""
+}
+
+variable "morpheus_app_name" {
+  type        = string
+  description = "Nome do App Morpheus (injetado automaticamente como TF_VAR_morpheus_app_name)."
+  default     = ""
+}
+
+variable "morpheus_resource_name" {
+  type        = string
+  description = "Nome do recurso no Morpheus."
   default     = ""
 }
 
