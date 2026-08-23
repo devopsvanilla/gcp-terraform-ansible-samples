@@ -172,4 +172,24 @@ locals {
     tonumber(hpe_morpheus_option_type_text.allowed_http_cidr.id),
     tonumber(hpe_morpheus_option_type_text.allowed_ssh_cidr.id)
   ]
+
+  all_option_type_field_names = [
+    "vm_name",
+    "machine_series",
+    "machine_type_override",
+    "vcpu_count",
+    "memory_gb",
+    "disk_type",
+    "disk_size_gb",
+    "boot_image_project",
+    "boot_image_family",
+    "assign_external_ip",
+    "ssh_username",
+    "ssh_public_key",
+    "user_groups",
+    "network_name",
+    "subnetwork_name",
+    "allowed_http_cidr",
+    "allowed_ssh_cidr"
+  ]
 }
