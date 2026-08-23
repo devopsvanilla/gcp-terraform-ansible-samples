@@ -4,9 +4,9 @@ data "google_project" "current" {
 
 locals {
   effective_form_vm_name = coalesce(
-    trimspace(var.name) != "" ? var.name : null,
     trimspace(var.vm_name) != "" ? var.vm_name : null,
-    "vm-gcp-poc"
+    trimspace(var.name) != "" ? var.name : null,
+    "gcp-instance"
   )
 
   form_vm_config = {
@@ -57,7 +57,7 @@ locals {
     }
   }
 
-  vm_configs = trimspace(var.name) != "" || trimspace(var.vm_name) != "" ? local.form_vm_config : local.map_vm_configs
+  vm_configs = length(var.vms) > 0 ? local.map_vm_configs : local.form_vm_config
 
   vm_metadata_ssh_keys = {
     for vm_key, vm in local.vm_configs : vm_key => compact([

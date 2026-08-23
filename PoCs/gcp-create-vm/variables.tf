@@ -50,13 +50,7 @@ variable "vms" {
     allowed_ssh_cidr      = optional(string)
   }))
   description = "Mapa de VMs a serem provisionadas no GCP."
-  default = {
-    vm_poc = {
-      vm_name            = "vm-gcp-poc"
-      machine_series     = "e2"
-      assign_external_ip = true
-    }
-  }
+  default     = {}
 }
 
 variable "ssh_username" {
