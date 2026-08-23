@@ -29,7 +29,7 @@ resource "hpe_morpheus_option_type_text" "machine_type_override" {
   required      = true
 }
 
-resource "hpe_morpheus_option_type_number" "vcpu_count" {
+resource "hpe_morpheus_option_type_text" "vcpu_count" {
   name          = "vm-native-vcpu-count"
   field_name    = "vcpu_count"
   field_label   = var.label_vcpu_count
@@ -38,7 +38,7 @@ resource "hpe_morpheus_option_type_number" "vcpu_count" {
   required      = true
 }
 
-resource "hpe_morpheus_option_type_number" "memory_gb" {
+resource "hpe_morpheus_option_type_text" "memory_gb" {
   name          = "vm-native-memory-gb"
   field_name    = "memory_gb"
   field_label   = var.label_memory_gb
@@ -56,7 +56,7 @@ resource "hpe_morpheus_option_type_text" "disk_type" {
   required      = true
 }
 
-resource "hpe_morpheus_option_type_number" "disk_size_gb" {
+resource "hpe_morpheus_option_type_text" "disk_size_gb" {
   name          = "vm-native-disk-size-gb"
   field_name    = "disk_size_gb"
   field_label   = var.label_disk_size_gb
@@ -157,10 +157,10 @@ locals {
     tonumber(hpe_morpheus_option_type_text.vm_name.id),
     tonumber(hpe_morpheus_option_type_text.machine_series.id),
     tonumber(hpe_morpheus_option_type_text.machine_type_override.id),
-    tonumber(hpe_morpheus_option_type_number.vcpu_count.id),
-    tonumber(hpe_morpheus_option_type_number.memory_gb.id),
+    tonumber(hpe_morpheus_option_type_text.vcpu_count.id),
+    tonumber(hpe_morpheus_option_type_text.memory_gb.id),
     tonumber(hpe_morpheus_option_type_text.disk_type.id),
-    tonumber(hpe_morpheus_option_type_number.disk_size_gb.id),
+    tonumber(hpe_morpheus_option_type_text.disk_size_gb.id),
     tonumber(hpe_morpheus_option_type_text.boot_image_project.id),
     tonumber(hpe_morpheus_option_type_text.boot_image_family.id),
     tonumber(hpe_morpheus_option_type_checkbox.assign_external_ip.id),
