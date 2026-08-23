@@ -1,7 +1,7 @@
 # Spec Template Terraform que renderiza dinamicamente as variáveis do formulário (customOptions)
 # no momento em que a aplicação é provisionada via Catálogo / App Blueprint.
 resource "hpe_morpheus_spec_template_terraform" "vm_vars" {
-  name         = "${var.blueprint_name}-vars"
+  name         = "morpheus_inputs.auto.tfvars"
   source_type  = "local"
   spec_content = <<-EOT
 disk_size_gb          = <%= (customOptions.disk_size_gb != null && customOptions.disk_size_gb != "") ? customOptions.disk_size_gb : 30 %>
