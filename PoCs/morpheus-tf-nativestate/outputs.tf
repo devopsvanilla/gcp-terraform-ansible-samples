@@ -18,10 +18,6 @@ output "catalog_item_name" {
   value       = hpe_morpheus_catalog_item_app_blueprint.vm_nginx.name
 }
 
-output "spec_template_id" {
-  description = "ID do Spec Template Terraform associado ao Blueprint."
-  value       = hpe_morpheus_spec_template_terraform.gcp_vm.id
-}
 
 output "cypher_secret_key" {
   description = "Chave do segredo no Cypher utilizada pelo Blueprint."
