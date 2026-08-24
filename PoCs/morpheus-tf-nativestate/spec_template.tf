@@ -37,32 +37,50 @@ provider "google" {
 }
 
 locals {
-  vm_name               = "<%=customOptions.vm_name%>"
-  machine_series        = "<%=customOptions.machine_series%>"
-  machine_type_override = "<%=customOptions.machine_type_override%>"
-  vcpu_count            = "<%=customOptions.vcpu_count%>"
-  memory_gb             = "<%=customOptions.memory_gb%>"
-  disk_type             = "<%=customOptions.disk_type%>"
-  disk_size_gb          = "<%=customOptions.disk_size_gb%>"
-  boot_image_project    = "<%=customOptions.boot_image_project%>"
-  boot_image_family     = "<%=customOptions.boot_image_family%>"
-  assign_external_ip    = "<%=customOptions.assign_external_ip%>"
-  ssh_username          = "<%=customOptions.ssh_username%>"
-  ssh_public_key        = "<%=customOptions.ssh_public_key%>"
-  network_name          = "<%=customOptions.network_name%>"
-  subnetwork_name       = "<%=customOptions.subnetwork_name%>"
-  allowed_http_cidr     = "<%=customOptions.allowed_http_cidr%>"
-  allowed_ssh_cidr      = "<%=customOptions.allowed_ssh_cidr%>"
+  raw_vm_name               = "<%=customOptions.vm_name%>"
+  raw_machine_series        = "<%=customOptions.machine_series%>"
+  raw_machine_type_override = "<%=customOptions.machine_type_override%>"
+  raw_vcpu_count            = "<%=customOptions.vcpu_count%>"
+  raw_memory_gb             = "<%=customOptions.memory_gb%>"
+  raw_disk_type             = "<%=customOptions.disk_type%>"
+  raw_disk_size_gb          = "<%=customOptions.disk_size_gb%>"
+  raw_boot_image_project    = "<%=customOptions.boot_image_project%>"
+  raw_boot_image_family     = "<%=customOptions.boot_image_family%>"
+  raw_assign_external_ip    = "<%=customOptions.assign_external_ip%>"
+  raw_ssh_username          = "<%=customOptions.ssh_username%>"
+  raw_ssh_public_key        = "<%=customOptions.ssh_public_key%>"
+  raw_network_name          = "<%=customOptions.network_name%>"
+  raw_subnetwork_name       = "<%=customOptions.subnetwork_name%>"
+  raw_allowed_http_cidr     = "<%=customOptions.allowed_http_cidr%>"
+  raw_allowed_ssh_cidr      = "<%=customOptions.allowed_ssh_cidr%>"
+
+  # Tratamento defensivo para valores "null", vazios ou não definidos
+  vm_name               = coalesce(trimspace(local.raw_vm_name) != "" && local.raw_vm_name != "null" && !can(regex("^<%", local.raw_vm_name)) ? local.raw_vm_name : null, "vm-gcp-poc")
+  machine_series        = coalesce(trimspace(local.raw_machine_series) != "" && local.raw_machine_series != "null" && !can(regex("^<%", local.raw_machine_series)) ? local.raw_machine_series : null, "e2")
+  machine_type_override = trimspace(local.raw_machine_type_override) != "" && local.raw_machine_type_override != "null" && !can(regex("^<%", local.raw_machine_type_override)) ? local.raw_machine_type_override : ""
+  vcpu_count            = try(tonumber(local.raw_vcpu_count), 1)
+  memory_gb             = try(tonumber(local.raw_memory_gb), 1)
+  disk_type             = coalesce(trimspace(local.raw_disk_type) != "" && local.raw_disk_type != "null" && !can(regex("^<%", local.raw_disk_type)) ? local.raw_disk_type : null, "pd-standard")
+  disk_size_gb          = try(tonumber(local.raw_disk_size_gb), 30)
+  boot_image_project    = coalesce(trimspace(local.raw_boot_image_project) != "" && local.raw_boot_image_project != "null" && !can(regex("^<%", local.raw_boot_image_project)) ? local.raw_boot_image_project : null, "debian-cloud")
+  boot_image_family     = coalesce(trimspace(local.raw_boot_image_family) != "" && local.raw_boot_image_family != "null" && !can(regex("^<%", local.raw_boot_image_family)) ? local.raw_boot_image_family : null, "debian-12")
+  assign_external_ip    = local.raw_assign_external_ip != "false" && local.raw_assign_external_ip != "off"
+  ssh_username          = coalesce(trimspace(local.raw_ssh_username) != "" && local.raw_ssh_username != "null" && !can(regex("^<%", local.raw_ssh_username)) ? local.raw_ssh_username : null, "devopsvanilla")
+  ssh_public_key        = trimspace(local.raw_ssh_public_key) != "" && local.raw_ssh_public_key != "null" && !can(regex("^<%", local.raw_ssh_public_key)) ? local.raw_ssh_public_key : ""
+  network_name          = coalesce(trimspace(local.raw_network_name) != "" && local.raw_network_name != "null" && !can(regex("^<%", local.raw_network_name)) ? local.raw_network_name : null, "default")
+  subnetwork_name       = trimspace(local.raw_subnetwork_name) != "" && local.raw_subnetwork_name != "null" && !can(regex("^<%", local.raw_subnetwork_name)) ? local.raw_subnetwork_name : ""
+  allowed_http_cidr     = can(cidrhost(local.raw_allowed_http_cidr, 0)) ? local.raw_allowed_http_cidr : "0.0.0.0/0"
+  allowed_ssh_cidr      = can(cidrhost(local.raw_allowed_ssh_cidr, 0)) ? local.raw_allowed_ssh_cidr : "0.0.0.0/0"
 
   machine_type = (
     trimspace(local.machine_type_override) == "" ||
     trimspace(local.machine_type_override) == "custom" ||
-    (local.machine_type_override == "e2-micro" && (try(tonumber(local.memory_gb), 1) > 1 || try(tonumber(local.vcpu_count), 1) > 1))
+    (local.machine_type_override == "e2-micro" && (local.memory_gb > 1 || local.vcpu_count > 1))
   ) ? format(
     "%s-custom-%d-%d",
     local.machine_series,
-    (local.machine_series == "e2" ? max(try(tonumber(local.vcpu_count), 2), 2) : try(tonumber(local.vcpu_count), 1)),
-    try(tonumber(local.memory_gb), 1) * 1024
+    (local.machine_series == "e2" ? max(local.vcpu_count, 2) : local.vcpu_count),
+    local.memory_gb * 1024
   ) : local.machine_type_override
 }
 
