@@ -3,14 +3,20 @@ data "google_project" "current" {
 }
 
 locals {
-  effective_form_vm_name = coalesce(
+  raw_form_vm_name = coalesce(
     trimspace(var.vm_name) != "" ? var.vm_name : null,
     trimspace(var.name) != "" ? var.name : null,
     trimspace(var.app_name) != "" ? var.app_name : null,
     trimspace(var.morpheus_app_name) != "" ? var.morpheus_app_name : null,
     trimspace(var.morpheus_resource_name) != "" ? var.morpheus_resource_name : null,
-    "gcp-instance"
+    "vm-gcp-poc"
   )
+
+  clean_name_chars       = lower(replace(replace(local.raw_form_vm_name, "/[^a-zA-Z0-9-]/", "-"), "/-+/", "-"))
+  sanitized_form_vm_name = trim(local.clean_name_chars, "-")
+  effective_form_vm_name = length(regexall("^[a-z]", local.sanitized_form_vm_name)) > 0 ? (
+    length(local.sanitized_form_vm_name) > 0 ? local.sanitized_form_vm_name : "vm-gcp-poc"
+  ) : "vm-${local.sanitized_form_vm_name}"
 
   form_vm_config = {
     for k in [local.effective_form_vm_name] : k => {
@@ -69,7 +75,8 @@ locals {
     }
   }
 
-  vm_configs = length(var.vms) > 0 ? local.map_vm_configs : local.form_vm_config
+  use_form_input = trimspace(var.vm_name) != "" || trimspace(var.name) != "" || trimspace(var.app_name) != "" || length(var.vms) == 0
+  vm_configs     = local.use_form_input ? local.form_vm_config : local.map_vm_configs
 
   vm_metadata_ssh_keys = {
     for vm_key, vm in local.vm_configs : vm_key => compact([
