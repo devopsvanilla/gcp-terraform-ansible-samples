@@ -4,10 +4,11 @@
 
 resource "hpe_morpheus_option_type_text" "vm_name" {
   name        = "vm-native-vm-name"
-  field_name  = "name"
+  field_name  = "vm_name"
   field_label = var.label_vm_name
   description = "Nome da instância Compute Engine no GCP (deve ser único no Morpheus)."
   placeholder = "ex: vm-gcp-poc2"
+  export_meta = true
   required    = true
 }
 
