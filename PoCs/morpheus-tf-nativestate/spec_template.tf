@@ -37,32 +37,32 @@ provider "google" {
 }
 
 locals {
-  vm_name               = "<%= (customOptions.name != null && customOptions.name != '') ? customOptions.name : ((customOptions.vm_name != null && customOptions.vm_name != '') ? customOptions.vm_name : 'vm-gcp-poc') %>"
-  machine_series        = "<%= (customOptions.machine_series != null && customOptions.machine_series != '') ? customOptions.machine_series : 'e2' %>"
-  machine_type_override = "<%= (customOptions.machine_type_override != null && customOptions.machine_type_override != '') ? customOptions.machine_type_override : 'e2-micro' %>"
-  vcpu_count            = <%= (customOptions.vcpu_count != null && customOptions.vcpu_count != '') ? customOptions.vcpu_count : 1 %>
-  memory_gb             = <%= (customOptions.memory_gb != null && customOptions.memory_gb != '') ? customOptions.memory_gb : 1 %>
-  disk_type             = "<%= (customOptions.disk_type != null && customOptions.disk_type != '') ? customOptions.disk_type : 'pd-standard' %>"
-  disk_size_gb          = <%= (customOptions.disk_size_gb != null && customOptions.disk_size_gb != '') ? customOptions.disk_size_gb : 30 %>
-  boot_image_project    = "<%= (customOptions.boot_image_project != null && customOptions.boot_image_project != '') ? customOptions.boot_image_project : 'debian-cloud' %>"
-  boot_image_family     = "<%= (customOptions.boot_image_family != null && customOptions.boot_image_family != '') ? customOptions.boot_image_family : 'debian-12' %>"
-  assign_external_ip    = <%= (customOptions.assign_external_ip != null && customOptions.assign_external_ip != '') ? customOptions.assign_external_ip : true %>
-  ssh_username          = "<%= (customOptions.ssh_username != null && customOptions.ssh_username != '') ? customOptions.ssh_username : 'devopsvanilla' %>"
-  ssh_public_key        = "<%= (customOptions.ssh_public_key != null && customOptions.ssh_public_key != '') ? customOptions.ssh_public_key : '' %>"
-  network_name          = "<%= (customOptions.network_name != null && customOptions.network_name != '') ? customOptions.network_name : 'default' %>"
-  subnetwork_name       = "<%= (customOptions.subnetwork_name != null && customOptions.subnetwork_name != '') ? customOptions.subnetwork_name : '' %>"
-  allowed_http_cidr     = "<%= (customOptions.allowed_http_cidr != null && customOptions.allowed_http_cidr != '') ? customOptions.allowed_http_cidr : '0.0.0.0/0' %>"
-  allowed_ssh_cidr      = "<%= (customOptions.allowed_ssh_cidr != null && customOptions.allowed_ssh_cidr != '') ? customOptions.allowed_ssh_cidr : '0.0.0.0/0' %>"
+  vm_name               = "<%=customOptions.vm_name%>"
+  machine_series        = "<%=customOptions.machine_series%>"
+  machine_type_override = "<%=customOptions.machine_type_override%>"
+  vcpu_count            = "<%=customOptions.vcpu_count%>"
+  memory_gb             = "<%=customOptions.memory_gb%>"
+  disk_type             = "<%=customOptions.disk_type%>"
+  disk_size_gb          = "<%=customOptions.disk_size_gb%>"
+  boot_image_project    = "<%=customOptions.boot_image_project%>"
+  boot_image_family     = "<%=customOptions.boot_image_family%>"
+  assign_external_ip    = "<%=customOptions.assign_external_ip%>"
+  ssh_username          = "<%=customOptions.ssh_username%>"
+  ssh_public_key        = "<%=customOptions.ssh_public_key%>"
+  network_name          = "<%=customOptions.network_name%>"
+  subnetwork_name       = "<%=customOptions.subnetwork_name%>"
+  allowed_http_cidr     = "<%=customOptions.allowed_http_cidr%>"
+  allowed_ssh_cidr      = "<%=customOptions.allowed_ssh_cidr%>"
 
   machine_type = (
     trimspace(local.machine_type_override) == "" ||
     trimspace(local.machine_type_override) == "custom" ||
-    (local.machine_type_override == "e2-micro" && (local.memory_gb > 1 || local.vcpu_count > 1))
+    (local.machine_type_override == "e2-micro" && (try(tonumber(local.memory_gb), 1) > 1 || try(tonumber(local.vcpu_count), 1) > 1))
   ) ? format(
     "%s-custom-%d-%d",
     local.machine_series,
-    (local.machine_series == "e2" ? max(local.vcpu_count, 2) : local.vcpu_count),
-    local.memory_gb * 1024
+    (local.machine_series == "e2" ? max(try(tonumber(local.vcpu_count), 2), 2) : try(tonumber(local.vcpu_count), 1)),
+    try(tonumber(local.memory_gb), 1) * 1024
   ) : local.machine_type_override
 }
 
@@ -80,7 +80,7 @@ resource "google_compute_instance" "vm" {
     initialize_params {
       image = "projects/$${local.boot_image_project}/global/images/family/$${local.boot_image_family}"
       type  = local.disk_type
-      size  = local.disk_size_gb
+      size  = try(tonumber(local.disk_size_gb), 30)
     }
   }
 
@@ -89,7 +89,7 @@ resource "google_compute_instance" "vm" {
     subnetwork = local.subnetwork_name != "" ? local.subnetwork_name : null
 
     dynamic "access_config" {
-      for_each = local.assign_external_ip ? [1] : []
+      for_each = try(tobool(local.assign_external_ip), true) ? [1] : []
       content {}
     }
   }
