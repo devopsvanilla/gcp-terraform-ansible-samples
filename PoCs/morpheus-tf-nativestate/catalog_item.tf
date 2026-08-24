@@ -9,14 +9,13 @@ resource "hpe_morpheus_catalog_item_app_blueprint" "vm_nginx" {
 
   option_type_ids = local.vm_nginx_option_type_ids
 
-  app_spec = jsonencode({
-    group = {
-      id = var.morpheus_group_id
-    }
-    cloud = {
-      id = var.morpheus_cloud_id
-    }
-  })
+  app_spec = <<-EOT
+    name: '<%= customOption.name ?: customOptions.name %>'
+    group:
+      id: ${var.morpheus_group_id}
+    cloud:
+      id: ${var.morpheus_cloud_id}
+  EOT
 
   content = <<-EOT
     ### ${var.blueprint_name}
