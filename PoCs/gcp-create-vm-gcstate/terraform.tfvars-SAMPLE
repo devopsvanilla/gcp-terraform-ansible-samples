@@ -8,6 +8,17 @@ region     = "us-central1" # Região GCP para a PoC
 zone       = "us-central1-a" # Zona GCP para a VM
 manage_vm_external_ip_org_policy = true # Gerencia a Org Policy de IP externo no projeto
 
+# ===== Credenciais GCP (Opcional se autenticado via gcloud / GOOGLE_APPLICATION_CREDENTIALS / Cypher) =====
+# gcp_credentials = <<-EOF
+# {
+#   "type": "service_account",
+#   "project_id": "poc-terraform-ansible",
+#   "private_key_id": "...",
+#   "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+#   "client_email": "sa-terraform@poc-terraform-ansible.iam.gserviceaccount.com"
+# }
+# EOF
+
 # ===== Atributos globais com fallback por VM =====
 # Estes valores servem como padrão para todas as VMs; cada VM pode sobrescrevê-los se necessário.
 ssh_username   = "devops" # Usuário Linux padrão para SSH

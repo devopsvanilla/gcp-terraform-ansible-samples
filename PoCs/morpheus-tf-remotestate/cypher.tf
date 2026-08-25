@@ -22,3 +22,12 @@ EOF
     ignore_changes = [value]
   }
 }
+
+# Garante que o segredo individual com as credenciais GCP também exista no Cypher quando fornecido
+resource "hpe_morpheus_cypher_secret" "gcp_credentials" {
+  count = var.gcp_credentials != null && var.gcp_credentials != "" ? 1 : 0
+
+  key   = var.cypher_gcp_credentials_key
+  ttl   = var.cypher_tfvars_ttl
+  value = var.gcp_credentials
+}

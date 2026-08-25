@@ -30,3 +30,13 @@ blueprint_category     = "terraform-ansible-samples"
 blueprint_visibility   = "private"
 project_id             = "poc-terraform-ansible"
 cypher_tfvars_key      = "tfvars-gcp-create-vm-gcstate"
+# cypher_gcp_credentials_key = "gcp-terraform-ansible-samples"
+# gcp_credentials        = <<-EOF
+# {
+#   "type": "service_account",
+#   "project_id": "poc-terraform-ansible",
+#   "private_key_id": "...",
+#   "private_key": "-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n",
+#   "client_email": "sa-terraform@poc-terraform-ansible.iam.gserviceaccount.com"
+# }
+# EOF

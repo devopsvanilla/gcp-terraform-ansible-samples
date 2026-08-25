@@ -38,4 +38,9 @@ output "cypher_tfvars_secret_id" {
   value       = hpe_morpheus_cypher_secret.tfvars_manifest.id
 }
 
+output "cypher_gcp_credentials_secret_id" {
+  description = "ID do segredo Cypher onde as credenciais GCP são armazenadas."
+  value       = try(hpe_morpheus_cypher_secret.gcp_credentials[0].id, null)
+}
+
 

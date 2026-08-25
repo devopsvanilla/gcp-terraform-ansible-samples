@@ -193,3 +193,16 @@ variable "cypher_tfvars_ttl" {
   default     = 0
 }
 
+variable "gcp_credentials" {
+  type        = string
+  description = "Conteúdo JSON da chave da Service Account GCP. Se fornecido, será gravado automaticamente no Cypher em secret/<cypher_gcp_credentials_key>."
+  default     = null
+  sensitive   = true
+}
+
+variable "cypher_gcp_credentials_key" {
+  type        = string
+  description = "Chave no Morpheus Cypher onde as credenciais GCP serão armazenadas (sem o prefixo secret/, pois o recurso hpe_morpheus_cypher_secret já o adiciona)."
+  default     = "gcp-terraform-ansible-samples"
+}
+
