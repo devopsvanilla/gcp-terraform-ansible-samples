@@ -14,8 +14,9 @@ locals {
       vm_name               = local.effective_form_vm_name
       machine_type_override = var.machine_type_override
       machine_series        = var.machine_series
-      vcpu_count            = var.vcpu_count
-      memory_gb             = var.memory_gb
+      vcpu_count            = try(tonumber(var.vcpu_count), 1)
+      memory_gb             = try(tonumber(var.memory_gb), 1)
+      memory_mb             = try(tonumber(var.memory_gb), 1) * 1024
       machine_type = (
         trimspace(var.machine_type_override) == "" ||
         trimspace(var.machine_type_override) == "custom" ||
@@ -33,7 +34,7 @@ locals {
       assign_external_ip               = var.assign_external_ip
       ssh_username                     = var.ssh_username
       ssh_public_key                   = var.ssh_public_key
-      user_groups                      = var.user_groups
+      user_groups                      = compact([for g in(can(tolist(var.user_groups)) ? tolist(var.user_groups) : split(",", replace(replace(tostring(var.user_groups), "[", ""), "]", ""))) : trimspace(g)])
       network_name                     = var.network_name
       subnetwork_name                  = var.subnetwork_name
       allowed_http_cidr                = var.allowed_http_cidr
@@ -76,7 +77,8 @@ locals {
     }
   }
 
-  vm_configs = trimspace(var.name) != "" || trimspace(var.vm_name) != "" ? local.form_vm_config : local.map_vm_configs
+  use_form_input = trimspace(var.name) != "" || trimspace(var.vm_name) != ""
+  vm_configs     = local.use_form_input ? tomap(local.form_vm_config) : tomap(local.map_vm_configs)
 
   vm_external_ip_allowed_values = distinct(flatten([
     for k, vm in local.vm_configs : (vm.assign_external_ip && vm.manage_vm_external_ip_org_policy ? [

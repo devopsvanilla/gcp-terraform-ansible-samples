@@ -29,4 +29,4 @@ blueprint_description = "Adiciona uma VM ao terraform.tfvars no Cypher da PoC gc
 blueprint_category     = "terraform-ansible-samples"
 blueprint_visibility   = "private"
 project_id             = "poc-terraform-ansible"
-cypher_tfvars_key      = "secret/tfvars-gcp-create-vm-gcstate"
+cypher_tfvars_key      = "tfvars-gcp-create-vm-gcstate"

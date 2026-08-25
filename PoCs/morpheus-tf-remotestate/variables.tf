@@ -183,8 +183,8 @@ variable "project_id" {
 
 variable "cypher_tfvars_key" {
   type        = string
-  description = "Chave no Morpheus Cypher onde o conteúdo de terraform.tfvars será armazenado."
-  default     = "secret/tfvars-gcp-create-vm-gcstate"
+  description = "Chave no Morpheus Cypher onde o conteúdo de terraform.tfvars será armazenado (sem o prefixo secret/, pois o recurso hpe_morpheus_cypher_secret já o adiciona)."
+  default     = "tfvars-gcp-create-vm-gcstate"
 }
 
 variable "cypher_tfvars_ttl" {

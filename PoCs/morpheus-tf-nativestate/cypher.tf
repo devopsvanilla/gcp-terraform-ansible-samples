@@ -35,7 +35,7 @@ EOT
 
 # Garante que o segredo individual com as credenciais GCP também exista no Cypher
 resource "hpe_morpheus_cypher_secret" "gcp_credentials" {
-  key = "secret/gcp-terraform-ansible-samples"
+  key = "gcp-terraform-ansible-samples"
   ttl = var.cypher_secret_ttl
 
   value = var.gcp_credentials != null ? var.gcp_credentials : ""
