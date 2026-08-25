@@ -23,12 +23,8 @@ ALLOWED_SSH_CIDR='<%=customOptions.allowedSshCidr%>'
 MANAGE_ORG_POLICY='<%=customOptions.manageVmExternalIpOrgPolicy%>'
 USER_GROUPS='<%=customOptions.userGroups%>'
 
-# Injeção de credenciais GCP e chaves do Cypher
+# Injeção de credenciais GCP via Cypher ou Variável de Ambiente
 GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
-CYPHER_TFVARS_VALUE='<%=cypher.read("secret/tfvars-gcp-create-vm-gcstate")%>'
-CYPHER_MORPHEUS_URL='<%=cypher.read("secret/morpheus-api-url")%>'
-CYPHER_MORPHEUS_TOKEN='<%=cypher.read("secret/morpheus-api-token")%>'
-CYPHER_TFVARS_KEY="secret/tfvars-gcp-create-vm-gcstate"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -78,11 +74,6 @@ log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 [ "$ALLOWED_SSH_CIDR" != "null" ] || ALLOWED_SSH_CIDR=""
 [ "$MANAGE_ORG_POLICY" != "null" ] || MANAGE_ORG_POLICY=""
 [ "$USER_GROUPS" != "null" ] || USER_GROUPS=""
-[ "$CYPHER_MORPHEUS_URL" != "null" ] || CYPHER_MORPHEUS_URL=""
-[ "$CYPHER_MORPHEUS_TOKEN" != "null" ] || CYPHER_MORPHEUS_TOKEN=""
-
-MORPHEUS_API_URL="${MORPHEUS_API_URL:-${MORPHEUS_APPLIANCE_URL:-${MORPHEUS_URL:-${CYPHER_MORPHEUS_URL:-}}}}"
-MORPHEUS_TOKEN="${MORPHEUS_TOKEN:-${MORPHEUS_API_TOKEN:-${MORPHEUS_ACCESS_TOKEN:-${CYPHER_MORPHEUS_TOKEN:-}}}}"
 
 # Normaliza booleanos do Morpheus
 case "$(echo "$ASSIGN_EXTERNAL_IP" | tr '[:upper:]' '[:lower:]')" in
@@ -170,52 +161,9 @@ fi
 
 FINAL_PROJECT_ID="${DETECTED_PROJECT_ID:-poc-terraform-ansible}"
 
-# 1. Recupera o conteúdo de terraform.tfvars a partir do Morpheus Cypher
-log_info "Carregando terraform.tfvars a partir do Cypher ($CYPHER_TFVARS_KEY)..."
-if [ -n "$CYPHER_TFVARS_VALUE" ] && [ "$CYPHER_TFVARS_VALUE" != "null" ]; then
-  log_info "Conteúdo do Cypher recuperado via interpolação."
-  printf '%s\n' "$CYPHER_TFVARS_VALUE" > "$TFVARS_FILE"
-elif [ -n "${MORPHEUS_API_URL:-}" ] && [ -n "${MORPHEUS_TOKEN:-}" ] && [ "$MORPHEUS_TOKEN" != "null" ]; then
-  log_info "Buscando chave no Cypher via API do Morpheus..."
-  API_CONTENT=$(python3 - <<PYEOF
-import urllib.request
-import urllib.error
-import ssl
-import json
-
-api_url = "${MORPHEUS_API_URL}".rstrip("/")
-token = "${MORPHEUS_TOKEN}"
-key = "${CYPHER_TFVARS_KEY}".lstrip("/")
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
-req = urllib.request.Request(
-    f"{api_url}/api/cypher/{key}",
-    headers={
-        "Authorization": f"BEARER {token}",
-        "Content-Type": "application/json"
-    }
-)
-try:
-    with urllib.request.urlopen(req, context=ctx) as resp:
-        data = json.loads(resp.read().decode('utf-8'))
-        val = data.get('cypher', {}).get('item', {}).get('value') or data.get('data') or ''
-        print(val)
-except Exception:
-    pass
-PYEOF
-  )
-  if [ -n "$API_CONTENT" ]; then
-    printf '%s\n' "$API_CONTENT" > "$TFVARS_FILE"
-  fi
-fi
-
-# Se o arquivo ainda não existir ou estiver vazio, gera a estrutura inicial padrão
-if [ ! -f "$TFVARS_FILE" ] || [ ! -s "$TFVARS_FILE" ]; then
-  log_info "Inicializando terraform.tfvars base (project_id: $FINAL_PROJECT_ID)..."
-  cat <<EOF > "$TFVARS_FILE"
+# 1. Inicializa o arquivo terraform.tfvars efêmero para esta instância
+log_info "Gerando terraform.tfvars exclusivo para a VM '$VM_NAME' ($VM_KEY)..."
+cat <<EOF > "$TFVARS_FILE"
 poc_name                         = "gcp-create-vm-gcstate"
 project_id                       = "$FINAL_PROJECT_ID"
 region                           = "us-central1"
@@ -227,16 +175,6 @@ allowed_ssh_cidr                 = "0.0.0.0/0"
 
 vms = {}
 EOF
-fi
-
-if grep -q "<gcp_project_id>" "$TFVARS_FILE" 2>/dev/null; then
-  log_info "Substituindo <gcp_project_id> por '$FINAL_PROJECT_ID' em $TFVARS_FILE..."
-  sed -i "s|<gcp_project_id>|$FINAL_PROJECT_ID|g" "$TFVARS_FILE"
-fi
-
-if [ "$MANAGE_ORG_POLICY" = "false" ]; then
-  sed -i 's/manage_vm_external_ip_org_policy\s*=\s*true/manage_vm_external_ip_org_policy = false/g' "$TFVARS_FILE" 2>/dev/null || true
-fi
 
 ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME" --overwrite)
 [ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
@@ -264,65 +202,21 @@ if [ -n "$USER_GROUPS" ]; then
   done
 fi
 
-log_info "Executando: bash $ADD_VM_SCRIPT ${ARGS[*]}"
+log_info "Populando parâmetros da VM via: bash $ADD_VM_SCRIPT ${ARGS[*]}"
 bash "$ADD_VM_SCRIPT" "${ARGS[@]}"
 
-# 2. Persiste o novo conteúdo atualizado de volta no Morpheus Cypher
-if [ -n "${MORPHEUS_API_URL:-}" ] && [ -n "${MORPHEUS_TOKEN:-}" ] && [ "$MORPHEUS_TOKEN" != "null" ]; then
-  log_info "Sincronizando terraform.tfvars atualizado no Morpheus Cypher ($CYPHER_TFVARS_KEY)..."
-  python3 - <<PYEOF
-import urllib.request
-import urllib.error
-import ssl
-import json
+# 2. Define o prefixo isolado no GCS para esta VM específica
+INSTANCE_STATE_PREFIX="${TFSTATE_PREFIX}/${VM_KEY}"
+log_info "Configurando estado remoto isolado no GCS (bucket: $TFSTATE_BUCKET, prefix: $INSTANCE_STATE_PREFIX)..."
 
-api_url = "${MORPHEUS_API_URL}".rstrip("/")
-token = "${MORPHEUS_TOKEN}"
-key = "${CYPHER_TFVARS_KEY}".lstrip("/")
-
-with open("${TFVARS_FILE}", "r") as f:
-    content = f.read()
-
-payload = json.dumps({"value": content, "ttl": 0}).encode("utf-8")
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
-req = urllib.request.Request(
-    f"{api_url}/api/cypher/{key}",
-    data=payload,
-    headers={
-        "Authorization": f"BEARER {token}",
-        "Content-Type": "application/json"
-    },
-    method="POST"
-)
-
-try:
-    with urllib.request.urlopen(req, context=ctx) as resp:
-        print(f"[INFO] Cypher atualizado com sucesso (HTTP {resp.status})")
-except urllib.error.HTTPError as e:
-    req.method = "PUT"
-    try:
-        with urllib.request.urlopen(req, context=ctx) as resp:
-            print(f"[INFO] Cypher atualizado via PUT (HTTP {resp.status})")
-    except Exception as ex:
-        print(f"[WARN] Nao foi possivel atualizar o Cypher via API: {ex}")
-except Exception as ex:
-    print(f"[WARN] Falha de conexao com API do Morpheus Cypher: {ex}")
-PYEOF
-fi
-
-# 3. Gera arquivo temporário backend_override.tf para o GCS
+# 3. Gera arquivo temporário backend_override.tf apontando para o prefixo da instância
 if [ -n "$TFSTATE_BUCKET" ]; then
-  log_info "Gerando backend_override.tf temporário para GCS (bucket: $TFSTATE_BUCKET, prefix: $TFSTATE_PREFIX)..."
   if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
     cat <<EOF > "$OVERRIDE_FILE"
 terraform {
   backend "gcs" {
     bucket      = "$TFSTATE_BUCKET"
-    prefix      = "$TFSTATE_PREFIX"
+    prefix      = "$INSTANCE_STATE_PREFIX"
     credentials = "$GOOGLE_APPLICATION_CREDENTIALS"
   }
 }
@@ -332,19 +226,19 @@ EOF
 terraform {
   backend "gcs" {
     bucket = "$TFSTATE_BUCKET"
-    prefix = "$TFSTATE_PREFIX"
+    prefix = "$INSTANCE_STATE_PREFIX"
   }
 }
 EOF
   fi
 fi
 
-# 4. Inicializa, valida e aplica o Terraform
-log_info "Inicializando Terraform em $POC_DIR..."
+# 4. Inicializa, valida e aplica o Terraform exclusivamente para esta instância
+log_info "Inicializando Terraform em $POC_DIR (reconfigure para prefix $INSTANCE_STATE_PREFIX)..."
 "$TERRAFORM_BIN" init -input=false -reconfigure
 
-log_info "Validando e aplicando o manifesto Terraform em $POC_DIR..."
+log_info "Validando e aplicando o manifesto Terraform para a VM '$VM_NAME'..."
 "$TERRAFORM_BIN" validate
 "$TERRAFORM_BIN" apply -auto-approve -input=false
 
-log_info "Apply concluído com sucesso. Limpeza automática será executada no término."
+log_info "Provisionamento da VM '$VM_NAME' concluído com sucesso com estado isolado em gs://$TFSTATE_BUCKET/$INSTANCE_STATE_PREFIX/default.tfstate."

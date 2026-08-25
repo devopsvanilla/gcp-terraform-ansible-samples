@@ -7,12 +7,8 @@ INSTANCE_NAME='<%= binding.hasVariable("instance") && instance ? instance.name :
 FORM_VM_NAME='<%= binding.hasVariable("customOptions") && customOptions?.vmName ? customOptions.vmName : "" %>'
 FORM_VM_KEY='<%= binding.hasVariable("customOptions") && customOptions?.vmKey ? customOptions.vmKey : "" %>'
 
-# Injeção de credenciais GCP e chaves do Cypher
+# Injeção de credenciais GCP via Cypher ou Variável de Ambiente
 GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
-CYPHER_TFVARS_VALUE='<%=cypher.read("secret/tfvars-gcp-create-vm-gcstate")%>'
-CYPHER_MORPHEUS_URL='<%=cypher.read("secret/morpheus-api-url")%>'
-CYPHER_MORPHEUS_TOKEN='<%=cypher.read("secret/morpheus-api-token")%>'
-CYPHER_TFVARS_KEY="secret/tfvars-gcp-create-vm-gcstate"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_warn() { printf '[WARN] %s\n' "$*" >&2; }
@@ -22,11 +18,6 @@ log_error() { printf '[ERROR] %s\n' "$*" >&2; }
 [ "$INSTANCE_NAME" != "null" ] || INSTANCE_NAME=""
 [ "$FORM_VM_NAME" != "null" ] || FORM_VM_NAME=""
 [ "$FORM_VM_KEY" != "null" ] || FORM_VM_KEY=""
-[ "$CYPHER_MORPHEUS_URL" != "null" ] || CYPHER_MORPHEUS_URL=""
-[ "$CYPHER_MORPHEUS_TOKEN" != "null" ] || CYPHER_MORPHEUS_TOKEN=""
-
-MORPHEUS_API_URL="${MORPHEUS_API_URL:-${MORPHEUS_APPLIANCE_URL:-${MORPHEUS_URL:-${CYPHER_MORPHEUS_URL:-}}}}"
-MORPHEUS_TOKEN="${MORPHEUS_TOKEN:-${MORPHEUS_API_TOKEN:-${MORPHEUS_ACCESS_TOKEN:-${CYPHER_MORPHEUS_TOKEN:-}}}}"
 
 VM_NAME="${INSTANCE_NAME:-$FORM_VM_NAME}"
 VM_KEY="${FORM_VM_KEY}"
@@ -109,128 +100,36 @@ elif [ -n "${GOOGLE_CREDENTIALS:-}" ] && [ -z "${GOOGLE_APPLICATION_CREDENTIALS:
   fi
 fi
 
-# 1. Recupera o conteúdo de terraform.tfvars a partir do Morpheus Cypher
-log_info "Carregando terraform.tfvars a partir do Cypher ($CYPHER_TFVARS_KEY)..."
-if [ -n "$CYPHER_TFVARS_VALUE" ] && [ "$CYPHER_TFVARS_VALUE" != "null" ]; then
-  log_info "Conteúdo do Cypher recuperado via interpolação."
-  printf '%s\n' "$CYPHER_TFVARS_VALUE" > "$TFVARS_FILE"
-elif [ -n "${MORPHEUS_API_URL:-}" ] && [ -n "${MORPHEUS_TOKEN:-}" ] && [ "$MORPHEUS_TOKEN" != "null" ]; then
-  log_info "Buscando chave no Cypher via API do Morpheus..."
-  API_CONTENT=$(python3 - <<PYEOF
-import urllib.request
-import urllib.error
-import ssl
-import json
-
-api_url = "${MORPHEUS_API_URL}".rstrip("/")
-token = "${MORPHEUS_TOKEN}"
-key = "${CYPHER_TFVARS_KEY}".lstrip("/")
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
-req = urllib.request.Request(
-    f"{api_url}/api/cypher/{key}",
-    headers={
-        "Authorization": f"BEARER {token}",
-        "Content-Type": "application/json"
-    }
-)
-try:
-    with urllib.request.urlopen(req, context=ctx) as resp:
-        data = json.loads(resp.read().decode('utf-8'))
-        val = data.get('cypher', {}).get('item', {}).get('value') or data.get('data') or ''
-        print(val)
-except Exception:
-    pass
-PYEOF
-  )
-  if [ -n "$API_CONTENT" ]; then
-    printf '%s\n' "$API_CONTENT" > "$TFVARS_FILE"
-  fi
+# Normalização e fallback de identificadores
+if [ -z "$VM_KEY" ] && [ -n "$VM_NAME" ]; then
+  VM_KEY="$(echo "$VM_NAME" | tr '-' '_' | tr -cd 'a-zA-Z0-9_')"
+  log_info "vmKey derivado automaticamente a partir de vmName: $VM_KEY"
 fi
 
-if [ ! -f "$TFVARS_FILE" ] || [ ! -s "$TFVARS_FILE" ]; then
-  log_warn "Nenhum manifesto terraform.tfvars recuperado do Cypher; inicializando estrutura base..."
-  cat <<EOF > "$TFVARS_FILE"
-poc_name                         = "gcp-create-vm-gcstate"
-project_id                       = "poc-terraform-ansible"
-region                           = "us-central1"
-zone                             = "us-central1-a"
-manage_vm_external_ip_org_policy = false
-network_name                     = "default"
-allowed_http_cidr                = "0.0.0.0/0"
-allowed_ssh_cidr                 = "0.0.0.0/0"
-
-vms = {}
-EOF
+if [ -z "$VM_NAME" ] && [ -n "$VM_KEY" ]; then
+  VM_NAME="$(echo "$VM_KEY" | tr '_' '-')"
+  log_info "vmName derivado automaticamente a partir de vmKey: $VM_NAME"
 fi
 
-# 2. Executa a remoção no arquivo temporário
-ARGS=(--file "$TFVARS_FILE")
-[ -z "$VM_KEY" ] || ARGS+=(--vm-key "$VM_KEY")
-[ -z "$VM_NAME" ] || ARGS+=(--vm-name "$VM_NAME")
-
-log_info "Executando remoção no tfvars: bash $REMOVE_VM_SCRIPT ${ARGS[*]}"
-bash "$REMOVE_VM_SCRIPT" "${ARGS[@]}"
-
-# 3. Persiste o conteúdo atualizado de volta no Morpheus Cypher
-if [ -n "${MORPHEUS_API_URL:-}" ] && [ -n "${MORPHEUS_TOKEN:-}" ] && [ "$MORPHEUS_TOKEN" != "null" ] && [ -f "$TFVARS_FILE" ]; then
-  log_info "Sincronizando terraform.tfvars atualizado no Morpheus Cypher ($CYPHER_TFVARS_KEY)..."
-  python3 - <<PYEOF
-import urllib.request
-import urllib.error
-import ssl
-import json
-
-api_url = "${MORPHEUS_API_URL}".rstrip("/")
-token = "${MORPHEUS_TOKEN}"
-key = "${CYPHER_TFVARS_KEY}".lstrip("/")
-
-with open("${TFVARS_FILE}", "r") as f:
-    content = f.read()
-
-payload = json.dumps({"value": content, "ttl": 0}).encode("utf-8")
-
-ctx = ssl.create_default_context()
-ctx.check_hostname = False
-ctx.verify_mode = ssl.CERT_NONE
-
-req = urllib.request.Request(
-    f"{api_url}/api/cypher/{key}",
-    data=payload,
-    headers={
-        "Authorization": f"BEARER {token}",
-        "Content-Type": "application/json"
-    },
-    method="POST"
-)
-
-try:
-    with urllib.request.urlopen(req, context=ctx) as resp:
-        print(f"[INFO] Cypher atualizado com sucesso (HTTP {resp.status})")
-except urllib.error.HTTPError as e:
-    req.method = "PUT"
-    try:
-        with urllib.request.urlopen(req, context=ctx) as resp:
-            print(f"[INFO] Cypher atualizado via PUT (HTTP {resp.status})")
-    except Exception as ex:
-        print(f"[WARN] Nao foi possivel atualizar o Cypher via API: {ex}")
-except Exception as ex:
-    print(f"[WARN] Falha de conexao com API do Morpheus Cypher: {ex}")
-PYEOF
+if [ -z "$VM_KEY" ] && [ -z "$VM_NAME" ]; then
+  log_error "Nenhum identificador de VM informado (instance.name, customOptions.vmName ou customOptions.vmKey estão vazios)."
+  exit 1
 fi
 
-# 4. Gera backend_override.tf temporário para GCS
+log_info "Iniciando processo de remoção da VM (nome: '$VM_NAME', chave: '$VM_KEY')..."
+
+# 1. Define o prefixo isolado no GCS para esta VM específica
+INSTANCE_STATE_PREFIX="${TFSTATE_PREFIX}/${VM_KEY}"
+log_info "Configurando estado remoto isolado no GCS (bucket: $TFSTATE_BUCKET, prefix: $INSTANCE_STATE_PREFIX)..."
+
+# 2. Gera backend_override.tf temporário para GCS
 if [ -n "$TFSTATE_BUCKET" ]; then
-  log_info "Gerando backend_override.tf temporário para GCS (bucket: $TFSTATE_BUCKET, prefix: $TFSTATE_PREFIX)..."
   if [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "${GOOGLE_APPLICATION_CREDENTIALS:-}" ]; then
     cat <<EOF > "$OVERRIDE_FILE"
 terraform {
   backend "gcs" {
     bucket      = "$TFSTATE_BUCKET"
-    prefix      = "$TFSTATE_PREFIX"
+    prefix      = "$INSTANCE_STATE_PREFIX"
     credentials = "$GOOGLE_APPLICATION_CREDENTIALS"
   }
 }
@@ -240,19 +139,18 @@ EOF
 terraform {
   backend "gcs" {
     bucket = "$TFSTATE_BUCKET"
-    prefix = "$TFSTATE_PREFIX"
+    prefix = "$INSTANCE_STATE_PREFIX"
   }
 }
 EOF
   fi
 fi
 
-# 5. Executa terraform init, validate e apply
-log_info "Inicializando Terraform em $POC_DIR..."
+# 3. Executa terraform init, validate e destroy
+log_info "Inicializando Terraform em $POC_DIR (reconfigure para prefix $INSTANCE_STATE_PREFIX)..."
 "$TERRAFORM_BIN" init -input=false -reconfigure
 
-log_info "Aplicando mudanças no Terraform para desprovisionar recursos na GCP e atualizar o tfstate..."
-"$TERRAFORM_BIN" validate
-"$TERRAFORM_BIN" apply -auto-approve -input=false
+log_info "Executando terraform destroy para a VM '$VM_NAME' (chave: '$VM_KEY')..."
+"$TERRAFORM_BIN" destroy -auto-approve -input=false
 
-log_info "Desprovisionamento concluído com sucesso. Limpeza automática será executada no término."
+log_info "Desprovisionamento da VM '$VM_NAME' concluído com sucesso."

@@ -11,35 +11,31 @@ como **App Blueprint** para o solicitante final) para provisionar instâncias Co
   imagem de boot, IP externo, usuário/chave SSH, rede, CIDRs de firewall,
   Org Policy e grupos do usuário remoto);
 - ao ser executado, dispara uma **task de shell script** que:
-  1. recupera o manifesto `terraform.tfvars` a partir do **Morpheus Cypher** (`secret/tfvars-gcp-create-vm-gcstate`);
-  2. executa `scripts/add-vm-to-tfvars.sh` com os valores informados no formulário, adicionando a nova VM ao manifesto local efêmero;
-  3. sincroniza o manifesto `terraform.tfvars` atualizado de volta no **Morpheus Cypher** via API REST do Morpheus;
-  4. executa `terraform init`, `terraform validate` e `terraform apply -auto-approve` com backend GCS dinâmico;
-  5. remove todos os arquivos de configuração e overrides do disco local via `trap cleanup EXIT`.
+  1. gera dinamicamente o arquivo temporário `terraform.tfvars` exclusivo para a VM solicitada;
+  2. configura o backend GCS apontando para um prefixo de estado isolado (`prefix = "gcp-create-vm-gcstate/<vm_key>"`);
+  3. executa `terraform init -reconfigure`, `terraform validate` e `terraform apply -auto-approve` com backend GCS isolado;
+  4. remove todos os arquivos efêmeros do disco local via `trap cleanup EXIT`.
 
 ---
 
-## Fluxo da Arquitetura (Cypher + GCS State)
+## Fluxo da Arquitetura (GCS State Isolado por Instância)
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Solicitante as Usuário / Catálogo
     participant Morph as Morpheus Workflow Task
-    participant Cypher as Morpheus Cypher<br/>(secret/tfvars-gcp-create-vm-gcstate)
-    participant Script as Scripts Auxiliares<br/>(add/remove-vm-to-tfvars.sh)
+    participant Script as Scripts Auxiliares<br/>(add-vm-to-tfvars.sh)
     participant TF as Terraform CLI
-    participant GCS as Bucket GCS<br/>(gs://tfstate-.../gcp-create-vm-gcstate)
+    participant GCS as Bucket GCS<br/>(gs://tfstate-.../gcp-create-vm-gcstate/{vm_key})
 
-    Solicitante->>Morph: Solicita criação (ou exclusão) da VM
-    Morph->>Cypher: 1. Lê o conteúdo atual do terraform.tfvars
-    Morph->>Morph: 2. Cria arquivo temporário efêmero terraform.tfvars
-    Morph->>Script: 3. Executa script para adicionar/remover VM no tfvars local
-    Morph->>Cypher: 4. Atualiza a chave no Cypher com o novo tfvars via Morpheus API
-    Morph->>Morph: 5. Gera backend_override.tf temporário (GCS)
-    Morph->>TF: 6. terraform init -reconfigure && terraform apply -auto-approve
-    TF->>GCS: Atualiza o tfstate remoto no bucket
-    Morph->>Morph: 7. TRAP EXIT: Remove terraform.tfvars e backend_override.tf do disco
+    Solicitante->>Morph: Solicita criação da VM
+    Morph->>Morph: 1. Gera terraform.tfvars efêmero para a VM solicitada
+    Morph->>Script: 2. Popula parâmetros da VM no tfvars local
+    Morph->>Morph: 3. Gera backend_override.tf com prefixo dinâmico (gcp-create-vm-gcstate/{vm_key})
+    Morph->>TF: 4. terraform init -reconfigure && terraform apply -auto-approve
+    TF->>GCS: Salva o tfstate exclusivo da VM no bucket
+    Morph->>Morph: 5. TRAP EXIT: Remove terraform.tfvars e backend_override.tf do disco
 ```
 
 ---
@@ -58,10 +54,10 @@ comportamento pedido, e é o padrão recomendado pelo próprio provider para
 
 | Recurso Terraform                        | Papel no Morpheus Data                                             |
 |-------------------------------------------|---------------------------------------------------------------------|
-| `hpe_morpheus_cypher_secret`              | Armazena o manifesto de variáveis `terraform.tfvars` no Cypher      |
+| `hpe_morpheus_cypher_secret`              | Armazena credenciais GCP no Cypher (`secret/gcp-terraform-ansible-samples`) |
 | `hpe_morpheus_option_type_text/number/checkbox` | Cada campo do formulário exibido ao solicitante                |
-| `hpe_morpheus_task_shell_script` (add)    | Script que roda `add-vm-to-tfvars.sh`, sync Cypher e `terraform apply` |
-| `hpe_morpheus_task_shell_script` (remove) | Script que roda `remove-vm-from-tfvars.sh`, sync Cypher e `apply`   |
+| `hpe_morpheus_task_shell_script` (add)    | Script que roda `add_vm_and_apply.sh` com estado isolado no GCS     |
+| `hpe_morpheus_task_shell_script` (remove) | Script que roda `remove_vm_and_apply.sh` (destroy no state da VM)    |
 | `hpe_morpheus_workflow_operational` (add) | Agrupa os campos do formulário e a task de criação                 |
 | `hpe_morpheus_workflow_operational` (del) | Agrupa os campos de identificação e a task de exclusão sob demanda |
 | `hpe_morpheus_workflow_provisioning`      | Provisioning Workflow com fase **Teardown** para exclusão automática|
@@ -72,38 +68,38 @@ recurso; consulte-os para o detalhamento de cada bloco.
 
 ## Ciclo de Vida e Desprovisionamento Automático (Teardown)
 
-Nesta PoC, a exclusão de VMs e a sincronização do `tfstate` no GCS acontecem de duas maneiras:
+Nesta PoC, a exclusão de VMs e a destruição dos recursos no GCS acontecem de duas maneiras:
 
 1. **Exclusão Automática via Teardown (Lifecycle Hook)**:
    - Ao vincular o Provisioning Workflow (`vm-provisioning-workflow`) à instância, quando qualquer usuário clica em **Delete** na interface do Morpheus, a fase **Teardown** é disparada automaticamente.
-   - O template [`remove_vm_and_apply.sh`](./templates/remove_vm_and_apply.sh) captura o nome da instância, recupera o `terraform.tfvars` do Cypher, remove a entrada via [`scripts/remove-vm-from-tfvars.sh`](../../scripts/remove-vm-from-tfvars.sh), sincroniza a exclusão no Cypher e executa `terraform apply -auto-approve` no GCS.
-   - A VM é destruída na GCP e removida do `tfstate` sem intervenção manual.
+   - O template [`remove_vm_and_apply.sh`](./templates/remove_vm_and_apply.sh) captura o identificador da VM, aponta o backend GCS para o prefixo daquela instância (`gcp-create-vm-gcstate/{vm_key}`) e executa `terraform destroy -auto-approve`.
+   - A VM é destruída no GCP e seu estado no GCS é limpo sem afetar nenhuma outra VM.
 
 2. **Exclusão sob demanda via Catálogo de Self-Service**:
    - Disponível pelo item de catálogo de remoção sob demanda.
-   - O solicitante informa a chave ou o nome da VM que deseja desativar. O workflow executa a remoção no `terraform.tfvars`, sincroniza o Cypher e aplica o desprovisionamento no Terraform.
+   - O solicitante informa a chave ou o nome da VM que deseja desativar. O workflow executa o `terraform destroy` no estado isolado daquela instância no GCS.
 
 ## Estratégia de Armazenamento de Estado (`tfstate`) e Variáveis (`tfvars`)
 
-Nesta arquitetura, adota-se o padrão **100% Stateless no runner**:
+Nesta arquitetura, adota-se o padrão **100% Stateless no runner e Isolado por Instância no GCS**:
 
 1. **Execuções Manuais / Locais (Desenvolvimento)**:
    O arquivo de manifesto local **não declara nenhum bloco `backend`**. Com isso, qualquer execução direta (`terraform init` / `apply`) no computador do desenvolvedor armazena o estado no backend **local** (`terraform.tfstate`), sem exigir conexão ou criação de buckets no Google Cloud.
 
-2. **Execuções Automatizadas via Morpheus Data (Remoto / GCS + Cypher)**:
-   - As variáveis ficam centralizadas no **Cypher** (`secret/tfvars-gcp-create-vm-gcstate`).
-   - Quando a Shell Task [`add_vm_and_apply.sh`](./templates/add_vm_and_apply.sh) é disparada pelo Morpheus, ela gera temporariamente um arquivo de sobreposição chamado `backend_override.tf` contendo a declaração do backend GCS:
+2. **Execuções Automatizadas via Morpheus Data (Remoto / GCS Isolado)**:
+   - Cada instância criada pelo catálogo recebe seu próprio caminho isolado no bucket GCS: `gs://<bucket>/gcp-create-vm-gcstate/<vm_key>/default.tfstate`.
+   - Quando a Shell Task [`add_vm_and_apply.sh`](./templates/add_vm_and_apply.sh) é disparada pelo Morpheus, ela gera temporariamente um arquivo de sobreposição chamado `backend_override.tf` contendo a declaração do backend GCS isolado:
 
    ```hcl
    terraform {
      backend "gcs" {
        bucket = "tfstate-devopsvanilla-samples"
-       prefix = "gcp-create-vm-gcstate"
+       prefix = "gcp-create-vm-gcstate/vm_app_01"
      }
    }
    ```
 
-   Em seguida, o script executa `terraform init -reconfigure` para conectar ao bucket GCS e, ao término da execução, um `trap` remove automaticamente o arquivo `backend_override.tf` e o `terraform.tfvars`, mantendo o repositório limpo e seguro.
+   Em seguida, o script executa `terraform init -reconfigure` para conectar ao state daquela VM específica e, ao término da execução, um `trap` remove automaticamente o arquivo `backend_override.tf` e o `terraform.tfvars`, mantendo o repositório limpo, seguro e sem risco de concorrência.
 
 ### Suporte a Outros Backends Remotos
 
