@@ -4,7 +4,8 @@ Este documento descreve a **arquitetura de ponta a ponta** do provisionamento de
 
 > 📖 **Documentos Relacionados:**
 > - **Provisionamento e Descomissionamento da VM**: [`README.md`](./README.md)
-> - **Automação do Blueprint no Morpheus Data**: [`PoCs/morpheus-tf-nativestate/README.md`](../morpheus-tf-nativestate/README.md)
+> - **Automação no Morpheus com Remote State no GCS (Estado Isolado por VM)**: [`PoCs/morpheus-tf-remotestate/README.md`](../morpheus-tf-remotestate/README.md)
+> - **Automação do Blueprint no Morpheus Data (Native State)**: [`PoCs/morpheus-tf-nativestate/README.md`](../morpheus-tf-nativestate/README.md)
 > - **Configuração de Conectividade GCP, GitHub e Cypher**: [`PoCs/morpheus-tf-nativestate/HOWTO-gcloud-connect.md`](../morpheus-tf-nativestate/HOWTO-gcloud-connect.md)
 
 ---
@@ -289,6 +290,7 @@ sequenceDiagram
 | Documento | Conteúdo |
 |---|---|
 | [`README.md`](./README.md) | Recursos provisionados, pré-requisitos, como implantar e descomissionar a VM |
-| [`../morpheus-tf-nativestate/README.md`](../morpheus-tf-nativestate/README.md) | Automação do Blueprint, Option Types e Catálogo no Morpheus Data |
+| [`../morpheus-tf-remotestate/README.md`](../morpheus-tf-remotestate/README.md) | Automação no Morpheus com Remote State no GCS (Estado Isolado por VM) |
+| [`../morpheus-tf-nativestate/README.md`](../morpheus-tf-nativestate/README.md) | Automação do Blueprint, Option Types e Catálogo no Morpheus Data (Native State) |
 | [`../morpheus-tf-nativestate/HOWTO-gcloud-connect.md`](../morpheus-tf-nativestate/HOWTO-gcloud-connect.md) | Configuração de Service Account GCP, integração Git, segredos no Cypher |
 | [`../morpheus-tf-nativestate/HOWTO-tfstate-drift.md`](../morpheus-tf-nativestate/HOWTO-tfstate-drift.md) | Gerenciamento de estado `.tfstate` e detecção de drifts |

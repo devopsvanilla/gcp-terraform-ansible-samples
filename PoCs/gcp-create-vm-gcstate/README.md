@@ -12,8 +12,27 @@ Esta PoC implanta **uma ou várias VMs Linux na Google Cloud Platform (GCP)** us
 - suporte a múltiplas entradas em `vms`, cada uma com configuração própria;
 - um fluxo opcional para gerenciar a Org Policy `constraints/compute.vmExternalIpAccess` e liberar IP externo para as VMs do projeto, inclusive para as que forem criadas posteriormente;
 - criação automática de um usuário remoto na VM via startup script, com grupos Linux opcionais definidos por VM (`user_groups`).
+- **Gestão de Estado Flexível e Isolada:**
+  - **Execução Local (Desenvolvimento)**: O manifesto é stateless no runner por padrão, gravando o estado localmente em `terraform.tfstate`.
+  - **Execução Remota / Morpheus Data**: Utiliza backend remoto dinâmico no Google Cloud Storage (GCS) onde cada VM possui seu prefixo de estado isolado (`gs://<bucket>/gcp-create-vm-gcstate/<vm_key>/default.tfstate`), permitindo provisionamento e destruição independentes de múltiplas instâncias no mesmo bucket.
 
 > 📖 **Arquitetura e Diagramas:** Para uma visão detalhada dos fluxos de provisionamento (Git → Morpheus → GCP), autenticação e credenciais, com diagramas de sequência e componentes, consulte o [`ARCHITECTURE.md`](./ARCHITECTURE.md).
+
+## Estrutura de Armazenamento de Estado (`tfstate`)
+
+A PoC adota um modelo **100% Stateless por padrão**:
+
+1. **Standalone / Local**: O arquivo `providers.tf` não declara nenhum bloco `backend`. Execuções manuais usam o backend local.
+2. **Remoto Isolado (GCS)**: Durante a orquestração (via Morpheus Data ou scripts de automação), um arquivo efêmero `backend_override.tf` é gerado apontando para o bucket e prefixo exclusivo da VM:
+   ```hcl
+   terraform {
+     backend "gcs" {
+       bucket = "tfstate-devopsvanilla-samples"
+       prefix = "gcp-create-vm-gcstate/<vm_key>"
+     }
+   }
+   ```
+   Isso assegura que solicitações simultâneas ou consecutivas não compartilhem o mesmo arquivo de state, eliminando conflitos de concorrência e garantindo que cada VM tenha seu ciclo de vida (provisionamento e destroy) isolado.
 
 ## Pré-requisitos
 
@@ -58,7 +77,7 @@ Esta PoC implanta **uma ou várias VMs Linux na Google Cloud Platform (GCP)** us
 5. Se quiser o fluxo automático de Org Policy para IP externo, mantenha `manage_vm_external_ip_org_policy = true`.
 6. Antes do primeiro `terraform init`, crie o bucket de state remoto no GCS (se for utilizar backend remoto):
    - `./scripts/create-tfstate-bucket.sh --project-id poc-terraform-ansible`
-   - O bucket configurado é `gs://tfstate-devopsvanilla-samples` e o prefixo usado é `gcp-create-vm-gcstate`.
+   - O bucket configurado é `gs://tfstate-devopsvanilla-samples` e o prefixo base é `gcp-create-vm-gcstate`.
 7. Execute as validações e o planejamento Terraform:
    - `terraform init`
    - `terraform fmt`

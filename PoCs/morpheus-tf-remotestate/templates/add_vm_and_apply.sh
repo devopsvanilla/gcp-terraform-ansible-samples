@@ -233,9 +233,32 @@ EOF
   fi
 fi
 
-# 4. Inicializa, valida e aplica o Terraform exclusivamente para esta instância
+# 4. Inicializa o Terraform com reconfigure para o prefixo da instância
 log_info "Inicializando Terraform em $POC_DIR (reconfigure para prefix $INSTANCE_STATE_PREFIX)..."
 "$TERRAFORM_BIN" init -input=false -reconfigure
+
+# 5. Pré-checagem e sanitização de recursos órfãos no GCP (evita erro 409 alreadyExists)
+log_info "Executando pre-flight check de recursos órfãos no GCP..."
+VM_KEY_SLUG="$(echo "$VM_KEY" | tr '[:upper:]' '[:lower:]' | tr '_' '-')"
+if command -v gcloud >/dev/null 2>&1; then
+  # Regras de Firewall órfãs
+  for fw_rule in "gcp-create-vm-gcstate-${VM_KEY_SLUG}-allow-http" "gcp-create-vm-gcstate-${VM_KEY_SLUG}-allow-ssh"; do
+    if gcloud compute firewall-rules describe "$fw_rule" --project="$FINAL_PROJECT_ID" >/dev/null 2>&1; then
+      if ! "$TERRAFORM_BIN" state list 2>/dev/null | grep -q "google_compute_firewall.*${VM_KEY}"; then
+        log_warn "Regra de firewall órfã detectada no GCP ($fw_rule) fora do tfstate atual. Removendo resquício..."
+        gcloud compute firewall-rules delete "$fw_rule" --project="$FINAL_PROJECT_ID" --quiet >/dev/null 2>&1 || true
+      fi
+    fi
+  done
+
+  # Instância Compute Engine órfã
+  if gcloud compute instances describe "$VM_NAME" --zone="us-central1-a" --project="$FINAL_PROJECT_ID" >/dev/null 2>&1; then
+    if ! "$TERRAFORM_BIN" state list 2>/dev/null | grep -q "google_compute_instance.vm"; then
+      log_warn "Instância Compute Engine órfã detectada no GCP ($VM_NAME) fora do tfstate atual. Removendo resquício..."
+      gcloud compute instances delete "$VM_NAME" --zone="us-central1-a" --project="$FINAL_PROJECT_ID" --quiet >/dev/null 2>&1 || true
+    fi
+  fi
+fi
 
 log_info "Validando e aplicando o manifesto Terraform para a VM '$VM_NAME'..."
 "$TERRAFORM_BIN" validate

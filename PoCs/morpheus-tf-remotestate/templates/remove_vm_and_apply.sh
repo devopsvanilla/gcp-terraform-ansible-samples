@@ -100,6 +100,16 @@ elif [ -n "${GOOGLE_CREDENTIALS:-}" ] && [ -z "${GOOGLE_APPLICATION_CREDENTIALS:
   fi
 fi
 
+# Detecta project_id a partir do arquivo de credenciais
+DETECTED_PROJECT_ID=""
+if [ -n "${CREDS_FILE:-}" ] && [ -f "$CREDS_FILE" ]; then
+  DETECTED_PROJECT_ID="$(python3 -c "import json; data=json.load(open('$CREDS_FILE')); print(data.get('project_id', ''))" 2>/dev/null || true)"
+elif [ -n "${GOOGLE_APPLICATION_CREDENTIALS:-}" ] && [ -f "$GOOGLE_APPLICATION_CREDENTIALS" ]; then
+  DETECTED_PROJECT_ID="$(python3 -c "import json; data=json.load(open('$GOOGLE_APPLICATION_CREDENTIALS')); print(data.get('project_id', ''))" 2>/dev/null || true)"
+fi
+
+FINAL_PROJECT_ID="${DETECTED_PROJECT_ID:-poc-terraform-ansible}"
+
 # Normalização e fallback de identificadores
 if [ -z "$VM_KEY" ] && [ -n "$VM_NAME" ]; then
   VM_KEY="$(echo "$VM_NAME" | tr '-' '_' | tr -cd 'a-zA-Z0-9_')"
@@ -116,7 +126,7 @@ if [ -z "$VM_KEY" ] && [ -z "$VM_NAME" ]; then
   exit 1
 fi
 
-log_info "Iniciando processo de remoção da VM (nome: '$VM_NAME', chave: '$VM_KEY')..."
+log_info "Iniciando processo de remoção da VM (nome: '$VM_NAME', chave: '$VM_KEY', project: '$FINAL_PROJECT_ID')..."
 
 # 1. Define o prefixo isolado no GCS para esta VM específica
 INSTANCE_STATE_PREFIX="${TFSTATE_PREFIX}/${VM_KEY}"
@@ -151,6 +161,17 @@ log_info "Inicializando Terraform em $POC_DIR (reconfigure para prefix $INSTANCE
 "$TERRAFORM_BIN" init -input=false -reconfigure
 
 log_info "Executando terraform destroy para a VM '$VM_NAME' (chave: '$VM_KEY')..."
-"$TERRAFORM_BIN" destroy -auto-approve -input=false
+"$TERRAFORM_BIN" destroy -auto-approve -input=false -var="project_id=$FINAL_PROJECT_ID" || true
+
+# 4. Limpeza de resíduos de firewall no GCP (garantia pós-destroy)
+VM_KEY_SLUG="$(echo "$VM_KEY" | tr '[:upper:]' '[:lower:]' | tr '_' '-')"
+if command -v gcloud >/dev/null 2>&1; then
+  for fw_rule in "gcp-create-vm-gcstate-${VM_KEY_SLUG}-allow-http" "gcp-create-vm-gcstate-${VM_KEY_SLUG}-allow-ssh"; do
+    if gcloud compute firewall-rules describe "$fw_rule" --project="$FINAL_PROJECT_ID" >/dev/null 2>&1; then
+      log_info "Limpando regra de firewall residual no GCP ($fw_rule)..."
+      gcloud compute firewall-rules delete "$fw_rule" --project="$FINAL_PROJECT_ID" --quiet >/dev/null 2>&1 || true
+    fi
+  done
+fi
 
 log_info "Desprovisionamento da VM '$VM_NAME' concluído com sucesso."
