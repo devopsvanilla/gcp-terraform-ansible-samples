@@ -174,4 +174,12 @@ if command -v gcloud >/dev/null 2>&1; then
   done
 fi
 
+# 5. Limpeza completa do estado e versões no bucket GCS
+if [ -n "$TFSTATE_BUCKET" ] && command -v gcloud >/dev/null 2>&1; then
+  log_info "Limpando arquivos de estado da VM no GCS (gs://$TFSTATE_BUCKET/$INSTANCE_STATE_PREFIX)..."
+  gcloud storage rm --recursive --all-versions "gs://${TFSTATE_BUCKET}/${INSTANCE_STATE_PREFIX}" --quiet >/dev/null 2>&1 || \
+  gcloud storage rm --recursive "gs://${TFSTATE_BUCKET}/${INSTANCE_STATE_PREFIX}" --quiet >/dev/null 2>&1 || \
+  gsutil -m rm -r "gs://${TFSTATE_BUCKET}/${INSTANCE_STATE_PREFIX}" >/dev/null 2>&1 || true
+fi
+
 log_info "Desprovisionamento da VM '$VM_NAME' concluído com sucesso."
