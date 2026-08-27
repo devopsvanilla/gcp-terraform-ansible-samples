@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# Configurações de Conexão HTTPAPI com Morpheus Data (morpheus.core)
+# Configurações Globais de Conexão HTTPAPI para Morpheus Core
 # ==============================================================================
 ansible_connection: httpapi
 ansible_network_os: morpheus.core.morpheus
@@ -11,26 +11,17 @@ ansible_morpheus_user: "POC\\administrator"
 ansible_morpheus_password: "C0p132022!#hpe50POC"
 ansible_httpapi_port: 443
 
-# URL base do Morpheus Appliance
+# Variáveis gerais da integração Morpheus
 morpheus_url: "https://morpheus.cec.dev.br"
-
-# Desabilita verificação SSL (útil para certificados autoassinados/ambientes de teste)
 morpheus_ssl_verify: false
-
-# Autenticação via Usuário / Senha:
 morpheus_username: "POC\\administrator"
 morpheus_password: "C0p132022!#hpe50POC"
 
-# ==============================================================================
-# Configurações do Provedor GCP no Morpheus
-# ==============================================================================
-# IDs e Nomes correspondentes à integração GCP configurada no Morpheus
 morpheus_gcp_cloud_id: 24
 morpheus_gcp_cloud_name: "loonar-gcp-terraform-ansible-samples"
 morpheus_gcp_group_id: 5
 morpheus_gcp_group_name: "GCP Loonar"
 
-# Identificadores de teste / padrão
 sample_instance_name: "vm-gcp-poc"
 sample_cypher_key: "tfvars/gcp-create-vm-poc"
 sample_keypair_name: "devopsvanilla-gcp-key"
