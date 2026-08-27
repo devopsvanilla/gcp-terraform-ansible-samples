@@ -1,6 +1,5 @@
 locals {
   vm_nginx_option_type_ids = [
-    tonumber(hpe_morpheus_option_type_text.vm_key.id),
     tonumber(hpe_morpheus_option_type_text.vm_name.id),
     tonumber(hpe_morpheus_option_type_text.machine_type_override.id),
     tonumber(hpe_morpheus_option_type_text.machine_series.id),
@@ -52,7 +51,6 @@ resource "hpe_morpheus_workflow_operational" "vm_nginx_remove_and_apply" {
 
   option_types = [
     tonumber(hpe_morpheus_option_type_text.vm_name.id),
-    tonumber(hpe_morpheus_option_type_text.vm_key.id),
   ]
   task_ids = [tonumber(hpe_morpheus_task_shell_script.remove_vm_and_apply.id)]
 }

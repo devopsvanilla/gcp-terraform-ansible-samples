@@ -1,15 +1,5 @@
-# Cada option_type abaixo corresponde a um parâmetro aceito pelo script
-# scripts/add-vm-to-tfvars.sh e vira um campo no formulário de self-service
-# exibido ao lançar o App Blueprint no Morpheus Data.
-
-resource "hpe_morpheus_option_type_text" "vm_key" {
-  name        = "vm-nginx-vm-key"
-  field_name  = "vmKey"
-  field_label = "Chave da VM (vm_key)"
-  description = "Chave única da entrada dentro do mapa vms { } do terraform.tfvars."
-  help_block  = "Usada apenas como identificador do mapa vms; não precisa ser igual ao nome da VM."
-  required    = true
-}
+# Cada option_type abaixo corresponde a um campo no formulário de self-service
+# exibido ao solicitar a VM no Catálogo do Morpheus Data.
 
 resource "hpe_morpheus_option_type_text" "vm_name" {
   name        = "vm-nginx-vm-name"
