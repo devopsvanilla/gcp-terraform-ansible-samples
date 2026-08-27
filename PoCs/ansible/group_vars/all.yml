@@ -7,15 +7,16 @@ ansible_network_os: morpheus.core.morpheus
 ansible_host: "morpheus.cec.dev.br"
 ansible_httpapi_use_ssl: true
 ansible_httpapi_validate_certs: false
-ansible_morpheus_user: "POC\\administrator"
-ansible_morpheus_password: "C0p132022!#hpe50POC"
 ansible_httpapi_port: 443
+
+# Autenticação via API Access Token
+ansible_morpheus_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
+ansible_httpapi_session_key: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
 
 # Variáveis gerais da integração Morpheus
 morpheus_url: "https://morpheus.cec.dev.br"
 morpheus_ssl_verify: false
-morpheus_username: "POC\\administrator"
-morpheus_password: "C0p132022!#hpe50POC"
+morpheus_api_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
 
 morpheus_gcp_cloud_id: 24
 morpheus_gcp_cloud_name: "loonar-gcp-terraform-ansible-samples"
