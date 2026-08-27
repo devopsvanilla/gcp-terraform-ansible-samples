@@ -16,8 +16,8 @@
 #     -e "keypair_id=50 keypair_action=absent"
 # ==============================================================================
 
-- name: Gerenciar Key Pairs SSH no Morpheus Data
-  hosts: morpheus_servers, localhost, all
+- name: Gerenciar Chaves SSH (Key Pairs) no Morpheus
+  hosts: morpheus_servers
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml

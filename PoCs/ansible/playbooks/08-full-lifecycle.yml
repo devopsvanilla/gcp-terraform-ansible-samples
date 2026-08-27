@@ -15,7 +15,7 @@
 # ==============================================================================
 
 - name: Orquestração Completa de Ciclo de Vida da Infraestrutura GCP via Morpheus
-  hosts: morpheus_servers, localhost, all
+  hosts: morpheus_servers
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml

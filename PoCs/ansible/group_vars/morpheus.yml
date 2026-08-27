@@ -11,7 +11,6 @@ ansible_httpapi_port: 443
 
 # Autenticação via API Access Token (morpheus.core httpapi)
 ansible_morpheus_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
-ansible_httpapi_session_key: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
 
 # URL base do Morpheus Appliance
 morpheus_url: "https://morpheus.cec.dev.br"
