@@ -11,7 +11,22 @@ Antes de criar a Task, certifique-se de que a integração está devidamente con
 > [!IMPORTANT]
 > A integração deve ser criada obrigatoriamente como tipo **`Ansible`** (sob o grupo **Automation**) e **NÃO** como tipo *Git repository* ou *GitHub* (sob o grupo *Code*). A integração do tipo Ansible permite ao Morpheus mapear playbooks, papéis, variáveis e controlar o ciclo de vida.
 
-### 1.1. Selecionando o Tipo de Integração
+### 1.1. Cadastro da Chave Privada (Key Pair) para Autenticação Git
+
+Antes de registrar a integração, é necessário cadastrar a chave privada SSH que o Morpheus utilizará para clonar e sincronizar os playbooks do repositório Git:
+
+1. Acesse no Morpheus: **Infrastructure > Trust > Key Pairs** (ou navegue via URL direta: `https://<MORPHEUS>/infrastructure/trust#!keypairs` / **Infrastructure > Keys & Certs**).
+2. Clique no botão **`+ ADD`** para criar um novo Key Pair.
+3. Preencha os campos:
+   - **NAME**: Nome identificador (ex.: `gcp-terraform-ansible-samples`).
+   - **PRIVATE KEY**: Cole a chave privada SSH correspondente.
+   - **PUBLIC KEY**: (Opcional) Cole a chave pública.
+4. Clique em **`SAVE CHANGES`**.
+5. **Associação no Git**: Certifique-se de que a **chave pública** desse par de chaves foi adicionada no GitHub (como uma *SSH Key* da conta de serviço ou como *Deploy Key* do repositório com permissão de leitura). Essa chave será referenciada no **Passo 1.4**.
+
+---
+
+### 1.2. Selecionando o Tipo de Integração
 
 1. Acesse no menu principal: **Administration > Integrations**.
 2. Clique no botão **`+ New Integration`**.
@@ -21,7 +36,7 @@ Antes de criar a Task, certifique-se de que a integração está devidamente con
 
 ---
 
-### 1.2. Configuração dos Caminhos (Paths) e Opções de Execução
+### 1.3. Configuração dos Caminhos (Paths) e Opções de Execução
 
 Na tela de configuração da integração, preencha os parâmetros do repositório:
 
@@ -46,16 +61,15 @@ Na tela de configuração da integração, preencha os parâmetros do repositór
 
 ---
 
-### 1.3. Autenticação com o Repositório Git (Key Pair SSH)
+### 1.4. Autenticação com o Repositório Git (Key Pair SSH)
 
 Na seção **Git** do formulário de integração:
 
 ![Configuração da seção Git e Key Pair](images/morpheus-ansible-integration-git.png)
 
 1. **Key Pair (Obrigatório)**: 
-   * O Morpheus exige a seleção de uma **Key Pair** cadastrada previamente em **Infrastructure > Keys & Certs**.
-   * Selecione a chave correspondente (ex.: `gcp-terraform-ansible-samples`).
-   * A chave pública dessa Key Pair deve estar cadastrada no GitHub como uma **Deploy Key** do repositório (com permissão de leitura).
+   * Selecione o **Key Pair** cadastrado no **Passo 1.1** (ex.: `gcp-terraform-ansible-samples`).
+   * O Morpheus utilizará essa chave para autenticar via SSH e realizar o download da automação Ansible.
 2. **Username / Password / Access Token**:
    * Como a autenticação é realizada via **Key Pair (SSH)**, esses campos **devem permanecer em branco**.
    * ⚠️ *Atenção ao gerenciador de senhas do navegador: limpe qualquer preenchimento automático em `Username` ou `Password` para evitar conflitos de autenticação.*
