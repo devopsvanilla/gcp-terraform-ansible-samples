@@ -1,0 +1,5 @@
+---
+# Morpheus Ansible Requirements
+collections:
+  - name: morpheus.core
+    version: ">=0.7.1"

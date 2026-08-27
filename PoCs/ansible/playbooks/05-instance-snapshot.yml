@@ -21,7 +21,7 @@
 # ==============================================================================
 
 - name: Gerenciar Snapshots de VMs no Morpheus
-  hosts: morpheus_servers
+  hosts: morpheus_servers, localhost, all
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml

@@ -25,8 +25,8 @@
 #     -e "target_instance_name=vm-gcp-poc target_state=stopped" --check
 # ==============================================================================
 
-- name: Gerenciar Estado Operacional de VM no Morpheus
-  hosts: morpheus_servers
+- name: Gerenciar Ciclo de Vida de Instância no Morpheus
+  hosts: morpheus_servers, localhost, all
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml

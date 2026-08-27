@@ -31,7 +31,7 @@ Quando uma VM é provisionada no GCP via Blueprint ou Terraform, o Morpheus pode
 
 ### Passo a Passo:
 
-1. Acesse: **Provisioning > Automation > Workflows**.
+1. Acesse: **Library > Automation > Workflows** (ou **Library > Workflows**).
 2. Clique no botão **`+ ADD`**.
 3. No campo **WORKFLOW TYPE**, selecione: **`Provisioning`**.
 4. Preencha os metadados:
@@ -65,7 +65,7 @@ Workflows operacionais servem para executar tarefas de rotina, manutenção e au
 
 ### Passo a Passo:
 
-1. Acesse: **Provisioning > Automation > Workflows**.
+1. Acesse: **Library > Automation > Workflows** (ou **Library > Workflows**).
 2. Clique em **`+ ADD`**.
 3. No campo **WORKFLOW TYPE**, selecione: **`Operational`**.
 4. Preencha:

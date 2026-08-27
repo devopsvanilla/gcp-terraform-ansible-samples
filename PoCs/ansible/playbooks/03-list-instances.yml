@@ -11,8 +11,8 @@
 #   ansible-playbook playbooks/03-list-instances.yml -e "filter_name=vm-gcp"
 # ==============================================================================
 
-- name: Listar Instâncias e VMs no Morpheus
-  hosts: morpheus_servers
+- name: Listar Instâncias e Containers no Morpheus
+  hosts: morpheus_servers, localhost, all
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml
