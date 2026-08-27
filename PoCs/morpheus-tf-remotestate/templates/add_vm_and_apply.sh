@@ -2,17 +2,21 @@
 # Shell Script executado pelo Morpheus Data a partir do repositório Git.
 set -euo pipefail
 
+# Marcador de template ERB construído dinamicamente para evitar interpretação pelo Morpheus
+_ERB_OPEN='<'
+_ERB_OPEN+='%'
+
 # Função para resolver parâmetros tanto por interpolação ERB quanto por variáveis de ambiente injetadas pelo Morpheus
 get_param() {
   local erb_val="$1"
   shift
-  if [ -n "$erb_val" ] && [ "$erb_val" != "null" ] && [[ "$erb_val" != *"<%"* ]]; then
+  if [ -n "$erb_val" ] && [ "$erb_val" != "null" ] && [[ "$erb_val" != *"$_ERB_OPEN"* ]]; then
     echo "$erb_val"
     return
   fi
   for var_name in "$@"; do
     local val="${!var_name:-}"
-    if [ -n "$val" ] && [ "$val" != "null" ] && [[ "$val" != *"<%"* ]]; then
+    if [ -n "$val" ] && [ "$val" != "null" ] && [[ "$val" != *"$_ERB_OPEN"* ]]; then
       echo "$val"
       return
     fi
