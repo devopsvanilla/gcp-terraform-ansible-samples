@@ -168,15 +168,92 @@ if [[ "${DRY_RUN}" == "true" ]]; then
   if [[ -z "${RAW_OBJECTS}" ]]; then
     log_info "Nenhum objeto encontrado em ${TARGET_URI}."
   else
+    # Identifica os prefixos/diretórios de cada VM
+    VM_DIRS="$(echo "${RAW_OBJECTS}" | grep -o 'gs://[^#]*' | sed 's|/[^/]*$||' | sort -u)"
+
     echo ""
-    log_info "=== [DRY-RUN] Instâncias/Prefixos Detectados no GCS ==="
-    echo "${RAW_OBJECTS}" | grep -o 'gs://[^#]*' | sed 's|/[^/]*$||' | sort -u | while read -r vm_dir; do
+    log_info "=== [DRY-RUN] Instâncias e Recursos Provisionados ==="
+
+    TEMP_STATE="$(mktemp /tmp/tfstate_inspect_XXXXXX.json 2>/dev/null || echo "/tmp/tfstate_inspect_$$.json")"
+    trap "rm -f '$TEMP_STATE'" EXIT
+
+    echo "${VM_DIRS}" | while read -r vm_dir; do
       vm_name="$(basename "$vm_dir")"
-      if [[ "$vm_name" != "${PREFIX}" && "$vm_name" != "${BUCKET_NAME}" && -n "$vm_name" ]]; then
-        echo "  📦 Instância: ${vm_name} -> ${vm_dir}"
+      if [[ "$vm_name" == "${PREFIX}" || "$vm_name" == "${BUCKET_NAME}" || -z "$vm_name" ]]; then
+        continue
+      fi
+
+      echo ""
+      echo "  📦 Instância: ${vm_name}"
+      echo "     Prefixo:   ${vm_dir}"
+
+      # Tenta baixar o tfstate ativo para inspecionar os recursos
+      STATE_URI="${vm_dir}/default.tfstate"
+      if gcloud storage cp "${STATE_URI}" "${TEMP_STATE}" >/dev/null 2>&1; then
+        # Extrai recursos do tfstate usando python3 (disponível na maioria dos runners)
+        if command -v python3 >/dev/null 2>&1; then
+          RESOURCES="$(python3 -c "
+import json, sys
+try:
+    data = json.load(open('${TEMP_STATE}'))
+    resources = data.get('resources', [])
+    if not resources:
+        print('     (estado vazio — VM já desprovisionada)')
+    else:
+        print('     Recursos no tfstate:')
+        for r in resources:
+            rtype = r.get('type', '?')
+            rname = r.get('name', '?')
+            rmode = r.get('mode', 'managed')
+            if rmode == 'data':
+                continue
+            instances = r.get('instances', [])
+            for inst in instances:
+                attrs = inst.get('attributes', {})
+                ik = inst.get('index_key', '')
+                ik_str = f' [\"{ik}\"]' if ik else ''
+                detail = ''
+                if rtype == 'google_compute_instance':
+                    name = attrs.get('name', '')
+                    zone = attrs.get('zone', '')
+                    mtype = attrs.get('machine_type', '')
+                    nifs = attrs.get('network_interface', [])
+                    ext_ip = ''
+                    if nifs:
+                        acs = nifs[0].get('access_config', [])
+                        if acs:
+                            ext_ip = acs[0].get('nat_ip', '')
+                    detail = f'name={name}, zone={zone}, type={mtype}'
+                    if ext_ip:
+                        detail += f', ip={ext_ip}'
+                elif rtype == 'google_compute_firewall':
+                    fname = attrs.get('name', '')
+                    direction = attrs.get('direction', '')
+                    detail = f'name={fname}, direction={direction}'
+                elif rtype == 'google_org_policy_policy':
+                    pname = attrs.get('name', '')
+                    detail = f'policy={pname}'
+                else:
+                    rid = attrs.get('id', attrs.get('name', ''))
+                    if rid:
+                        detail = f'id={rid}'
+                line = f'       • {rtype}.{rname}{ik_str}'
+                if detail:
+                    line += f'  ({detail})'
+                print(line)
+except Exception as e:
+    print(f'     ⚠️  Erro ao inspecionar tfstate: {e}')
+" 2>/dev/null)" || RESOURCES="     ⚠️  Não foi possível parsear o tfstate."
+          echo "${RESOURCES}"
+        else
+          echo "     ⚠️  python3 não disponível para inspecionar recursos."
+        fi
+        rm -f "${TEMP_STATE}" 2>/dev/null || true
+      else
+        echo "     ⚠️  Não foi possível baixar ${STATE_URI} para inspeção."
       fi
     done
-    
+
     echo ""
     log_info "=== [DRY-RUN] Detalhamento de Arquivos e Versões (Object Versioning) ==="
     echo "  ℹ️  O sufixo '#<geração>' representa uma versão/backup histórico de alterações no mesmo arquivo."
