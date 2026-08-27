@@ -154,13 +154,35 @@ fi
 # Listagem (Dry-run ou verificação prévia)
 log_info "Consultando objetos em ${TARGET_URI}..."
 if [[ "${DRY_RUN}" == "true" ]]; then
-  log_info "[DRY-RUN] Objetos que seriam removidos:"
-  gcloud storage ls --all-versions --recursive "${TARGET_URI}/**" 2>/dev/null || \
-  gcloud storage ls --recursive "${TARGET_URI}" 2>/dev/null || log_info "Nenhum objeto encontrado em ${TARGET_URI}."
+  RAW_OBJECTS="$(gcloud storage ls --all-versions --recursive "${TARGET_URI}/**" 2>/dev/null || gcloud storage ls --recursive "${TARGET_URI}" 2>/dev/null || true)"
   
+  if [[ -z "${RAW_OBJECTS}" ]]; then
+    log_info "Nenhum objeto encontrado em ${TARGET_URI}."
+  else
+    echo ""
+    log_info "=== [DRY-RUN] Instâncias/Prefixos Detectados no GCS ==="
+    echo "${RAW_OBJECTS}" | grep -o 'gs://[^#]*' | sed 's|/[^/]*$||' | sort -u | while read -r vm_dir; do
+      vm_name="$(basename "$vm_dir")"
+      if [[ "$vm_name" != "${PREFIX}" && "$vm_name" != "${BUCKET_NAME}" && -n "$vm_name" ]]; then
+        echo "  📦 Instância: ${vm_name} -> ${vm_dir}"
+      fi
+    done
+    
+    echo ""
+    log_info "=== [DRY-RUN] Detalhamento de Arquivos e Versões (Object Versioning) ==="
+    echo "  ℹ️  O sufixo '#<geração>' representa uma versão/backup histórico de alterações no mesmo arquivo."
+    echo "${RAW_OBJECTS}" | while read -r obj; do
+      if [[ -n "$obj" ]]; then
+        echo "  • ${obj}"
+      fi
+    done
+  fi
+
   if [[ "${DELETE_BUCKET}" == "true" ]]; then
+    echo ""
     log_info "[DRY-RUN] O bucket gs://${BUCKET_NAME} seria excluído após a limpeza."
   fi
+  echo ""
   log_info "[DRY-RUN] Simulação concluída com sucesso. Nenhuma alteração foi realizada."
   exit 0
 fi
