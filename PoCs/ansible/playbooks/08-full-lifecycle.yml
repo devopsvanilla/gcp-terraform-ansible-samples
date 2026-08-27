@@ -33,17 +33,20 @@
       register: target_info
 
     - name: Validar se a instância foi localizada
+      vars:
+        found_instances: "{{ target_info.instances | default(target_info.morpheus_instances | default([])) }}"
       ansible.builtin.assert:
         that:
-          - target_info.morpheus_instances is defined
-          - (target_info.morpheus_instances | length) > 0
+          - (found_instances | length) > 0
         fail_msg: "A instância '{{ target_instance_name }}' não foi encontrada no Morpheus."
 
     - name: Extrair metadados da instância
+      vars:
+        found_instances: "{{ target_info.instances | default(target_info.morpheus_instances | default([])) }}"
       ansible.builtin.set_fact:
-        target_vm_id: "{{ target_info.morpheus_instances[0].id }}"
-        target_vm_status: "{{ target_info.morpheus_instances[0].status | default('unknown') }}"
-        target_vm_ip: "{{ target_info.morpheus_instances[0].ip_address | default('N/A') }}"
+        target_vm_id: "{{ found_instances[0].id }}"
+        target_vm_status: "{{ found_instances[0].status | default('unknown') }}"
+        target_vm_ip: "{{ found_instances[0].ip_address | default('N/A') }}"
 
     - name: Exibir status inicial
       ansible.builtin.debug:
@@ -92,6 +95,8 @@
       register: final_info
 
     - name: Exibir Resumo Final do Ciclo de Vida
+      vars:
+        final_instances: "{{ final_info.instances | default(final_info.morpheus_instances | default([])) }}"
       ansible.builtin.debug:
         msg:
           - "=========================================================="
@@ -100,5 +105,5 @@
           - "Instância:       {{ target_instance_name }}"
           - "ID:              {{ target_vm_id }}"
           - "Snapshot Criado: {{ auto_snapshot_name }}"
-          - "Status Final:    {{ final_info.morpheus_instances[0].status | default('running') }}"
+          - "Status Final:    {{ (final_instances[0].status if (final_instances | length > 0) else 'running') | default('running') }}"
           - "=========================================================="

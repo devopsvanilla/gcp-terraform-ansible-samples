@@ -38,11 +38,11 @@
           - "IP Primário:     {{ item.ip_address | default(item.connection_info.ip | default('N/A')) }}"
           - "Criado em:       {{ item.date_created | default('N/A') }}"
           - "=========================================================="
-      loop: "{{ instances_result.morpheus_instances | default([]) }}"
+      loop: "{{ instances_result.instances | default(instances_result.morpheus_instances | default([])) }}"
       loop_control:
         label: "{{ item.name }}"
 
     - name: Informar caso nenhuma instância seja encontrada
       ansible.builtin.debug:
         msg: "Nenhuma instância encontrada com os filtros informados."
-      when: (instances_result.morpheus_instances | default([]) | length) == 0
+      when: (instances_result.instances | default(instances_result.morpheus_instances | default([])) | length) == 0

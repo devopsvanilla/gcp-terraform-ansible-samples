@@ -22,17 +22,19 @@
       register: appliance_facts_result
 
     - name: Exibir status e versão do Morpheus Data
+      vars:
+        appliance_data: "{{ appliance_facts_result.morpheus_appliance_facts.appliance | default(appliance_facts_result.ansible_facts.morpheus_appliance_facts.appliance | default(appliance_facts_result.appliance | default(ansible_facts.morpheus_appliance_facts.appliance | default({})))) }}"
       ansible.builtin.debug:
         msg:
           - "=========================================================="
           - " Conexão estabelecida com sucesso com o Morpheus Data! "
           - "=========================================================="
           - "URL do Appliance:  {{ morpheus_url }}"
-          - "Versão do Morpheus: {{ appliance_facts_result.morpheus_appliance_facts.appliance.version | default('N/A') }}"
-          - "Status da Conexão:  {{ appliance_facts_result.morpheus_appliance_facts.appliance.status | default('Online') }}"
+          - "Versão do Morpheus: {{ appliance_data.version | default(appliance_facts_result.ansible_facts.morpheus_version | default('Detectada via API')) }}"
+          - "Status da Conexão:  {{ appliance_data.status | default('Online') }}"
           - "=========================================================="
 
     - name: Exibir detalhes completos (modo verboso)
       ansible.builtin.debug:
-        var: appliance_facts_result.morpheus_appliance_facts
+        var: appliance_facts_result
         verbosity: 1

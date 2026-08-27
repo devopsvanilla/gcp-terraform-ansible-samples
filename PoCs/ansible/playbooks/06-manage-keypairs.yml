@@ -39,7 +39,7 @@
           ID: {{ item.id }} |
           Nome: {{ item.name }} |
           Fingerprint: {{ item.fingerprint | default('N/A') }}
-      loop: "{{ keypairs_info.morpheus_key_pairs | default([]) }}"
+      loop: "{{ keypairs_info.key_pairs | default(keypairs_info.morpheus_key_pairs | default([])) }}"
       loop_control:
         label: "{{ item.name }}"
 

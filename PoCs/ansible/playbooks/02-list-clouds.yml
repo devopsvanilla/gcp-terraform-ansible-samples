@@ -30,16 +30,17 @@
         msg: >-
           Cloud ID: {{ item.id }} |
           Nome: {{ item.name }} |
-          Tipo: {{ item.cloud_type.name | default(item.code | default('Desconhecido')) }} |
+          Tipo: {{ item.cloud_type.name | default(item.code | default(item.type | default('Desconhecido'))) }} |
           Status: {{ item.status | default('N/A') }} |
           Ativo: {{ item.enabled | default(true) }}
-      loop: "{{ clouds_result.morpheus_clouds }}"
+      loop: "{{ clouds_result.clouds | default(clouds_result.morpheus_clouds | default([])) }}"
       loop_control:
         label: "{{ item.name }}"
 
     - name: Destacar Cloud GCP configurada
       vars:
-        gcp_clouds: "{{ clouds_result.morpheus_clouds | selectattr('name', 'search', 'gcp|google', ignorecase=true) | list }}"
+        all_clouds: "{{ clouds_result.clouds | default(clouds_result.morpheus_clouds | default([])) }}"
+        gcp_clouds: "{{ all_clouds | selectattr('name', 'search', 'gcp|google', ignorecase=true) | list }}"
       ansible.builtin.debug:
         msg:
           - "=========================================================="
@@ -47,7 +48,7 @@
           - "=========================================================="
           - "ID: {{ item.id }}"
           - "Nome: {{ item.name }}"
-          - "Tipo: {{ item.cloud_type.name | default('Google Cloud') }}"
+          - "Tipo: {{ item.cloud_type.name | default(item.type | default('Google Cloud')) }}"
           - "Localização: {{ item.location | default('global') }}"
           - "=========================================================="
       loop: "{{ gcp_clouds }}"
@@ -61,6 +62,6 @@
           Nome: {{ item.name }} |
           Código: {{ item.code | default('N/A') }} |
           Localização: {{ item.location | default('N/A') }}
-      loop: "{{ groups_result.morpheus_groups }}"
+      loop: "{{ groups_result.groups | default(groups_result.morpheus_groups | default([])) }}"
       loop_control:
         label: "{{ item.name }}"
