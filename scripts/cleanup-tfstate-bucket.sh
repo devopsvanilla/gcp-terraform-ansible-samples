@@ -27,6 +27,7 @@ Opções gerais:
   --bucket-name <nome>          Nome do bucket GCS (padrão: ${DEFAULT_BUCKET_NAME})
   --prefix <prefixo>            Prefixo do estado a ser limpo (padrão: ${DEFAULT_PREFIX})
                                 Use --prefix "" ou --all para limpar todo o bucket.
+  --vm, --vm-key <nome>         Limpa apenas o estado de uma VM específica (ex.: loonar-teste-sandro)
   --all                         Limpa todos os objetos e prefixos de dentro do bucket
   --delete-bucket               Exclui o bucket GCS completamente após limpar seu conteúdo
   --dry-run                     Apenas lista os objetos que seriam excluídos, sem apagá-los
@@ -34,17 +35,20 @@ Opções gerais:
   -h, --help                    Exibe esta ajuda
 
 Exemplos:
-  # 1. Limpar apenas o estado da PoC gcp-create-vm-gcstate
+  # 1. Limpar todas as VMs da PoC gcp-create-vm-gcstate
   $(basename "$0") --project-id poc-terraform-ansible
 
-  # 2. Limpar todo o conteúdo do bucket
+  # 2. Limpar o estado de uma VM específica
+  $(basename "$0") --project-id poc-terraform-ansible --vm loonar-teste-sandro
+
+  # 3. Limpar todo o conteúdo do bucket
   $(basename "$0") --project-id poc-terraform-ansible --all
 
-  # 3. Limpar o conteúdo e excluir o bucket GCS
+  # 4. Limpar o conteúdo e excluir o bucket GCS
   $(basename "$0") --project-id poc-terraform-ansible --delete-bucket
 
-  # 4. Simulação (dry-run)
-  $(basename "$0") --project-id poc-terraform-ansible --delete-bucket --dry-run
+  # 5. Simulação (dry-run) de uma VM específica
+  $(basename "$0") --project-id poc-terraform-ansible --vm loonar-teste-sandro --dry-run
 EOF
 }
 
@@ -76,6 +80,11 @@ while [[ $# -gt 0 ]]; do
     --prefix)
       [[ $# -ge 2 ]] || die "O argumento --prefix exige um valor."
       PREFIX="$2"
+      shift 2
+      ;;
+    --vm|--vm-key)
+      [[ $# -ge 2 ]] || die "O argumento $1 exige o nome/chave da VM."
+      PREFIX="${DEFAULT_PREFIX}/$2"
       shift 2
       ;;
     --all)

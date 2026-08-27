@@ -2,22 +2,35 @@
 # Shell Script executado pelo Morpheus Data para exclusão de VM (Teardown ou Self-Service).
 set -euo pipefail
 
+# Função para resolver parâmetros tanto por interpolação ERB quanto por variáveis de ambiente injetadas pelo Morpheus
+get_param() {
+  local erb_val="$1"
+  shift
+  if [ -n "$erb_val" ] && [ "$erb_val" != "null" ] && [[ "$erb_val" != *"<%"* ]]; then
+    echo "$erb_val"
+    return
+  fi
+  for var_name in "$@"; do
+    local val="${!var_name:-}"
+    if [ -n "$val" ] && [ "$val" != "null" ] && [[ "$val" != *"<%"* ]]; then
+      echo "$val"
+      return
+    fi
+  done
+  echo ""
+}
+
 # Variáveis substituídas pelo Morpheus no contexto de Instância (Teardown) ou Formulário (Operational)
-INSTANCE_NAME='<%= binding.hasVariable("instance") && instance ? instance.name : "" %>'
-FORM_VM_NAME='<%= binding.hasVariable("customOptions") && customOptions?.vmName ? customOptions.vmName : "" %>'
-FORM_VM_KEY='<%= binding.hasVariable("customOptions") && customOptions?.vmKey ? customOptions.vmKey : "" %>'
+INSTANCE_NAME="$(get_param '<%= binding.hasVariable("instance") && instance ? instance.name : "" %>' instance_name morpheus_instance_name INSTANCE_NAME)"
+FORM_VM_NAME="$(get_param '<%= binding.hasVariable("customOptions") && customOptions?.vmName ? customOptions.vmName : "" %>' customOption_vmName customOptions_vmName morpheus_customOption_vmName morpheus_customOptions_vmName vmName VM_NAME vm_name)"
+FORM_VM_KEY="$(get_param '<%= binding.hasVariable("customOptions") && customOptions?.vmKey ? customOptions.vmKey : "" %>' customOption_vmKey customOptions_vmKey morpheus_customOption_vmKey morpheus_customOptions_vmKey vmKey VM_KEY vm_key)"
 
 # Injeção de credenciais GCP via Cypher ou Variável de Ambiente
-GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
+GCP_CREDS_SECRET="$(get_param '<%=cypher.read("secret/gcp-terraform-ansible-samples")%>' GCP_CREDS_SECRET GOOGLE_CREDENTIALS GCP_CREDENTIALS)"
 
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_warn() { printf '[WARN] %s\n' "$*" >&2; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
-
-# Limpa valores "null"
-[ "$INSTANCE_NAME" != "null" ] || INSTANCE_NAME=""
-[ "$FORM_VM_NAME" != "null" ] || FORM_VM_NAME=""
-[ "$FORM_VM_KEY" != "null" ] || FORM_VM_KEY=""
 
 VM_NAME="${INSTANCE_NAME:-$FORM_VM_NAME}"
 VM_KEY="${FORM_VM_KEY}"
@@ -46,15 +59,12 @@ if [ -z "${REPO_DIR:-}" ]; then
 fi
 
 POC_DIR="${POC_DIR:-$REPO_DIR/PoCs/gcp-create-vm-gcstate}"
-REMOVE_VM_SCRIPT="${REMOVE_VM_SCRIPT:-$REPO_DIR/scripts/remove-vm-from-tfvars.sh}"
 TFVARS_FILE="$POC_DIR/terraform.tfvars"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 TFSTATE_BUCKET="${TFSTATE_BUCKET:-tfstate-devopsvanilla-samples}"
 TFSTATE_PREFIX="${TFSTATE_PREFIX:-gcp-create-vm-gcstate}"
 
 [ -d "$POC_DIR" ] || { log_error "Diretório da PoC não encontrado em $POC_DIR"; exit 1; }
-[ -f "$REMOVE_VM_SCRIPT" ] || { log_error "Script de remoção não encontrado em $REMOVE_VM_SCRIPT"; exit 1; }
-chmod +x "$REMOVE_VM_SCRIPT" 2>/dev/null || true
 
 OVERRIDE_FILE="$POC_DIR/backend_override.tf"
 CREDS_FILE=""

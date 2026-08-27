@@ -2,29 +2,47 @@
 # Shell Script executado pelo Morpheus Data a partir do repositório Git.
 set -euo pipefail
 
-# Variáveis substituídas pelo Morpheus
-VM_KEY='<%=customOptions.vmKey%>'
-VM_NAME='<%=customOptions.vmName%>'
-MACHINE_TYPE_OVERRIDE='<%=customOptions.machineTypeOverride%>'
-MACHINE_SERIES='<%=customOptions.machineSeries%>'
-VCPU_COUNT='<%=customOptions.vcpuCount%>'
-MEMORY_GB='<%=customOptions.memoryGb%>'
-DISK_TYPE='<%=customOptions.diskType%>'
-DISK_SIZE_GB='<%=customOptions.diskSizeGb%>'
-BOOT_IMAGE_PROJECT='<%=customOptions.bootImageProject%>'
-BOOT_IMAGE_FAMILY='<%=customOptions.bootImageFamily%>'
-ASSIGN_EXTERNAL_IP='<%=customOptions.assignExternalIp%>'
-SSH_USERNAME='<%=customOptions.sshUsername%>'
-SSH_PUBLIC_KEY='<%=customOptions.sshPublicKey%>'
-NETWORK_NAME='<%=customOptions.networkName%>'
-SUBNETWORK_NAME='<%=customOptions.subnetworkName%>'
-ALLOWED_HTTP_CIDR='<%=customOptions.allowedHttpCidr%>'
-ALLOWED_SSH_CIDR='<%=customOptions.allowedSshCidr%>'
-MANAGE_ORG_POLICY='<%=customOptions.manageVmExternalIpOrgPolicy%>'
-USER_GROUPS='<%=customOptions.userGroups%>'
+# Função para resolver parâmetros tanto por interpolação ERB quanto por variáveis de ambiente injetadas pelo Morpheus
+get_param() {
+  local erb_val="$1"
+  shift
+  if [ -n "$erb_val" ] && [ "$erb_val" != "null" ] && [[ "$erb_val" != *"<%"* ]]; then
+    echo "$erb_val"
+    return
+  fi
+  for var_name in "$@"; do
+    local val="${!var_name:-}"
+    if [ -n "$val" ] && [ "$val" != "null" ] && [[ "$val" != *"<%"* ]]; then
+      echo "$val"
+      return
+    fi
+  done
+  echo ""
+}
+
+# Resolução de Variáveis
+VM_KEY="$(get_param '<%=customOptions.vmKey%>' customOption_vmKey customOptions_vmKey morpheus_customOption_vmKey morpheus_customOptions_vmKey vmKey VM_KEY vm_key)"
+VM_NAME="$(get_param '<%=customOptions.vmName%>' customOption_vmName customOptions_vmName morpheus_customOption_vmName morpheus_customOptions_vmName vmName VM_NAME vm_name instance_name morpheus_instance_name INSTANCE_NAME)"
+MACHINE_TYPE_OVERRIDE="$(get_param '<%=customOptions.machineTypeOverride%>' customOption_machineTypeOverride customOptions_machineTypeOverride morpheus_customOption_machineTypeOverride morpheus_customOptions_machineTypeOverride machineTypeOverride machine_type_override)"
+MACHINE_SERIES="$(get_param '<%=customOptions.machineSeries%>' customOption_machineSeries customOptions_machineSeries morpheus_customOption_machineSeries morpheus_customOptions_machineSeries machineSeries machine_series)"
+VCPU_COUNT="$(get_param '<%=customOptions.vcpuCount%>' customOption_vcpuCount customOptions_vcpuCount morpheus_customOption_vcpuCount morpheus_customOptions_vcpuCount vcpuCount vcpu_count)"
+MEMORY_GB="$(get_param '<%=customOptions.memoryGb%>' customOption_memoryGb customOptions_memoryGb morpheus_customOption_memoryGb morpheus_customOptions_memoryGb memoryGb memory_gb)"
+DISK_TYPE="$(get_param '<%=customOptions.diskType%>' customOption_diskType customOptions_diskType morpheus_customOption_diskType morpheus_customOptions_diskType diskType disk_type)"
+DISK_SIZE_GB="$(get_param '<%=customOptions.diskSizeGb%>' customOption_diskSizeGb customOptions_diskSizeGb morpheus_customOption_diskSizeGb morpheus_customOptions_diskSizeGb diskSizeGb disk_size_gb)"
+BOOT_IMAGE_PROJECT="$(get_param '<%=customOptions.bootImageProject%>' customOption_bootImageProject customOptions_bootImageProject morpheus_customOption_bootImageProject morpheus_customOptions_bootImageProject bootImageProject boot_image_project)"
+BOOT_IMAGE_FAMILY="$(get_param '<%=customOptions.bootImageFamily%>' customOption_bootImageFamily customOptions_bootImageFamily morpheus_customOption_bootImageFamily morpheus_customOptions_bootImageFamily bootImageFamily boot_image_family)"
+ASSIGN_EXTERNAL_IP="$(get_param '<%=customOptions.assignExternalIp%>' customOption_assignExternalIp customOptions_assignExternalIp morpheus_customOption_assignExternalIp morpheus_customOptions_assignExternalIp assignExternalIp assign_external_ip)"
+SSH_USERNAME="$(get_param '<%=customOptions.sshUsername%>' customOption_sshUsername customOptions_sshUsername morpheus_customOption_sshUsername morpheus_customOptions_sshUsername sshUsername ssh_username)"
+SSH_PUBLIC_KEY="$(get_param '<%=customOptions.sshPublicKey%>' customOption_sshPublicKey customOptions_sshPublicKey morpheus_customOption_sshPublicKey morpheus_customOptions_sshPublicKey sshPublicKey ssh_public_key)"
+NETWORK_NAME="$(get_param '<%=customOptions.networkName%>' customOption_networkName customOptions_networkName morpheus_customOption_networkName morpheus_customOptions_networkName networkName network_name)"
+SUBNETWORK_NAME="$(get_param '<%=customOptions.subnetworkName%>' customOption_subnetworkName customOptions_subnetworkName morpheus_customOption_subnetworkName morpheus_customOptions_subnetworkName subnetworkName subnetwork_name)"
+ALLOWED_HTTP_CIDR="$(get_param '<%=customOptions.allowedHttpCidr%>' customOption_allowedHttpCidr customOptions_allowedHttpCidr morpheus_customOption_allowedHttpCidr morpheus_customOptions_allowedHttpCidr allowedHttpCidr allowed_http_cidr)"
+ALLOWED_SSH_CIDR="$(get_param '<%=customOptions.allowedSshCidr%>' customOption_allowedSshCidr customOptions_allowedSshCidr morpheus_customOption_allowedSshCidr morpheus_customOptions_allowedSshCidr allowedSshCidr allowed_ssh_cidr)"
+MANAGE_ORG_POLICY="$(get_param '<%=customOptions.manageVmExternalIpOrgPolicy%>' customOption_manageVmExternalIpOrgPolicy customOptions_manageVmExternalIpOrgPolicy morpheus_customOption_manageVmExternalIpOrgPolicy morpheus_customOptions_manageVmExternalIpOrgPolicy manageVmExternalIpOrgPolicy manage_vm_external_ip_org_policy)"
+USER_GROUPS="$(get_param '<%=customOptions.userGroups%>' customOption_userGroups customOptions_userGroups morpheus_customOption_userGroups morpheus_customOptions_userGroups userGroups user_groups)"
 
 # Injeção de credenciais GCP via Cypher ou Variável de Ambiente
-GCP_CREDS_SECRET='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
+GCP_CREDS_SECRET="$(get_param '<%=cypher.read("secret/gcp-terraform-ansible-samples")%>' GCP_CREDS_SECRET GOOGLE_CREDENTIALS GCP_CREDENTIALS)"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
@@ -43,8 +61,6 @@ if [ -z "${REPO_DIR:-}" ]; then
 fi
 
 POC_DIR="${POC_DIR:-$REPO_DIR/PoCs/gcp-create-vm-gcstate}"
-ADD_VM_SCRIPT="${ADD_VM_SCRIPT:-$REPO_DIR/scripts/add-vm-to-tfvars.sh}"
-REMOVE_VM_SCRIPT="${REMOVE_VM_SCRIPT:-$REPO_DIR/scripts/remove-vm-from-tfvars.sh}"
 TFVARS_FILE="$POC_DIR/terraform.tfvars"
 TERRAFORM_BIN="${TERRAFORM_BIN:-terraform}"
 TFSTATE_BUCKET="${TFSTATE_BUCKET:-tfstate-devopsvanilla-samples}"
@@ -53,27 +69,6 @@ TFSTATE_PREFIX="${TFSTATE_PREFIX:-gcp-create-vm-gcstate}"
 log_info() { printf '[INFO] %s\n' "$*"; }
 log_warn() { printf '[WARN] %s\n' "$*" >&2; }
 log_error() { printf '[ERROR] %s\n' "$*" >&2; }
-
-# Limpa valores "null"
-[ "$VM_KEY" != "null" ] || VM_KEY=""
-[ "$VM_NAME" != "null" ] || VM_NAME=""
-[ "$MACHINE_TYPE_OVERRIDE" != "null" ] || MACHINE_TYPE_OVERRIDE=""
-[ "$MACHINE_SERIES" != "null" ] || MACHINE_SERIES=""
-[ "$VCPU_COUNT" != "null" ] || VCPU_COUNT=""
-[ "$MEMORY_GB" != "null" ] || MEMORY_GB=""
-[ "$DISK_TYPE" != "null" ] || DISK_TYPE=""
-[ "$DISK_SIZE_GB" != "null" ] || DISK_SIZE_GB=""
-[ "$BOOT_IMAGE_PROJECT" != "null" ] || BOOT_IMAGE_PROJECT=""
-[ "$BOOT_IMAGE_FAMILY" != "null" ] || BOOT_IMAGE_FAMILY=""
-[ "$ASSIGN_EXTERNAL_IP" != "null" ] || ASSIGN_EXTERNAL_IP=""
-[ "$SSH_USERNAME" != "null" ] || SSH_USERNAME=""
-[ "$SSH_PUBLIC_KEY" != "null" ] || SSH_PUBLIC_KEY=""
-[ "$NETWORK_NAME" != "null" ] || NETWORK_NAME=""
-[ "$SUBNETWORK_NAME" != "null" ] || SUBNETWORK_NAME=""
-[ "$ALLOWED_HTTP_CIDR" != "null" ] || ALLOWED_HTTP_CIDR=""
-[ "$ALLOWED_SSH_CIDR" != "null" ] || ALLOWED_SSH_CIDR=""
-[ "$MANAGE_ORG_POLICY" != "null" ] || MANAGE_ORG_POLICY=""
-[ "$USER_GROUPS" != "null" ] || USER_GROUPS=""
 
 # Normaliza booleanos do Morpheus
 case "$(echo "$ASSIGN_EXTERNAL_IP" | tr '[:upper:]' '[:lower:]')" in
@@ -103,9 +98,9 @@ if [ -z "$VM_KEY" ] || [ -z "$VM_NAME" ]; then
   exit 1
 fi
 
+log_info "Parâmetros recebidos: vmKey='$VM_KEY', vmName='$VM_NAME', series='${MACHINE_SERIES:-e2}', type='${MACHINE_TYPE_OVERRIDE:-}'"
+
 [ -d "$REPO_DIR" ] || { log_error "Repositório não encontrado em $REPO_DIR"; exit 1; }
-[ -f "$ADD_VM_SCRIPT" ] || { log_error "Script não encontrado em $ADD_VM_SCRIPT"; exit 1; }
-chmod +x "$ADD_VM_SCRIPT" 2>/dev/null || true
 
 OVERRIDE_FILE="$POC_DIR/backend_override.tf"
 CREDS_FILE=""
@@ -161,49 +156,52 @@ fi
 
 FINAL_PROJECT_ID="${DETECTED_PROJECT_ID:-poc-terraform-ansible}"
 
-# 1. Inicializa o arquivo terraform.tfvars efêmero para esta instância
-log_info "Gerando terraform.tfvars exclusivo para a VM '$VM_NAME' ($VM_KEY)..."
+# Formata grupos de usuário para sintaxe HCL
+if [ -n "$USER_GROUPS" ]; then
+  IFS=',' read -ra RAW_GROUPS <<< "$USER_GROUPS"
+  FORMATTED_GROUPS=""
+  for raw_group in "${RAW_GROUPS[@]}"; do
+    group_name="$(echo "$raw_group" | xargs)"
+    if [ -n "$group_name" ]; then
+      if [ -n "$FORMATTED_GROUPS" ]; then
+        FORMATTED_GROUPS="${FORMATTED_GROUPS}, \"${group_name}\""
+      else
+        FORMATTED_GROUPS="\"${group_name}\""
+      fi
+    fi
+  done
+  USER_GROUPS_HCL="[${FORMATTED_GROUPS}]"
+else
+  USER_GROUPS_HCL="[\"sudo\"]"
+fi
+
+# 1. Gera o arquivo terraform.tfvars plano exclusivo para esta VM
+log_info "Gerando manifesto terraform.tfvars direto para a VM '$VM_NAME' ($VM_KEY)..."
 cat <<EOF > "$TFVARS_FILE"
 poc_name                         = "gcp-create-vm-gcstate"
 project_id                       = "$FINAL_PROJECT_ID"
 region                           = "us-central1"
 zone                             = "us-central1-a"
+name                             = "$VM_NAME"
+vm_name                          = "$VM_NAME"
+machine_type_override            = "${MACHINE_TYPE_OVERRIDE:-e2-micro}"
+machine_series                   = "${MACHINE_SERIES:-e2}"
+vcpu_count                       = ${VCPU_COUNT:-1}
+memory_gb                        = ${MEMORY_GB:-1}
+disk_type                        = "${DISK_TYPE:-pd-standard}"
+disk_size_gb                     = ${DISK_SIZE_GB:-30}
+boot_image_project               = "${BOOT_IMAGE_PROJECT:-debian-cloud}"
+boot_image_family                = "${BOOT_IMAGE_FAMILY:-debian-12}"
+assign_external_ip               = ${ASSIGN_EXTERNAL_IP:-true}
+ssh_username                     = "${SSH_USERNAME:-devopsvanilla}"
+ssh_public_key                   = "${SSH_PUBLIC_KEY:-}"
+network_name                     = "${NETWORK_NAME:-default}"
+subnetwork_name                  = "${SUBNETWORK_NAME:-}"
+allowed_http_cidr                = "${ALLOWED_HTTP_CIDR:-0.0.0.0/0}"
+allowed_ssh_cidr                 = "${ALLOWED_SSH_CIDR:-0.0.0.0/0}"
 manage_vm_external_ip_org_policy = ${MANAGE_ORG_POLICY:-false}
-network_name                     = "default"
-allowed_http_cidr                = "0.0.0.0/0"
-allowed_ssh_cidr                 = "0.0.0.0/0"
-
-vms = {}
+user_groups                      = ${USER_GROUPS_HCL}
 EOF
-
-ARGS=(--file "$TFVARS_FILE" --vm-key "$VM_KEY" --vm-name "$VM_NAME" --overwrite)
-[ -z "$MACHINE_TYPE_OVERRIDE" ] || ARGS+=(--machine-type-override "$MACHINE_TYPE_OVERRIDE")
-[ -z "$MACHINE_SERIES" ] || ARGS+=(--machine-series "$MACHINE_SERIES")
-[ -z "$VCPU_COUNT" ] || ARGS+=(--vcpu-count "$VCPU_COUNT")
-[ -z "$MEMORY_GB" ] || ARGS+=(--memory-gb "$MEMORY_GB")
-[ -z "$DISK_TYPE" ] || ARGS+=(--disk-type "$DISK_TYPE")
-[ -z "$DISK_SIZE_GB" ] || ARGS+=(--disk-size-gb "$DISK_SIZE_GB")
-[ -z "$BOOT_IMAGE_PROJECT" ] || ARGS+=(--boot-image-project "$BOOT_IMAGE_PROJECT")
-[ -z "$BOOT_IMAGE_FAMILY" ] || ARGS+=(--boot-image-family "$BOOT_IMAGE_FAMILY")
-[ -z "$ASSIGN_EXTERNAL_IP" ] || ARGS+=(--assign-external-ip "$ASSIGN_EXTERNAL_IP")
-[ -z "$SSH_USERNAME" ] || ARGS+=(--ssh-username "$SSH_USERNAME")
-[ -z "$SSH_PUBLIC_KEY" ] || ARGS+=(--ssh-public-key "$SSH_PUBLIC_KEY")
-[ -z "$NETWORK_NAME" ] || ARGS+=(--network-name "$NETWORK_NAME")
-[ -z "$SUBNETWORK_NAME" ] || ARGS+=(--subnetwork-name "$SUBNETWORK_NAME")
-[ -z "$ALLOWED_HTTP_CIDR" ] || ARGS+=(--allowed-http-cidr "$ALLOWED_HTTP_CIDR")
-[ -z "$ALLOWED_SSH_CIDR" ] || ARGS+=(--allowed-ssh-cidr "$ALLOWED_SSH_CIDR")
-[ -z "$MANAGE_ORG_POLICY" ] || ARGS+=(--manage-vm-external-ip-org-policy "$MANAGE_ORG_POLICY")
-
-if [ -n "$USER_GROUPS" ]; then
-  IFS=',' read -ra RAW_GROUPS <<< "$USER_GROUPS"
-  for raw_group in "${RAW_GROUPS[@]}"; do
-    group_name="$(echo "$raw_group" | xargs)"
-    [ -z "$group_name" ] || ARGS+=(--user-group "$group_name")
-  done
-fi
-
-log_info "Populando parâmetros da VM via: bash $ADD_VM_SCRIPT ${ARGS[*]}"
-bash "$ADD_VM_SCRIPT" "${ARGS[@]}"
 
 # 2. Define o prefixo isolado no GCS para esta VM específica
 INSTANCE_STATE_PREFIX="${TFSTATE_PREFIX}/${VM_KEY}"
