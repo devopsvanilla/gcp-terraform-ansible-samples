@@ -88,6 +88,15 @@ Na seção **Git** do formulário de integração:
 
 ## 3. Exemplos Práticos de Configuração de Tasks
 
+> [!IMPORTANT]
+> **Ações de Automação Requerem Instâncias Gerenciadas (*Managed Instances*)**:
+> Os módulos do Ansible (`morpheus.core.instance_snapshot`, `morpheus.core.instance_state`, etc.) consultam e atuam exclusivamente sobre VMs presentes no catálogo de instâncias gerenciadas (**Provisioning > Instances**).
+> 
+> Se a sua VM foi provisionada diretamente na nuvem (GCP) e aparece apenas como máquina descoberta em **Infrastructure > Compute > Virtual Machines** (*Unmanaged / Discovered*), é necessário convertê-la antes de executar automações:
+> 1. Acesse: **Infrastructure > Compute > Virtual Machines**.
+> 2. Localize a VM desejada, clique no menu de ações (`...`) e selecione **`Convert to Managed`**.
+> 3. Conclua o assistente. A VM passará a constar em **Provisioning > Instances** e estará pronta para receber tarefas automatizadas.
+
 ### Exemplo A: Task de Snapshot Preventivo
 - **Name**: `GCP - Criar Snapshot de VM`
 - **Playbook**: `05-instance-snapshot.yml`
