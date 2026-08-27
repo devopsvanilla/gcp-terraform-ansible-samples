@@ -15,10 +15,12 @@ plugin: morpheus.core.morpheus_inventory
 morpheus_url: "https://morpheus.cec.dev.br"
 morpheus_ssl_verify: false
 
-# Autenticação
-morpheus_user: "POC\\administrator"
-morpheus_password: "C0p132022!#hpe50POC"
-# morpheus_api_key: "SEU_API_TOKEN_AQUI"
+# Autenticacao
+# O plugin de inventario dinamico requer obrigatoriamente um API Token do Morpheus
+# (Gerado em Morpheus UI -> User Profile -> API Access Tokens)
+# Pode ser configurado aqui ou via variavel de ambiente MORPHEUS_API_KEY.
+morpheus_api_key: "SEU_API_TOKEN_AQUI"
+# morpheus_token: "SEU_API_TOKEN_AQUI"
 
 # Definição de grupos dinâmicos por filtro
 groups:

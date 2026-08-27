@@ -11,7 +11,7 @@
 # ==============================================================================
 
 - name: Listar Clouds e Grupos Configurados no Morpheus
-  hosts: localhost
+  hosts: morpheus_servers
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml
@@ -19,20 +19,10 @@
   tasks:
     - name: Consultar Clouds configuradas no Morpheus
       morpheus.core.cloud_info:
-        morpheus_url: "{{ morpheus_url }}"
-        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
-        morpheus_username: "{{ morpheus_username | default(omit) }}"
-        morpheus_password: "{{ morpheus_password | default(omit) }}"
-        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
       register: clouds_result
 
     - name: Consultar Grupos de Infraestrutura no Morpheus
       morpheus.core.group_info:
-        morpheus_url: "{{ morpheus_url }}"
-        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
-        morpheus_username: "{{ morpheus_username | default(omit) }}"
-        morpheus_password: "{{ morpheus_password | default(omit) }}"
-        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
       register: groups_result
 
     - name: Exibir resumo das Clouds encontradas

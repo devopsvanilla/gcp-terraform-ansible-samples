@@ -11,7 +11,7 @@
 # ==============================================================================
 
 - name: Validar Conexão com Morpheus Data e Coletar Facts
-  hosts: localhost
+  hosts: morpheus_servers
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml
@@ -19,11 +19,6 @@
   tasks:
     - name: Coletar facts do Morpheus Appliance
       morpheus.core.appliance_facts:
-        morpheus_url: "{{ morpheus_url }}"
-        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
-        morpheus_username: "{{ morpheus_username | default(omit) }}"
-        morpheus_password: "{{ morpheus_password | default(omit) }}"
-        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
       register: appliance_facts_result
 
     - name: Exibir status e versão do Morpheus Data

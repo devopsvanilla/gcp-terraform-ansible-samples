@@ -12,7 +12,7 @@
 # ==============================================================================
 
 - name: Listar Instâncias e VMs no Morpheus
-  hosts: localhost
+  hosts: morpheus_servers
   gather_facts: false
   vars_files:
     - ../group_vars/morpheus.yml
@@ -22,11 +22,6 @@
   tasks:
     - name: Consultar instâncias no Morpheus
       morpheus.core.instance_info:
-        morpheus_url: "{{ morpheus_url }}"
-        morpheus_ssl_verify: "{{ morpheus_ssl_verify }}"
-        morpheus_username: "{{ morpheus_username | default(omit) }}"
-        morpheus_password: "{{ morpheus_password | default(omit) }}"
-        morpheus_token: "{{ morpheus_api_token | default(omit) }}"
         name: "{{ filter_name if (filter_name | length > 0) else omit }}"
       register: instances_result
 
