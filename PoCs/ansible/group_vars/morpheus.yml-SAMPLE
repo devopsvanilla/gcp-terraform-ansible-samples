@@ -1,36 +1,36 @@
 ---
 # ==============================================================================
-# Configurações de Conexão HTTPAPI com Morpheus Data (morpheus.core)
+# Configurações de Conexão HTTPAPI com Morpheus Data (morpheus.core) - EXEMPLO
 # ==============================================================================
 ansible_connection: httpapi
 ansible_network_os: morpheus.core.morpheus
-ansible_host: "morpheus.cec.dev.br"
+ansible_host: "morpheus.example.com"
 ansible_httpapi_use_ssl: true
 ansible_httpapi_validate_certs: false
 ansible_httpapi_port: 443
 
 # Autenticação via API Access Token (morpheus.core httpapi)
-ansible_morpheus_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
+ansible_morpheus_token: "seu-morpheus-api-token-aqui"
 
 # URL base do Morpheus Appliance
-morpheus_url: "https://morpheus.cec.dev.br"
+morpheus_url: "https://morpheus.example.com"
 
 # Desabilita verificação SSL (útil para certificados autoassinados/ambientes de teste)
 morpheus_ssl_verify: false
 
 # Autenticação via API Token
-morpheus_api_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
+morpheus_api_token: "seu-morpheus-api-token-aqui"
 
 # ==============================================================================
 # Configurações do Provedor GCP no Morpheus
 # ==============================================================================
 # IDs e Nomes correspondentes à integração GCP configurada no Morpheus
 morpheus_gcp_cloud_id: 24
-morpheus_gcp_cloud_name: "loonar-gcp-terraform-ansible-samples"
+morpheus_gcp_cloud_name: "gcp-cloud-sample"
 morpheus_gcp_group_id: 5
-morpheus_gcp_group_name: "GCP Loonar"
+morpheus_gcp_group_name: "GCP Group Sample"
 
 # Identificadores de teste / padrão
 sample_instance_name: "vm-gcp-poc"
 sample_cypher_key: "tfvars/gcp-create-vm-poc"
-sample_keypair_name: "devopsvanilla-gcp-key"
+sample_keypair_name: "devops-gcp-key"

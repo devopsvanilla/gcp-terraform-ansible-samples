@@ -76,5 +76,45 @@ terraform.rc
 
 # Custom rules (everything added below won't be overriden by 'Generate .gitignore File' if you use 'Update' option)
 
-# Ignore GCP Key
-gcp-key.json
+### GCP & Cloud Credentials / Private Keys ###
+*gcp-key*.json
+*credentials*.json
+*.key
+*.pem
+*.pkcs12
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+id_ecdsa
+*.id_rsa
+*.id_ed25519
+known_hosts
+authorized_keys
+
+### Ansible Sensitive Variables, Inventories & Cache ###
+PoCs/ansible/group_vars/all.yml
+PoCs/ansible/group_vars/morpheus.yml
+PoCs/ansible/inventory/hosts.yml
+*.vault
+*.vault.yml
+*.retry
+.ansible/
+
+### Environment Variables & Secrets ###
+.env
+.env.*
+*.env
+!*.env.example
+!*.env-SAMPLE
+
+### Terraform Plans ###
+*.tfplan
+*tfplan*
+
+### Whitelist Sample & Template Files ###
+!*-SAMPLE
+!*-SAMPLE.*
+!*.example.*
+!*.example
+

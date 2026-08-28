@@ -157,9 +157,9 @@ O Blueprint nativo exige que o repositório Git que contém os arquivos do Terra
 Os recursos `hpe_morpheus_app_blueprint_terraform` exigem os IDs numéricos internos do Morpheus Data:
 
 - **`integration_id`**: Abra a integração em **Administration > Integrations** e observe o ID numérico na URL do navegador.
-  - *Exemplo*: Na URL `https://morpheus.cec.dev.br/admin/integrations/15/code`, o ID é **`15`**.
+  - *Exemplo*: Na URL `https://morpheus.example.com/admin/integrations/15/code`, o ID é **`15`**.
 - **`repository_id`**: Acesse **Provisioning > Code > Repositories** e observe o ID na URL ao abrir o repositório.
-  - *Exemplo*: Na URL `https://morpheus.cec.dev.br/provisioning/code/repos/63`, o ID é **`63`**.
+  - *Exemplo*: Na URL `https://morpheus.example.com/provisioning/code/repos/63`, o ID é **`63`**.
 
 ---
 

@@ -30,8 +30,8 @@ vms = {
     boot_image_project    = "debian-cloud"
     boot_image_family     = "debian-12"
     assign_external_ip    = true
-    ssh_username          = "devopsvanilla"
-    ssh_public_key        = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCcPB/xV54Ux56mwHp7Z+G95prF5mxOenihK9cePpxqGgwSijDgPkQjCyuu3/fP6so7AJq68Hv01X2hyKpoTcGUkk9cUXBxhR7ufoNNCQmkuQGIoZuF54nFjn2q66QoZN5HuPQLSIzvEkniImfK+6Nd0SiSI9v38bBwlZlbMmf1C4jZjZOoYqQ31L9NFAdbxyiG4NrV8XuCXRzPoQaxbjglSxv8Otdiw1t6RV4BXuSNDJkwfGBQ7pAxYfdvwW6kmVMtwvlxN73xPMo/hDhTnhmU+8a/JnnYOUtJN8iaegcBf+duUZm3HHboa7+P6zRM3vrwHiofj6ebwLjhU43ZrAV50rn4vbtLKmQYwEw3QsPWTNEbz4hTJWi8xyIT1D1c7VUP4rkqwVW0K/KMrNniCZFGRVRHp9vujfAJJ4DkWehCYJFEp7dMP5EC6IU4352wqk1vqDquyyiJq/ZwkNt29FXH+W45Xz4SR6vonS1+3/vZG3gWIson3CvFKAlWiT8rZvs= devopsvanilla"
+    ssh_username          = "devops"
+    ssh_public_key        = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC... substitua-pela-sua-chave-publica"
     user_groups           = ["sudo"]
     network_name          = "default"
     subnetwork_name       = ""

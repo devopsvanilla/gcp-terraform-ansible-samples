@@ -12,7 +12,7 @@
 
 plugin: morpheus.core.morpheus_inventory
 
-morpheus_url: "https://morpheus.cec.dev.br"
+morpheus_url: "https://morpheus.example.com"
 morpheus_ssl_verify: false
 
 # Autenticacao

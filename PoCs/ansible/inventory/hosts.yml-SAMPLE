@@ -1,6 +1,6 @@
 ---
 # ==============================================================================
-# Inventário Estático para Conexão HTTPAPI com Morpheus Data
+# Inventário Estático para Conexão HTTPAPI com Morpheus Data - EXEMPLO
 # ==============================================================================
 # Define o host de controle do Morpheus utilizando o plugin httpapi da coleção.
 # ==============================================================================
@@ -10,11 +10,11 @@ all:
     morpheus_servers:
       hosts:
         morpheus_appliance:
-          ansible_host: "morpheus.cec.dev.br"
+          ansible_host: "morpheus.example.com"
           ansible_connection: httpapi
           ansible_network_os: morpheus.core.morpheus
           ansible_httpapi_use_ssl: true
-          ansible_morpheus_token: "c356423a-e931-40ca-a0de-6572ed4b9c2b"
+          ansible_morpheus_token: "seu-morpheus-api-token-aqui"
           ansible_httpapi_port: 443
 
     morpheus_local:
