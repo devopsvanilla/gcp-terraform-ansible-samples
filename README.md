@@ -48,6 +48,21 @@ gcp-terraform-ansible-samples/
 
 ---
 
+## 🔍 Relatórios Técnicos e Avaliação de Integração (Issues & Diagnósticos)
+
+Com o objetivo de dar transparência e facilitar a avaliação técnica da PoC por arquitetos, desenvolvedores e equipes de engenharia, disponibilizamos relatórios detalhados contendo a arquitetura proposta, comportamentos observados, desafios de integração encontrados e oportunidades de melhoria enviadas à engenharia da **Morpheus Data** e **HPE**:
+
+| Relatório Técnico | Escopo da PoC | Principais Tópicos e Diagnósticos |
+|---|---|---|
+| 📑 [**ISSUES: Terraform Native State**](PoCs/morpheus-tf-nativestate/ISSUES-morpheus-tf-nativestate.md) | `PoCs/morpheus-tf-nativestate` | Diagnóstico aprofundado sobre a passagem de parâmetros do formulário de Catálogo (`customOptions` / ERB) para o runner nativo de Terraform (Git-backed), limitações de interpolação no `tfvar_secret` do Cypher e análise das 5 abordagens testadas. |
+| 📑 [**ISSUES: Automação com Ansible**](PoCs/ansible/ISSUES-ansible.md) | `PoCs/ansible` | Análise da integração Git com o GitHub (requisito de chave SSH vs HTTPS/Tokens), comportamento de sincronização das abas *Roles* e *Inventory* na interface e exceções na ação *Run Playbook*. |
+
+> [!TIP]
+> Esses documentos fornecem insumos valiosos para acelerar o aprendizado, evitar armadilhas de configuração (*gotchas*) e orientar a tomada de decisão sobre os padrões arquiteturais recomendados para o Morpheus Data.
+
+
+---
+
 ## 🛠️ Pré-requisitos Gerais
 
 | Ferramenta | Versão Mínima | Finalidade |
