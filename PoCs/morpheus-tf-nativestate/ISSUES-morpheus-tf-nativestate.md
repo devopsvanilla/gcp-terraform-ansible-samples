@@ -132,7 +132,7 @@ E no [`blueprint.tf`](./blueprint.tf):
 ```hcl
 resource "hpe_morpheus_app_blueprint_terraform" "vm" {
   # ...
-  terraform_options = "-var 'vm_name=<%= customOptions.vm_name %>'"
+  terraform_options = "-var 'vm_name=<%=customOptions.vm_name%>'"
 }
 ```
 
@@ -187,8 +187,8 @@ resource "hpe_morpheus_spec_template_terraform" "gcp_vm" {
   source_type  = "local"
   spec_content = <<-EOT
     locals {
-      vm_name      = "<%= (customOptions.vm_name != null) ? customOptions.vm_name : 'vm-default' %>"
-      disk_size_gb = <%= (customOptions.disk_size_gb != null) ? customOptions.disk_size_gb : 30 %>
+      vm_name      = "<%=customOptions.vm_name%>"
+      disk_size_gb = <%=customOptions.disk_size_gb%>
     }
     # ... recursos google_compute_instance ...
   EOT
