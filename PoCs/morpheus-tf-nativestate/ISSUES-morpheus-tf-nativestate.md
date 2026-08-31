@@ -124,7 +124,7 @@ Tentou-se forçar a injeção via argumentos de linha de comando no binário do 
 # catalog_item.tf (app_spec)
 config:
   terraform:
-    commandOptions: "-var 'disk_size_gb=<%=customOptions.disk_size_gb%>' -var 'vcpu_count=<%= customOptions.vcpu_count%>' -var 'vm_name=<%=customOptions.vm_name%>'"
+    commandOptions: "-var 'disk_size_gb=<%=customOptions.disk_size_gb%>' -var 'vcpu_count=<%=customOptions.vcpu_count%>' -var 'vm_name=<%=customOptions.vm_name%>'"
 ```
 
 E no [`blueprint.tf`](./blueprint.tf):
