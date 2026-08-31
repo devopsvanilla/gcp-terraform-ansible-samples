@@ -124,7 +124,7 @@ Tentou-se forçar a injeção via argumentos de linha de comando no binário do 
 # catalog_item.tf (app_spec)
 config:
   terraform:
-    commandOptions: "-var 'disk_size_gb=<%= customOptions.disk_size_gb ?: 30 %>' -var 'vcpu_count=<%= customOptions.vcpu_count ?: 1 %>' -var 'vm_name=<%= customOptions.vm_name %>'"
+    commandOptions: "-var 'disk_size_gb=<%=customOptions.disk_size_gb%>' -var 'vcpu_count=<%= customOptions.vcpu_count%>' -var 'vm_name=<%=customOptions.vm_name%>'"
 ```
 
 E no [`blueprint.tf`](./blueprint.tf):
@@ -239,10 +239,10 @@ GCP_CREDS='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 ### 3.2. Questionamentos à Engenharia da Morpheus Data
 
 > [!NOTE] **Oportunidade de Melhoria Contínua e Parceria Técnica: Documentação e Exemplos Práticos**
-> Identificamos como uma excelente oportunidade de evolução conjunta o aprofundamento da documentação oficial com exemplos práticos *end-to-end* e guias detalhados de exploração para cenários avançados de integração. 
-> 
-> Durante a implementação desta Prova de Conceito, observamos que a velocidade de adoção e a curva de aprendizado foram impactadas pela necessidade de ciclos iterativos de tentativa e erro, inspeção aprofundada de logs e certa incerteza técnica sobre quais abordagens representam as melhores práticas recomendadas pela plataforma. 
-> 
+> Identificamos como uma excelente oportunidade de evolução conjunta o aprofundamento da documentação oficial com exemplos práticos *end-to-end* e guias detalhados de exploração para cenários avançados de integração.
+>
+> Durante a implementação desta Prova de Conceito, observamos que a velocidade de adoção e a curva de aprendizado foram impactadas pela necessidade de ciclos iterativos de tentativa e erro, inspeção aprofundada de logs e certa incerteza técnica sobre quais abordagens representam as melhores práticas recomendadas pela plataforma.
+>
 > A inclusão de arquiteturas de referência documentadas, tutoriais de casos de uso reais e o detalhamento dos mecanismos internos de injeção de parâmetros trarão expressivo ganho de produtividade, acelerando o *time-to-value*, fortalecendo a experiência do desenvolvedor e garantindo a consolidação dos padrões arquiteturais recomendados pela Morpheus Data.
 
 Para que possamos adotar as melhores práticas recomendadas pela Morpheus Data mantendo a arquitetura nativa de App Blueprints de Terraform, solicitamos esclarecimentos sobre os seguintes pontos:
@@ -267,6 +267,7 @@ Para que possamos adotar as melhores práticas recomendadas pela Morpheus Data m
 ## 4. Referências Técnicas Utilizadas
 
 ### 4.1. Documentação Oficial Morpheus Data
+
 * [Morpheus Data Documentation Hub](https://docs.morpheusdata.com/)
 * [Morpheus Blueprints & App Management Guide](https://docs.morpheusdata.com/en/latest/provisioning/blueprints/blueprints.html)
 * [Morpheus Cypher Architecture & Secret Storage](https://docs.morpheusdata.com/en/latest/tools/cypher/cypher.html)
@@ -276,12 +277,14 @@ Para que possamos adotar as melhores práticas recomendadas pela Morpheus Data m
 * [Morpheus Terraform Integration & State Backend Guide](https://docs.morpheusdata.com/en/latest/integration_guides/Terraform/terraform.html)
 
 ### 4.2. Terraform Registry e Provedores
+
 * [Terraform Registry: HPE Morpheus Provider (`HPE/hpe`)](https://registry.terraform.io/providers/HPE/hpe/latest/docs)
 * [Terraform Registry: HashiCorp Google Cloud Provider (`hashicorp/google`)](https://registry.terraform.io/providers/hashicorp/google/latest/docs)
 * [Terraform Language: Input Variables & `.tfvars` Loading Precedence](https://developer.hashicorp.com/terraform/language/values/variables)
 * [Terraform Language: Variable Definitions Files (`.tfvars` e `.auto.tfvars`)](https://developer.hashicorp.com/terraform/language/values/variables#variable-definitions-tfvars-files)
 
 ### 4.3. Google Cloud Platform (GCP)
+
 * [Google Compute Engine: Creating and Starting VM Instances](https://cloud.google.com/compute/docs/instances/create-start-instance)
 * [Google Compute Engine: Custom Machine Types (Configuração dinâmica de vCPU e RAM)](https://cloud.google.com/compute/docs/general-purpose-machines#custom_machine_types)
 * [Google Compute Engine: Instance Metadata & Linux Startup Scripts](https://cloud.google.com/compute/docs/instances/startup-scripts/linux)
@@ -289,6 +292,7 @@ Para que possamos adotar as melhores práticas recomendadas pela Morpheus Data m
 * [Google Cloud IAM: Service Accounts and Key Authentication](https://cloud.google.com/iam/docs/service-account-overview)
 
 ### 4.4. Artefatos e Código da PoC no Repositório
+
 * [PoC Native State README](./README.md) - Documentação completa e instruções da PoC.
 * [Blueprint Definition (`blueprint.tf`)](./blueprint.tf) - Declaração do recurso `hpe_morpheus_app_blueprint_terraform`.
 * [Catalog Item Definition (`catalog_item.tf`)](./catalog_item.tf) - Declaração do `hpe_morpheus_catalog_item_app_blueprint` e `app_spec`.
