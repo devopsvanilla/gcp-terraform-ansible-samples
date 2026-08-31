@@ -238,6 +238,13 @@ GCP_CREDS='<%=cypher.read("secret/gcp-terraform-ansible-samples")%>'
 
 ### 3.2. Questionamentos à Engenharia da Morpheus Data
 
+> [!NOTE] **Oportunidade de Melhoria Contínua e Parceria Técnica: Documentação e Exemplos Práticos**
+> Identificamos como uma excelente oportunidade de evolução conjunta o aprofundamento da documentação oficial com exemplos práticos *end-to-end* e guias detalhados de exploração para cenários avançados de integração. 
+> 
+> Durante a implementação desta Prova de Conceito, observamos que a velocidade de adoção e a curva de aprendizado foram impactadas pela necessidade de ciclos iterativos de tentativa e erro, inspeção aprofundada de logs e certa incerteza técnica sobre quais abordagens representam as melhores práticas recomendadas pela plataforma. 
+> 
+> A inclusão de arquiteturas de referência documentadas, tutoriais de casos de uso reais e o detalhamento dos mecanismos internos de injeção de parâmetros trarão expressivo ganho de produtividade, acelerando o *time-to-value*, fortalecendo a experiência do desenvolvedor e garantindo a consolidação dos padrões arquiteturais recomendados pela Morpheus Data.
+
 Para que possamos adotar as melhores práticas recomendadas pela Morpheus Data mantendo a arquitetura nativa de App Blueprints de Terraform, solicitamos esclarecimentos sobre os seguintes pontos:
 
 1. **Passagem Oficial de `customOptions` para Terraform**:  
